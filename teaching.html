@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>課程工具</title>
+    <audio id="countdownSound" src="https://drive.google.com/uc?export=download&id=1YSbtHqBYtX9FkZRPodAxIZQ4uDY5FXyP" loop></audio>
+<meta http-equiv="cache-control" content="no-cache">
+<meta http-equiv="pragma" content="no-cache"> 
+<meta http-equiv="expires" content="0"> 
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        margin: 20px auto;
+        max-width: 800px;
+        text-align: center;
+        background-color: #fff;
+        padding: 20px;
+        box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.1);
+      }
+      .container-button {
+  display: flex;
+  flex-wrap: wrap; /* 讓子元素換行 */
+  justify-content: center;
+  align-items: center;
+	  }
+      h1 {
+        font-size: 36px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        color: #7b5e94;
+      }
+
+      table {
+        margin: 20px auto;
+        border-collapse: collapse;
+        width: 100%;
+		table-layout: fixed;
+      }
+
+      th,
+      td {
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f2f2f2;
+        color: #7A869A;
+        font-weight: normal;
+      }
+
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+
+      tr:hover {
+        background-color: #ddd;
+      }
+
+      tr.selected {
+        background-color: #bfbfbf;
+      }
+#scoreboard th:nth-child(1),
+#scoreboard th:nth-child(2) {
+  width: 35%;
+}
+
+#scoreboard th:nth-child(3){
+  width: 20%;
+}
+#scoreboard th:nth-child(4) {
+  width: 10%;
+}
+      input,
+      button {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 8px;
+        margin-right: 5px;
+        background-color: #fff;
+        color: #7b5e94;
+      }
+
+      input:focus,
+      button:hover {
+        outline: none;
+        border-color: #7b5e94;
+      }
+
+      button {
+        background-color: #7b5e94;
+        color: #fff;
+        border-radius: 4px;
+        border: none;
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #a68da8;
+        transform: translateY(-2px);
+        box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      #timer {
+        font-size: 100px;
+        font-weight: bold;
+        font-family: 'Helvetica Neue', sans-serif;
+        color: #7b5e94;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+        margin: 20px;
+      }
+	  .score-animation {
+animation: score-increase 0.5s ease-in-out;
+}
+@keyframes score-increase {
+0% {
+font-size: 100%;
+color: default;
+}
+50% {
+font-size: 150%;
+color: #7b5e94;
+}
+100% {
+font-size: 100%;
+color: default;
+}
+}
+    </style>
+
+  </head>
+  <body>
+    <div class="container"><div class="container-button">
+      <button onclick="startTimer(30)">30s</button>
+      <button onclick="startTimer(60)">1m</button>
+      <button onclick="startTimer(120)">2m</button>
+      <button onclick="startTimer(180)">3m</button>
+        <input type="number" id="customMinutes" placeholder="分" style="width:30px">:
+        <input type="number" id="customSeconds" placeholder="秒"  step="30" max="60" min="0" style="width:30px">
+        <button onclick="startCustomTimer()">倒數</button>
+        <button id="pauseBtn" onclick="pauseOrResumeTimer()">暫停</button>
+        <button onclick="resetTimer()">重設</button></div>
+      <h2 id="timer">00:00</h2>
+      <table id="scoreboard">
+        <tr>
+          <th>小組名稱</th>
+          <th>分數</th>
+          <th>加分</th>
+		  <th>刪</th>
+        </tr>
+      </table>
+	        <div class="container-button"><button onclick="addTeam()">+小組</button>
+	          <button onclick="resetScores()">清空</button>
+      <button onclick="addPoints(100)">+100</button>
+      <button onclick="addPoints(500)">+500</button>
+      <button onclick="addPoints(3000)">+3000</button>
+      <button onclick="addPoints(5000)">+5000</button>
+        <button onclick="addCustomPoints()">+</button>
+        <input type="number" id="customPoints" placeholder="分" step="100" style="width:50px"></div>
+<script>
+let timerId;
+let remainingTime;
+let countdownSound = document.getElementById("countdownSound");
+let pauseTime;
+
+function startTimer(time) {
+  // 如果已經有倒數計時器正在運作，則先將它清空
+  if (timerId) {
+    clearInterval(timerId);
+  }
+  // 設定新的倒數計時器
+  remainingTime = time;
+  timerId = setInterval(updateTimer, 1000);
+  countdownSound.play();
+  setTimeout(() => {
+    resetTimer();
+    countdownSound.pause();
+    countdownSound.currentTime = 0;
+  }, remainingTime * 1000);
+}
+
+function startCustomTimer() {
+  const minutesInput = document.getElementById("customMinutes");
+  const secondsInput = document.getElementById("customSeconds");
+  let minutes = minutesInput.value;
+  let seconds = secondsInput.value;
+  if (minutes === "") {
+    minutes = 0;
+  } else if (seconds === "") {
+    seconds = 0;
+  }
+  if (isNaN(minutes) || isNaN(seconds)) {
+    alert("請輸入有效的時間");
+    return;
+  }
+  startTimer(parseInt(minutes) * 60 + parseInt(seconds));
+  minutesInput.value = "";
+  secondsInput.value = "";
+}
+
+function updateTimer() {
+  let minutes = Math.floor(remainingTime / 60);
+  let seconds = remainingTime - minutes * 60;
+  document.getElementById("timer").innerHTML =
+    ("0" + minutes).slice(-2) +
+    ":" +
+    ("0" + seconds).slice(-2);
+  remainingTime--;
+}
+
+function pauseTimer() {
+  clearInterval(timerId);
+}
+
+function resetTimer() {
+  clearInterval(timerId);
+  remainingTime = 0;
+  document.getElementById("timer").innerHTML = "00:00";
+  clearTimeout(pauseTime); // 新增這行代碼
+    countdownSound.pause();
+}
+
+function formatNumber(number) {
+  return number.toString().padStart(2, "0");
+}
+
+var countdown; // 宣告一個全域變數來保存計時器
+
+function startCountdown(minutes) {
+  clearInterval(countdown); // 每次開始計時前先清除上一次計時器
+  var display = document.getElementById("countdownTimer");
+  var endTime = new Date().getTime() + minutes * 60 * 1000; // 計算結束時間
+  display.innerText = formatTime(minutes * 60); // 顯示初始倒數時間
+
+  countdown = setInterval(function() {
+    var now = new Date().getTime();
+    var distance = endTime - now;
+    var remainingTime = Math.round(distance / 1000); // 轉換為剩餘秒數
+    display.innerText = formatTime(remainingTime);
+
+  }, 1000);
+}
+
+function formatTime(seconds) {
+  var mins = Math.floor(seconds / 60);
+  var secs = seconds % 60;
+  if (mins < 10) mins = "0" + mins;
+  if (secs < 10) secs = "0" + secs;
+  return mins + ":" + secs;
+}
+let isPaused = false;
+
+function pauseOrResumeTimer() {
+  const pauseBtn = document.getElementById("pauseBtn");
+  if (pauseBtn.innerHTML === "暫停") {
+    clearInterval(timerId);
+    pauseTime = remainingTime;
+    pauseBtn.innerHTML = "繼續";
+    countdownSound.pause();
+  } else {
+    remainingTime = pauseTime;
+    timerId = setInterval(updateTimer, 1000);
+    pauseBtn.innerHTML = "暫停";
+    countdownSound.play();
+  }
+}
+
+</script>
+    <script>
+      
+var teamNumbers = [];
+function addTeam() {
+  var table = document.getElementById("scoreboard");
+  var teamNumber = teamNumbers.length + 1;
+  teamNumbers.push(teamNumber);
+
+  var row = table.insertRow(-1);
+  var nameCell = row.insertCell(0);
+  var scoreCell = row.insertCell(1);
+  var addPointsButton = row.insertCell(2);
+  var deleteCell = row.insertCell(3);
+
+  nameCell.innerHTML = "小組 " + teamNumber;
+  nameCell.ondblclick = function() {
+    editName(nameCell, teamNumber);
+  };
+  // 讀取之前的分數
+  var storedScore = localStorage.getItem("team_" + teamNumber);
+  if (storedScore !== null) {
+    scoreCell.innerHTML = storedScore;
+  } else {
+    scoreCell.innerHTML = "0";
+  }
+  deleteCell.innerHTML = "✖";
+  deleteCell.classList.add("deleteIcon");
+  deleteCell.onclick = function() {
+    deleteTeam(row, teamNumber);
+  };
+  row.onclick = function() {
+    selectRow(row);
+  };
+  scoreCell.ondblclick = function() {
+    editScore(scoreCell);
+  };
+  // 讀取之前的組別名稱
+  var storedName = localStorage.getItem("teamName_" + teamNumber);
+  if (storedName !== null) {
+    nameCell.innerHTML = storedName;
+  } else {
+    nameCell.innerHTML = "小組 " + teamNumber;
+  }
+  
+  addPointsButton.innerHTML = '<button onclick="addPointsOnClick(' + teamNumber + ',1000)">+</button>';
+}
+
+function addPointsOnClick(teamNumber, points) {
+  var table = document.getElementById("scoreboard");
+  var row = table.rows[teamNumber];
+  var scoreCell = row.cells[1];
+  var currentScore = parseInt(scoreCell.innerHTML);
+  scoreCell.innerHTML = currentScore + points;
+  // 新增分數動畫
+  scoreCell.classList.add("score-animation");
+  setTimeout(function() {
+    scoreCell.classList.remove("score-animation");
+  }, 500);
+  // 將新的分數存入本地儲存
+  localStorage.setItem("team_" + teamNumber, scoreCell.innerHTML);
+}
+
+function editName(cell, teamNumber) {
+  var currentName = cell.innerHTML;
+  cell.innerHTML = "<input type='text' value='" + currentName + "' onblur='updateName(this, " + teamNumber + ")' />";
+  cell.firstChild.focus();
+}
+
+function updateName(input, teamNumber) {
+  var cell = input.parentElement;
+  cell.innerHTML = input.value;
+  // 將新的組別名稱存入本地儲存
+  localStorage.setItem("teamName_" + teamNumber, input.value);
+}
+
+function deleteTeam(row, teamNumber) {
+  var table = document.getElementById("scoreboard");
+  var index = teamNumbers.indexOf(teamNumber);
+  if (index !== -1) {
+    // 刪除時一併刪除本地儲存
+    localStorage.removeItem("team_" + teamNumber);
+    table.deleteRow(row.rowIndex);
+    teamNumbers.splice(index, 1);
+  }
+}
+
+      
+      function addPoints(points) {
+        var table = document.getElementById("scoreboard");
+        var selectedRow = table.getElementsByClassName("selected")[0];
+        if (selectedRow) {
+          var scoreCell = selectedRow.cells[1];
+          var currentScore = parseInt(scoreCell.innerHTML);
+          scoreCell.innerHTML = currentScore + points;
+// 新增分數動畫
+scoreCell.classList.add("score-animation");
+setTimeout(function() {
+scoreCell.classList.remove("score-animation");
+}, 500);
+          // 將新的分數存入本地儲存
+          var teamNumber = teamNumbers[selectedRow.rowIndex - 1];
+          localStorage.setItem("team_" + teamNumber, scoreCell.innerHTML);
+
+        } else {
+          alert("請選擇一個小組");
+        }
+      }
+      
+   function addCustomPoints() {
+var table = document.getElementById("scoreboard");
+var selectedRow = table.getElementsByClassName("selected")[0];
+var customPoints = parseInt(document.getElementById("customPoints").value);
+if (selectedRow && customPoints) {
+var scoreCell = selectedRow.cells[1];
+var currentScore = parseInt(scoreCell.innerHTML);
+scoreCell.innerHTML = currentScore + customPoints;
+} else {
+alert("請選擇一個小組並輸入分數");
+}
+}
+
+function selectRow(row) {
+var rows = document.getElementsByTagName("tr");
+for (var i = 1; i < rows.length; i++) {
+rows[i].classList.remove("selected");
+}
+row.classList.add("selected");
+}
+
+function editScore(cell) {
+var currentScore = cell.innerHTML;
+cell.innerHTML = "<input type='number' step='1000' value='" + currentScore + "' onblur='updateScore(this)' />";
+cell.firstChild.focus();
+}
+function updateScore(input) {
+  var cell = input.parentElement;
+  cell.innerHTML = input.value;
+  var teamNumber = teamNumbers[cell.parentElement.rowIndex - 1];
+  localStorage.setItem("team_" + teamNumber, input.value);
+}
+
+
+function resetScores() {
+  if (confirm("確定要把分數歸零並恢復名稱為預設嗎？")) {
+    var table = document.getElementById("scoreboard");
+    for (var i = 1; i < table.rows.length; i++) {
+      var row = table.rows[i];
+      var nameCell = row.cells[0];
+      var scoreCell = row.cells[1];
+      scoreCell.innerHTML = "0";
+      nameCell.innerHTML = "小組 " + teamNumbers[i - 1];
+      var teamNumber = teamNumbers[i - 1];
+      localStorage.setItem("teamName_" + teamNumber, nameCell.innerHTML);
+      localStorage.setItem("team_" + teamNumber, scoreCell.innerHTML);
+    }
+  }
+}
+
+// 記錄當前排序方式，默認為升序
+var sortOrder = {
+  name: "asc",
+  score: "asc"
+};
+
+// 監聽小組名稱和分數的點擊事件
+document.querySelector("#scoreboard th:nth-child(1)").addEventListener("click", sortTable.bind(this, 0));
+document.querySelector("#scoreboard th:nth-child(2)").addEventListener("click", sortTable.bind(this, 1));
+
+function sortTable(columnIndex) {
+  var rows = Array.from(document.querySelectorAll("#scoreboard tr")).slice(1);
+  var sortType = columnIndex === 0 ? "name" : "score";
+  var sortDirection = sortOrder[sortType] === "asc" ? 1 : -1;
+  rows.sort(function(a, b) {
+    var aValue = a.cells[columnIndex].textContent;
+    var bValue = b.cells[columnIndex].textContent;
+    if (sortType === "score") {
+      aValue = parseInt(aValue);
+      bValue = parseInt(bValue);
+    }
+    if (aValue < bValue) {
+      return -1 * sortDirection;
+    } else if (aValue > bValue) {
+      return 1 * sortDirection;
+    } else {
+      return 0;
+    }
+  });
+  // 重新排列行
+  rows.forEach(function(row) {
+    document.querySelector("#scoreboard tbody").appendChild(row);
+  });
+  // 更新排序方式
+  sortOrder[sortType] = sortOrder[sortType] === "asc" ? "desc" : "asc";
+}
+// 預設添加兩個小組
+window.onload = function() {
+  for (var i = 1; i <= 6; i++) {
+    addTeam();
+  }
+};
+</script>
+<br />
+<details>
+  <summary>抽籤</summary>
+  <div>
+    <textarea id="input-names" rows="5" cols="30" placeholder="抽籤名單"></textarea>
+   <select id="input-number">
+      <option value="1">抽1個</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="10">10</option>
+      <option value="11">11</option>
+      <option value="12">12</option>
+      <option value="13">13</option>
+      <option value="14">14</option>
+      <option value="15">15</option>
+      <option value="16">16</option>
+      <option value="17">17</option>
+      <option value="18">18</option>
+      <option value="19">19</option>
+      <option value="20">20</option>
+    </select>
+
+  <button onclick="drawLots()">抽籤</button>  </div>
+</details>
+
+<script>
+  // 檢查 Web Storage 是否可用
+  const storage = window.localStorage || window.sessionStorage;
+  if (!storage) {
+    alert("瀏覽器不支持 Web Storage！");
+  }
+
+  // 讀取之前存儲的學生名單
+  const names = storage.getItem("names");
+  if (names) {
+    document.getElementById("input-names").value = names;
+  }
+
+  function drawLots() {
+    // 取得 textarea 中的學生名單
+    const textarea = document.getElementById("input-names");
+    const students = textarea.value.split("\n").filter((name) => name.trim() !== "");
+
+    // 取得要抽出的人數
+    const number = document.getElementById("input-number").value;
+
+    // 檢查人數是否合法
+    if (number < 1 || number > students.length) {
+      alert("抽取人數不合法！");
+      return;
+    }
+
+    // 亂數抽出指定數量的學生名單
+    const selected = [];
+    while (selected.length < number) {
+      const index = Math.floor(Math.random() * students.length);
+      const name = students[index];
+      if (!selected.includes(name)) {
+        selected.push(name);
+      }
+    }
+
+    // 在畫面上顯示抽出的結果
+    const result = selected.join("、");
+    alert(`抽出的學生為：${result}`);
+
+    // 將學生名單存儲到 Web Storage 中
+    storage.setItem("names", textarea.value);
+  }
+</script>
+  </body>
+</html>
