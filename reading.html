@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧閱讀書院</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Preload the font stylesheet to improve loading performance -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/gh/max32002/genwaneoscjk/css/genwaneoscjk-dynamic-subset.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/max32002/genwaneoscjk/css/genwaneoscjk-dynamic-subset.min.css"></noscript>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body class="text-gray-800">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 flex items-center justify-center z-[100] p-4" style="background-color: rgba(30, 30, 30, 0.7); backdrop-filter: blur(4px);">
+        <div class="bg-white p-8 rounded-lg shadow-2xl flex flex-col items-center space-y-4">
+            <div class="loader"></div>
+            <p id="loading-message" class="text-lg font-medium text-gray-700">展卷中...</p>
+        </div>
+    </div>
+
+    <!-- App Loader -->
+    <div id="app-loader" class="min-h-screen flex items-center justify-center">
+        <div class="flex flex-col items-center space-y-4">
+            <div class="loader"></div>
+            <p class="text-lg font-medium text-gray-800 font-rounded">正在載入書院...</p>
+        </div>
+    </div>
+
+    <!-- View Templates -->
+    <template id="template-login-view">
+        <div class="login-card">
+            <div class="text-center mb-8">
+                <h1 class="login-title">書院開筆</h1>
+                <p class="login-subtitle">擇一學堂，入座啟程。</p>
+            </div>
+            <div class="space-y-6">
+                <div>
+                    <label for="class-login-selector" class="block text-sm font-bold text-gray-600 mb-2">選擇學堂 (班級)</label>
+                    <select id="class-login-selector" class="form-element-ink"></select>
+                </div>
+                <div>
+                    <label for="student-login-selector" class="block text-sm font-bold text-gray-600 mb-2">選擇學子 (姓名)</label>
+                    <select id="student-login-selector" class="form-element-ink" disabled></select>
+                </div>
+                <div>
+                    <label for="student-password-input" class="block text-sm font-bold text-gray-600 mb-2">憑信（密碼）</label>
+                    <input type="password" id="student-password-input" class="form-element-ink" placeholder="預設為班級加座號，共五碼" disabled>
+                </div>
+                <button id="student-login-btn" class="w-full btn-primary py-3 px-4 text-lg btn-seal" disabled>入座啟程</button>
+                <p id="login-error" class="text-red-500 text-sm text-center h-4 font-bold"></p>
+            </div>
+            <div class="mt-8 text-center">
+                <a href="#" id="teacher-login-link" class="text-sm text-gray-500 hover:text-red-700 font-bold transition-colors">我是夫子 (教師)，前往講堂</a>
+            </div>
+        </div>
+    </template>
+
+    <!-- 開筆畫面 -->
+    <div id="login-view" class="hidden min-h-screen flex items-center justify-center p-4"></div>
+
+    <!-- 主應用程式 -->
+    <div id="main-app-view" class="hidden max-w-screen-2xl mx-auto p-4 md:p-8">
+        <header class="flex justify-between items-center pb-4">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <h1 class="text-2xl font-bold text-gray-800 font-rounded">智慧閱讀書院</h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <div id="user-avatar" class="w-12 h-12 rounded-full flex items-center justify-center avatar-seal">
+                        <span id="user-avatar-text" class="avatar-seal-text text-2xl"></span>
+                    </div>
+                    <div>
+                        <h2 id="user-greeting" class="text-lg font-semibold text-gray-700 font-rounded"></h2>
+                        <p id="user-class" class="text-sm text-gray-500"></p>
+                    </div>
+                </div>
+                <button id="logout-btn" class="btn-danger py-2 px-4 text-sm">離席</button>
+            </div>
+        </header>
+
+        <!-- View tabs (teacher only) -->
+        <div id="view-tabs-container" class="border-b-2 border-gray-200 mb-6">
+            <div id="view-tabs" class="flex space-x-1">
+                <button id="student-view-btn" class="tab-btn py-2 px-4 font-semibold text-sm">我的書房</button>
+                <button id="teacher-view-btn" class="tab-btn py-2 px-4 font-semibold text-sm">夫子講堂</button>
+            </div>
+        </div>
+        
+        <!-- App Content Container -->
+        <div id="app-content-container"></div>
+    </div>
+
+    <template id="template-student-view">
+        <main id="student-view" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div id="student-sidebar" class="lg:col-span-1 space-y-8">
+                <div class="card"><div class="grid grid-cols-2 gap-4 mb-4"><button id="student-view-analysis-btn" class="w-full btn-primary py-3 text-base">查看我的課業</button><button id="student-view-achievements-btn" class="w-full btn-secondary py-3 text-base">我的成就</button></div><h2 class="text-2xl font-bold mb-4 border-b-2 pb-3 text-gray-800 flex items-center gap-2 font-rounded">學習日誌</h2><div id="calendar-view"></div></div>
+                <div class="card"><div class="flex justify-between items-center mb-4 border-b-2 pb-3"><h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2 font-rounded">指定篇章</h2></div><div id="assignments-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2"></div></div>
+            </div>
+            <div id="reading-view" class="lg:col-span-2 card min-h-[80vh]">
+                <div id="article-grid-view">
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-100">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+                            <div><label class="text-sm font-bold text-slate-600">形式</label><select id="filter-format" class="w-full form-element-ink mt-1 text-sm article-filter"><option value="">所有形式</option><option value="純文">#純文</option><option value="圖表">#圖表</option><option value="圖文">#圖文</option></select></div>
+                            <div><label class="text-sm font-bold text-slate-600">內容</label><select id="filter-contentType" class="w-full form-element-ink mt-1 text-sm article-filter"><option value="">所有內容</option><option value="記敘">#記敘</option><option value="抒情">#抒情</option><option value="說明">#說明</option><option value="議論">#議論</option><option value="應用">#應用</option></select></div>
+                            <div><label class="text-sm font-bold text-slate-600">難度</label><select id="filter-difficulty" class="w-full form-element-ink mt-1 text-sm article-filter"><option value="">所有難度</option><option value="簡單">#簡單</option><option value="基礎">#基礎</option><option value="普通">#普通</option><option value="進階">#進階</option><option value="困難">#困難</option></select></div>
+                            <div><label class="text-sm font-bold text-slate-600">狀態</label><select id="filter-status" class="w-full form-element-ink mt-1 text-sm article-filter"><option value="">所有狀態</option><option value="incomplete">未完成</option><option value="complete">已完成</option></select></div>
+                            <div><button id="clear-article-filters-btn" class="w-full btn-secondary text-sm py-3">清除篩選</button></div>
+                        </div>
+                    </div>
+                    <div id="article-grid-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+                    <div id="pagination-container" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+                <div id="content-display" class="hidden"></div>
+            </div>
+        </main>
+    </template>
+
+    <template id="template-teacher-view">
+        <div id="teacher-view">
+            <div class="flex border-b-2 border-gray-200 mb-6">
+                <button data-tab="class-overview" class="teacher-tab-btn font-bold py-3 px-6 rounded-t-lg active">學堂總覽</button>
+                <button data-tab="article-library" class="teacher-tab-btn font-bold py-3 px-6 rounded-t-lg">藏書閣</button>
+                <button data-tab="achievement-management" class="teacher-tab-btn font-bold py-3 px-6 rounded-t-lg">成就管理</button>
+            </div>
+            <div id="teacher-main-content"></div>
+        </div>
+    </template>
+
+    <!-- Modal Container: Modals will be dynamically injected here -->
+    <div id="modal-container"></div>
+    
+    <!-- Highlight Toolbar -->
+    <div id="highlight-toolbar" class="hidden absolute z-[70] bg-gray-800 shadow-lg rounded-md p-2 flex flex-col items-center space-y-2">
+        <button class="highlight-btn w-8 h-8 rounded-full bg-red-300 border-2 border-white" data-color="rgba(254, 178, 178, 0.7)"></button>
+        <button class="highlight-btn w-8 h-8 rounded-full bg-yellow-300 border-2 border-white" data-color="rgba(253, 230, 138, 0.7)"></button>
+        <button class="highlight-btn w-8 h-8 rounded-full bg-gray-300 border-2 border-white" data-color="rgba(209, 213, 219, 0.7)"></button>
+        <button id="remove-highlight-btn" class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold bg-gray-600"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z"/></svg></button>
+    </div>
+<!-- Load Mermaid.js library -->
+<!-- Load Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" defer></script>
+<script src="config.js"></script>
+<script type="module" src="scripts.js"></script>
+</body>
+</html>
