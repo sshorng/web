@@ -1314,7 +1314,7 @@
                 ])
             ]);
 
-            const createFilterSelect = (id, label, options) => el('select', { id, class: 'input-styled text-sm' }, [
+            const createFilterSelect = (id, label, options) => el('select', { id, class: 'teacher-select-filter input-styled text-sm' }, [
                 el('option', { value: '', textContent: label }),
                 ...Object.entries(options).map(([value, text]) => el('option', { value, textContent: text }))
             ]);
@@ -1357,7 +1357,7 @@
                 ])
             ]);
 
-            const createArticlePanel = el('div', { id: 'panel-create-article' }, [
+            const createArticlePanel = el('div', { id: 'panel-create-article', class: 'hidden' }, [
                 el('div', { class: 'flex border-b-2 border-gray-200 mb-4' }, [
                     el('button', { id: 'tab-ai-generate', class: 'creation-tab font-bold py-2 px-4 text-sm rounded-t-lg active', textContent: 'AI 起草' }),
                     el('button', { id: 'tab-paste-text', class: 'creation-tab font-bold py-2 px-4 text-sm rounded-t-lg', textContent: '貼入文章' })
@@ -1366,7 +1366,7 @@
                 pasteTextPanel
             ]);
 
-            const analyzeArticlePanel = el('div', { id: 'panel-analyze-article', class: 'hidden card' }, [
+            const analyzeArticlePanel = el('div', { id: 'panel-analyze-article', class: 'card' }, [
                 el('div', { class: 'mb-4 flex flex-wrap gap-4 items-center' }, [
                     el('input', { type: 'text', id: 'article-search-input', class: 'input-styled w-full md:w-auto flex-grow', placeholder: '🔍 搜尋篇章名號...' }),
                     createFilterSelect('filter-tag-format', '所有形式', { '純文': '#純文', '圖表': '#圖表', '圖文': '#圖文' }),
@@ -1419,8 +1419,8 @@
 
             const mainCard = el('div', { class: 'card mb-8' }, [
                 el('div', { class: 'flex border-b-2 border-gray-200 mb-4' }, [
-                    el('button', { id: 'tab-create-article', class: 'creation-tab font-bold py-2 px-6 rounded-t-lg active', textContent: '新撰篇章' }),
-                    el('button', { id: 'tab-analyze-article', class: 'creation-tab font-bold py-2 px-6 rounded-t-lg', textContent: '篇章書庫' })
+                    el('button', { id: 'tab-create-article', class: 'creation-tab font-bold py-2 px-6 rounded-t-lg', textContent: '新撰篇章' }),
+                    el('button', { id: 'tab-analyze-article', class: 'creation-tab font-bold py-2 px-6 rounded-t-lg active', textContent: '篇章書庫' })
                 ]),
                 createArticlePanel,
                 analyzeArticlePanel
@@ -1430,36 +1430,40 @@
             fetchTeacherAssignmentsPage(true); // Initial fetch
         }
 
-        function renderTeacherArticleTable(assignments) {
-            const tableBody = document.getElementById('article-list-body');
+        function updateTeacherLoadMoreButton() {
             const loadMoreContainer = document.getElementById('teacher-load-more-container');
+            if (!loadMoreContainer) return;
+            
             const state = appState.teacherArticleQueryState;
+            const loadMoreBtn = loadMoreContainer.querySelector('#load-more-teacher-articles-btn');
 
+            if (state.isLastPage) {
+                loadMoreContainer.classList.add('hidden');
+            } else {
+                loadMoreContainer.classList.remove('hidden');
+                if (loadMoreBtn) {
+                    loadMoreBtn.disabled = state.isLoading;
+                    loadMoreBtn.textContent = state.isLoading ? '載入中...' : '載入更多';
+                }
+            }
+        }
+
+        function renderTeacherArticleTable(assignments, isNewQuery) {
+            const tableBody = document.getElementById('article-list-body');
             if (!tableBody) return;
 
-            // Always clear the table. The calling function provides the complete, sorted list.
-            tableBody.innerHTML = '';
+            if (isNewQuery) {
+                tableBody.innerHTML = '';
+            }
 
-            if (assignments.length === 0) {
+            if (assignments.length === 0 && isNewQuery) {
                 tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-slate-500">沒有找到符合條件的篇章。</td></tr>`;
-            } else {
+            } else if (assignments.length > 0) {
                 const fragment = document.createDocumentFragment();
                 assignments.forEach(assignment => {
                     fragment.appendChild(createFullArticleTableRow(assignment));
                 });
                 tableBody.appendChild(fragment);
-            }
-
-            // Handle "Load More" button visibility
-            if (loadMoreContainer) {
-                const loadMoreBtn = loadMoreContainer.querySelector('#load-more-teacher-articles-btn');
-                if (state.isLastPage) {
-                    loadMoreContainer.classList.add('hidden');
-                } else {
-                    loadMoreContainer.classList.remove('hidden');
-                    loadMoreBtn.disabled = state.isLoading;
-                    loadMoreBtn.textContent = state.isLoading ? '載入中...' : '載入更多';
-                }
             }
         }
 
@@ -2559,15 +2563,20 @@ ${JSON.stringify(analysisData, null, 2)}
                 });
             });
 
-            document.getElementById('prev-month-btn').addEventListener('click', () => {
-                appState.calendarDisplayDate.setMonth(appState.calendarDisplayDate.getMonth() - 1);
-                renderCalendar();
-            });
+            const prevBtn = document.getElementById('prev-month-btn');
+            const nextBtn = document.getElementById('next-month-btn');
 
-            document.getElementById('next-month-btn').addEventListener('click', () => {
-                appState.calendarDisplayDate.setMonth(appState.calendarDisplayDate.getMonth() + 1);
-                renderCalendar();
-            });
+            if (prevBtn && nextBtn) {
+                prevBtn.addEventListener('click', () => {
+                    appState.calendarDisplayDate.setMonth(appState.calendarDisplayDate.getMonth() - 1);
+                    renderCalendar();
+                });
+
+                nextBtn.addEventListener('click', () => {
+                    appState.calendarDisplayDate.setMonth(appState.calendarDisplayDate.getMonth() + 1);
+                    renderCalendar();
+                });
+            }
         }
         
         function renderAssignmentsList(assignmentsToRender) {
@@ -2670,57 +2679,71 @@ ${JSON.stringify(analysisData, null, 2)}
 
         async function fetchTeacherAssignmentsPage(isNewQuery = false) {
             const state = appState.teacherArticleQueryState;
-            if (state.isLoading || (!isNewQuery && state.isLastPage)) return;
+            if (state.isLoading) return;
+            if (!isNewQuery && state.isLastPage) return;
 
             state.isLoading = true;
-            if (isNewQuery) {
-                state.isLastPage = false;
-                state.articles = [];
-            }
-            showLoading('正在擷取篇章書庫...');
+            updateTeacherLoadMoreButton();
 
             try {
-                const allAssignments = await getAssignments();
-                const filters = state.filters;
-                const now = new Date();
-
-                let filteredAssignments = allAssignments.filter(a => {
-                    if (filters.format && a.tags?.format !== filters.format) return false;
-                    if (filters.contentType && a.tags?.contentType !== filters.contentType) return false;
-                    if (filters.difficulty && a.tags?.difficulty !== filters.difficulty) return false;
-                    if (filters.searchTerm && !a.title.toLowerCase().includes(filters.searchTerm.toLowerCase())) return false;
-                    if (filters.deadlineStatus) {
-                        const deadline = a.deadline?.toDate();
-                        if (filters.deadlineStatus === 'active' && (!deadline || deadline <= now)) return false;
-                        if (filters.deadlineStatus === 'expired' && (!deadline || deadline > now)) return false;
-                        if (filters.deadlineStatus === 'none' && deadline) return false;
-                    }
-                    return true;
-                });
-
-                // Sort
-                filteredAssignments.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-
-                const startIndex = isNewQuery ? 0 : state.articles.length;
-                const newAssignments = filteredAssignments.slice(startIndex, startIndex + 15);
-
-                if (newAssignments.length < 15 || (startIndex + newAssignments.length) >= filteredAssignments.length) {
-                    state.isLastPage = true;
+                if (isNewQuery) {
+                    state.articles = [];
+                    state.isLastPage = false;
+                    const assignmentsQuery = query(collection(db, "assignments"), orderBy("createdAt", "desc"));
+                    const documentSnapshots = await getDocs(assignmentsQuery);
+                    appState.allTeacherArticles = documentSnapshots.docs.map(doc => ({ ...doc.data(), id: doc.id }));
                 }
+
+                let filteredArticles = [...appState.allTeacherArticles];
+                const filters = state.filters;
+
+                if (filters.format) {
+                    filteredArticles = filteredArticles.filter(a => a.tags?.format === filters.format);
+                }
+                if (filters.contentType) {
+                    filteredArticles = filteredArticles.filter(a => a.tags?.contentType === filters.contentType);
+                }
+                if (filters.difficulty) {
+                    filteredArticles = filteredArticles.filter(a => a.tags?.difficulty === filters.difficulty);
+                }
+                if (filters.searchTerm) {
+                    filteredArticles = filteredArticles.filter(a => a.title && a.title.toLowerCase().includes(filters.searchTerm.toLowerCase()));
+                }
+                if (filters.deadlineStatus) {
+                    const now = new Date();
+                    filteredArticles = filteredArticles.filter(a => {
+                        if (!a.deadline || typeof a.deadline.toDate !== 'function') {
+                            return filters.deadlineStatus === 'none';
+                        }
+                        const deadline = a.deadline.toDate();
+                        const isExpired = deadline <= now;
+                        if (filters.deadlineStatus === 'active') return !isExpired;
+                        if (filters.deadlineStatus === 'expired') return isExpired;
+                        if (filters.deadlineStatus === 'none') return false;
+                        return true;
+                    });
+                }
+
+                const PAGE_SIZE = 15;
+                const startIndex = state.articles.length;
+                const endIndex = startIndex + PAGE_SIZE;
+                const newAssignments = filteredArticles.slice(startIndex, endIndex);
 
                 if (isNewQuery) {
                     state.articles = newAssignments;
                 } else {
                     state.articles.push(...newAssignments);
                 }
+                
+                state.isLastPage = state.articles.length >= filteredArticles.length;
 
-                renderTeacherArticleTable(state.articles);
+                renderTeacherArticleTable(newAssignments, isNewQuery);
 
             } catch (error) {
                 console.error("Error fetching teacher assignments:", error);
             } finally {
                 state.isLoading = false;
-                hideLoading();
+                updateTeacherLoadMoreButton();
             }
         }
 
@@ -3122,6 +3145,23 @@ ${JSON.stringify(analysisData, null, 2)}
             
             showLoading('正在載入分析報告...');
             try {
+                // **FIX**: Force-load submissions for the selected class and assignment to ensure data is fresh.
+                const submissionsQuery = query(
+                    collection(db, "submissions"),
+                    where("classId", "==", selectedClassId),
+                    where("assignmentId", "==", assignmentId)
+                );
+                const submissionsSnapshot = await getDocs(submissionsQuery);
+                const newSubmissions = submissionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Merge new submissions into the global state, avoiding duplicates.
+                const existingSubmissionIds = new Set(appState.allSubmissions.map(s => s.id));
+                newSubmissions.forEach(sub => {
+                    if (!existingSubmissionIds.has(sub.id)) {
+                        appState.allSubmissions.push(sub);
+                    }
+                });
+
                 const students = await loadStudentsForClass(selectedClassId);
                 if (students === null) { // Check for null in case of error
                     renderModal('message', { type: 'error', title: '錯誤', message: '載入學生資料失敗。' });
@@ -3933,9 +3973,12 @@ ${rawText}
                 }
 
                 // Teacher View Filters
-                if (target.matches('.teacher-filter')) {
+                if (target.matches('.teacher-select-filter')) {
                     const { id, value } = target;
-                    const filterKey = id.replace('filter-tag-', '').replace('filter-', '');
+                    let filterKey = id.replace('filter-tag-', '').replace('filter-', '');
+                    if (filterKey === 'deadline-status') {
+                        filterKey = 'deadlineStatus'; // Convert to camelCase
+                    }
                     appState.teacherArticleQueryState.filters[filterKey] = value;
                     fetchTeacherAssignmentsPage(true);
                 }
