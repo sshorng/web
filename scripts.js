@@ -1371,7 +1371,7 @@
                     el('input', { type: 'text', id: 'article-search-input', class: 'input-styled w-full md:w-auto flex-grow', placeholder: '🔍 搜尋篇章名號...' }),
                     createFilterSelect('filter-tag-format', '所有形式', { '純文': '#純文', '圖表': '#圖表', '圖文': '#圖文' }),
                     createFilterSelect('filter-tag-contentType', '所有內容', { '記敘': '#記敘', '抒情': '#抒情', '說明': '#說明', '議論': '#議論', '應用': '#應用' }),
-                    createFilterSelect('filter-tag-difficulty', '所有難度', { '簡單': '#簡單', '基礎': '#基礎', '普通': '#進階', '困難': '#困難' }),
+                    createFilterSelect('filter-tag-difficulty', '所有難度', { '簡單': '#簡單', '基礎': '#基礎', '普通': '#普通', '進階': '#進階', '困難': '#困難' }),
                     createFilterSelect('filter-deadline-status', '所有期限', { 'active': '進行中', 'expired': '已逾期', 'none': '無期限' })
                 ]),
                 el('div', { id: 'bulk-actions-container', class: 'hidden mb-4' }, [
