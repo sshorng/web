@@ -16,7 +16,11 @@
             currentArticlePage: 1,
             currentSelectionRange: null,
             isEventListenersInitialized: false,
-            
+            quizTimer: {
+                startTime: null,
+                intervalId: null,
+                elapsedSeconds: 0
+            },
             // New state for server-side pagination
             articleQueryState: {
                 lastVisible: null, // Stores the last document snapshot for pagination
@@ -856,6 +860,42 @@
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             return `(${month}/${day} ${hours}:${minutes})`;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+
+        function startQuizTimer() {
+            stopQuizTimer(); // Ensure no multiple timers running
+            appState.quizTimer.startTime = Date.now();
+            appState.quizTimer.elapsedSeconds = 0;
+            const timerElement = document.getElementById('quiz-timer-display');
+            if (timerElement) {
+                timerElement.textContent = formatTime(0);
+            }
+
+            appState.quizTimer.intervalId = setInterval(() => {
+                const now = Date.now();
+                appState.quizTimer.elapsedSeconds = Math.floor((now - appState.quizTimer.startTime) / 1000);
+                if (timerElement) {
+                    timerElement.textContent = formatTime(appState.quizTimer.elapsedSeconds);
+                }
+            }, 1000);
+        }
+
+        function stopQuizTimer(preserveDisplay = false) {
+            if (appState.quizTimer.intervalId) {
+                clearInterval(appState.quizTimer.intervalId);
+                appState.quizTimer.intervalId = null;
+            }
+            if (!preserveDisplay) {
+                appState.quizTimer.elapsedSeconds = 0;
+                const timerDisplay = document.getElementById('quiz-timer-display');
+                if (timerDisplay) timerDisplay.textContent = '00:00';
+            }
         }
 
         async function hashString(str) {
@@ -2867,7 +2907,7 @@ ${JSON.stringify(analysisData, null, 2)}
             }
 
             // Build back button
-            const backButton = el('button', { id: 'back-to-grid-btn', class: 'mb-4 btn-secondary py-2 px-4 text-sm flex items-center gap-2' }, [
+            const backButton = el('button', { id: 'back-to-grid-btn', class: 'absolute top-6 left-6 btn-secondary py-2 px-4 text-sm flex items-center gap-2' }, [
                 el('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", fill: "currentColor", viewBox: "0 0 16 16" }, [
                     el('path', { 'fill-rule': "evenodd", d: "M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" })
                 ]),
@@ -2882,9 +2922,11 @@ ${JSON.stringify(analysisData, null, 2)}
                 submitButton
             ]);
 
-            let teacherActions = null;
+            const timerDisplay = el('div', { id: 'quiz-timer-display', class: 'text-lg font-semibold text-gray-700 bg-gray-100 px-4 py-2 rounded-lg' }, '00:00');
+            const topRightContainer = el('div', { class: 'absolute top-6 right-6 flex gap-2 items-center' });
+
             if (appState.currentUser.type === 'teacher') {
-                teacherActions = el('div', { class: 'absolute top-6 right-6 flex gap-2' }, [
+                const teacherActions = [
                     el('button', {
                         class: 'edit-article-btn btn-secondary py-2 px-4 text-sm',
                         'data-assignment-id': assignment.id,
@@ -2895,13 +2937,16 @@ ${JSON.stringify(analysisData, null, 2)}
                         'data-assignment-id': assignment.id,
                         textContent: '刪除'
                     })
-                ]);
+                ];
+                teacherActions.forEach(btn => topRightContainer.appendChild(btn));
             }
+            
+            topRightContainer.appendChild(timerDisplay);
 
-            const mainContent = el('div', { class: 'p-6 relative' }, [ // Added relative positioning
-                teacherActions, // Add the buttons here
-                el('div', { class: 'flex-shrink-0' }, [backButton]),
-                el('div', { class: 'mt-2 grid grid-cols-1 lg:grid-cols-3 lg:gap-8' }, [
+            const mainContent = el('div', { class: 'p-6 relative' }, [
+                backButton,
+                topRightContainer,
+                el('div', { class: 'mt-16 grid grid-cols-1 lg:grid-cols-3 lg:gap-8' }, [
                     el('div', { class: 'lg:col-span-2' }, [
                         el('article', {}, [
                             el('h1', { class: 'text-3xl font-bold mb-2', textContent: assignment.title }),
@@ -3022,16 +3067,29 @@ ${JSON.stringify(analysisData, null, 2)}
             loadAndApplyHighlights(assignment.id);
             
             // Add event listeners
-            backButton.addEventListener('click', showArticleGrid);
+            backButton.addEventListener('click', () => {
+                stopQuizTimer();
+                showArticleGrid();
+            });
             articleBody.addEventListener('mouseup', handleTextSelection);
             if (isCompleted) {
                 submitButton.addEventListener('click', () => { if (submission) displayResults(submission.score, assignment, submission.answers); });
             } else {
                 quizForm.addEventListener('submit', (e) => { e.preventDefault(); submitQuiz(assignment); });
             }
+            if (isCompleted) {
+                stopQuizTimer(); // Ensure no timers are running
+                const timerDisplay = document.getElementById('quiz-timer-display');
+                if (timerDisplay && submission.durationSeconds) {
+                    timerDisplay.textContent = formatTime(submission.durationSeconds);
+                }
+            } else {
+                startQuizTimer();
+            }
         }
 
         async function submitQuiz(assignment) {
+            stopQuizTimer(true); // Stop timer but preserve final time on display
             const formData = new FormData(document.getElementById('quiz-form'));
             let score = 0;
             const userAnswers = [];
@@ -3054,7 +3112,8 @@ ${JSON.stringify(analysisData, null, 2)}
                 answers: userAnswers,
                 score: finalScore,
                 submittedAt: Timestamp.now(),
-                isOverdue: !!isOverdue
+                isOverdue: !!isOverdue,
+                durationSeconds: appState.quizTimer.elapsedSeconds || 0
             };
             await setDoc(doc(db, "submissions", `${appState.currentUser.studentId}_${assignment.id}`), submission);
             
@@ -3172,21 +3231,28 @@ ${JSON.stringify(analysisData, null, 2)}
                     return;
                 }
 
-                const tableHeader = `<tr class="bg-slate-100"><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">座號</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">姓名</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">狀態</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">分數</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">行事</th></tr>`;
+                const tableHeader = `<tr class="bg-slate-100"><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">座號</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">姓名</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">狀態</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">分數</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">作答時間</th><th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">行事</th></tr>`;
                 const tableBody = students.sort((a, b) => a.seatNumber - b.seatNumber).map(student => {
                     const submission = appState.allSubmissions.find(s => s.assignmentId === assignmentId && s.studentId === student.id);
-                    let status, score, detailBtn;
+                    let status, score, detailBtn, duration;
                     if (submission) {
                         const submissionTime = formatSubmissionTime(submission.submittedAt);
                         status = submission.isOverdue ? `<span class="font-semibold text-orange-500">逾期完成</span><span class="text-xs text-slate-500 ml-2">${submissionTime}</span>` : `<span class="font-semibold text-green-600">已完成</span><span class="text-xs text-slate-500 ml-2">${submissionTime}</span>`;
                         score = `<span class="font-bold">${submission.score}%</span>`;
+                        duration = formatTime(submission.durationSeconds || 0);
                         detailBtn = `<button data-assignment-id="${assignmentId}" data-student-id="${student.id}" class="view-submission-review-btn text-red-700 hover:text-red-900 font-semibold">查看詳情</button>`;
+                        
+                        // Add a warning for suspected guessing
+                        if (submission.durationSeconds < 60 && submission.score < 60) {
+                            status += ` <span class="text-red-500" title="作答時間過短且分數較低，可能為猜測作答。">⚠️</span>`;
+                        }
                     } else {
                         status = `<span class="font-semibold text-red-500">未應試</span>`;
                         score = '-';
+                        duration = '-';
                         detailBtn = '';
                     }
-                    return `<tr><td class="px-6 py-4">${student.seatNumber}</td><td class="px-6 py-4">${student.name}</td><td class="px-6 py-4">${status}</td><td class="px-6 py-4">${score}</td><td class="px-6 py-4">${detailBtn}</td></tr>`;
+                    return `<tr><td class="px-6 py-4">${student.seatNumber}</td><td class="px-6 py-4">${student.name}</td><td class="px-6 py-4">${status}</td><td class="px-6 py-4">${score}</td><td class="px-6 py-4">${duration}</td><td class="px-6 py-4">${detailBtn}</td></tr>`;
                 }).join('');
 
                 const tableHtml = `<table class="min-w-full bg-white border border-slate-200 rounded-lg"><thead>${tableHeader}</thead><tbody class="divide-y divide-slate-200">${tableBody}</tbody></table>`;
