@@ -2288,7 +2288,7 @@
                         }
                         await batch.commit();
                         appState.assignments = appState.assignments.filter(a => !selectedIds.includes(a.id));
-                        renderArticleTable(appState.assignments);
+                        renderTeacherArticleTable(appState.assignments, true);
                         document.getElementById('analysis-panel').classList.add('hidden');
                         document.getElementById('select-all-articles').checked = false;
                         document.getElementById('bulk-actions-container').classList.add('hidden');
