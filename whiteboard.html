@@ -500,52 +500,54 @@
                 <button id="clear-board" class="btn-outline"> <i class="fas fa-eraser mr-1"></i> 清空白板 </button>
                 <div class="relative">
                     <button id="add-tool" class="btn-primary"> <i class="fas fa-plus mr-1"></i> 新增工具 </button>
-                    <div id="tool-dropdown" class="hidden absolute right-0 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                    <div id="tool-dropdown" class="hidden absolute right-0 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200" style="bottom: 100%; margin-bottom: 0.5rem;">
                         <div class="py-1">
                             <a href="#" class="add-tool-item block px-4 py-2" data-tool="timer"><i class="fas fa-hourglass-half"></i>倒數計時器</a>
                             <a href="#" class="add-tool-item block px-4 py-2" data-tool="picker"><i class="fas fa-random"></i>隨機抽籤</a>
                             <a href="#" class="add-tool-item block px-4 py-2" data-tool="sticky"><i class="fas fa-sticky-note"></i>便利貼</a>
-                            <a href="#" class="add-tool-item block px-4 py-2" data-tool="clock"><i class="fas fa-clock"></i>現在時間</a>
-                            <a href="#" class="add-tool-item block px-4 py-2" data-tool="calendar"><i class="fas fa-calendar-alt"></i>日曆</a>
                             <a href="#" class="add-tool-item block px-4 py-2" data-tool="youtube"><i class="fab fa-youtube"></i>YouTube</a>
+                            <a href="#" class="add-tool-item block px-4 py-2" data-tool="clock"><i class="fas fa-clock"></i>時鐘</a>
+                            <a href="#" class="add-tool-item block px-4 py-2" data-tool="calendar"><i class="fas fa-calendar-alt"></i>日曆</a>
                             <a href="#" class="add-tool-item block px-4 py-2" data-tool="bookmark"><i class="fas fa-bookmark"></i>書籤</a>
-                            <a href="#" class="add-tool-item block px-4 py-2" data-tool="group"><i class="fas fa-users"></i>隨機分組</a>
+                            <a href="#" class="add-tool-item block px-4 py-2" data-tool="group"><i class="fas fa-users"></i>分組工具</a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <audio id="timer-audio" src="https://sshorng.github.io/web/countdown.mp3" loop></audio>
+    <audio id="timer-audio" src="countdown.mp3"></audio>
 
     <script>
-        $(document).ready(function() {
-            // Improved font scaling logic
+        $(function() {
+            // --- Global Setup & Polyfills ---
+            if (typeof $.ui.dialog.prototype._allowInteraction === 'function') {
+                $.ui.dialog.prototype._allowInteraction = function(event) {
+                    return !!$(event.target).closest(".cke_dialog, .cke").length || this._super(event);
+                };
+            }
+
+            // --- Responsive Font Size Adjuster ---
             function adjustFontSize() {
                 const toolContents = document.querySelectorAll('.tool-content, .sticky-note textarea, .timer-display, .picker-result');
                 toolContents.forEach(element => {
-                    const parentWidth = element.parentElement.offsetWidth;
-                    const baseFontSize = parseFloat(getComputedStyle(element).fontSize);  // Get the initial font size
-                    const newFontSize = baseFontSize * (parentWidth / 300);  // Scale based on parent width
-                    element.style.fontSize = newFontSize + 'px';
+                    // This is a simple example. You can develop a more sophisticated formula.
+                    // The base size is in 'rem', and it scales with a portion of the viewport width.
+                    // The values (e.g., 0.8rem, 0.8vw) can be tweaked for best results.
+                    let baseSize = 0.8; // in rem
+                    let scaleFactor = 0.8; // portion of viewport width
+                    if(element.classList.contains('timer-display')) {
+                        baseSize = 3; scaleFactor = 2.5;
+                    } else if (element.classList.contains('picker-result')) {
+                        baseSize = 1.5; scaleFactor = 1.5;
+                    }
+                    element.style.fontSize = `calc(${baseSize}rem + ${scaleFactor}vw)`;
                 });
             }
-    
-            // Call on resize and initially
-            window.addEventListener('resize', adjustFontSize);
-            adjustFontSize();  // Initial call
-    
-            // Add event listener for tool widget resize if using jQuery UI
-            $( ".tool-widget" ).on('resizestop', function() {
-                adjustFontSize();
-            });
-    
-            // --- Original code ---
-            const whiteboard = document.getElementById('whiteboard');
-            const addToolBtn = document.getElementById('add-tool');
-            const toolDropdown = document.getElementById('tool-dropdown');
-            const clearBoardBtn = document.getElementById('clear-board');
+
+
+            // --- Core Application Logic ---
+            const whiteboard = $('#whiteboard');
             const timerAudio = document.getElementById('timer-audio');
             const canvas = document.getElementById('drawing-canvas');
             const ctx = canvas.getContext('2d');
@@ -557,7 +559,7 @@
             let toolCounter = 0;
             let drawingState = {
                 isDrawing: false, lastX: 0, lastY: 0,
-                color: '#a78bfa', lineWidth: parseInt(sizeInput.value),
+                color: '#a78bfa', lineWidth: 3,
                 isEraser: false, saveTimeout: null
             };
 
@@ -565,12 +567,12 @@
             const STORAGE_KEY_DRAWING = 'classroom_whiteboard_drawing_v5';
             const STORAGE_KEY_PICKER_CLASSES = 'classroom_whiteboard_picker_classes_v5';
 
-            // --- Canvas & Drawing Logic ---
+            // --- Canvas & Drawing Functions ---
             function resizeCanvas() {
-                const currentDrawingDataUrl = (canvas.width > 0 && canvas.height > 0) ? canvas.toDataURL() : null;
-                canvas.width = whiteboard.clientWidth;
-                canvas.height = whiteboard.clientHeight;
-                if (currentDrawingDataUrl && canvas.width > 0 && canvas.height > 0) {
+                const currentDrawingDataUrl = canvas.toDataURL();
+                canvas.width = whiteboard.width();
+                canvas.height = whiteboard.height();
+                if (currentDrawingDataUrl) {
                     const img = new Image();
                     img.onload = () => {
                         ctx.drawImage(img, 0, 0);
@@ -587,7 +589,7 @@
             function getEventCoords(e) { const rect = canvas.getBoundingClientRect(); const touch = e.touches && e.touches[0]; return { x: (touch ? touch.clientX : e.clientX) - rect.left, y: (touch ? touch.clientY : e.clientY) - rect.top }; }
             function startDrawing(e) { if (e.button !== 0 && e.type === 'mousedown') return; drawingState.isDrawing = true; const coords = getEventCoords(e); [drawingState.lastX, drawingState.lastY] = [coords.x, coords.y]; ctx.beginPath(); applyDrawingSettings(); if (drawingState.isEraser) { ctx.arc(drawingState.lastX, drawingState.lastY, drawingState.lineWidth * 2.5, 0, Math.PI * 2); ctx.fill(); } else { ctx.fillStyle = drawingState.color; ctx.arc(drawingState.lastX, drawingState.lastY, drawingState.lineWidth / 2, 0, Math.PI * 2); ctx.fill(); } }
             function startDrawingTouch(e) { e.preventDefault(); startDrawing(e); }
-            function draw(e) { if (!drawingState.isDrawing) return; const coords = getEventCoords(e); ctx.beginPath(); ctx.moveTo(drawingState.lastX, drawingState.lastY); ctx.lineTo(coords.x, coords.y); ctx.globalCompositeOperation = drawingState.isEraser ? 'destination-out' : 'source-over'; ctx.lineWidth = drawingState.isEraser ? drawingState.lineWidth * 5 : drawingState.lineWidth; ctx.strokeStyle = drawingState.isEraser ? 'rgba(0,0,0,1)' : drawingState.color; ctx.stroke(); [drawingState.lastX, drawingState.lastY] = [coords.x, coords.y]; saveDrawing(); }
+            function draw(e) { if (!drawingState.isDrawing) return; const coords = getEventCoords(e); ctx.beginPath(); ctx.moveTo(drawingState.lastX, drawingState.lastY); ctx.lineTo(coords.x, coords.y); ctx.globalCompositeOperation = drawingState.isEraser ? 'destination-out' : 'source-over'; ctx.lineWidth = drawingState.isEraser ? drawingState.lineWidth * 5 : drawingState.lineWidth; ctx.strokeStyle = drawingState.isEraser ? 'rgba(0,0,0,1)' : drawingState.color; ctx.stroke(); [drawingState.lastX, drawingState.lastY] = [coords.x, coords.y]; }
             function drawTouch(e) { e.preventDefault(); draw(e); }
             function stopDrawing() { if (drawingState.isDrawing) { drawingState.isDrawing = false; saveDrawing(); applyDrawingSettings(); } }
 
@@ -596,7 +598,7 @@
             canvas.addEventListener('touchstart', startDrawingTouch, { passive: false });
             canvas.addEventListener('touchmove', drawTouch, { passive: false });
             canvas.addEventListener('touchend', stopDrawing);
-            canvas.addEventListener('touchcancel', stopDrawing);
+
             $(window).on('resize', resizeCanvas);
             $('#eraser-tool').on('click', function() { drawingState.isEraser = !drawingState.isEraser; $(this).toggleClass('bg-gray-200 bg-gray-500 text-white'); canvas.style.cursor = drawingState.isEraser ? 'cell' : 'crosshair'; applyDrawingSettings(); });
             $('#clear-drawing').on('click', () => { if (confirm('確定要清除所有繪圖內容嗎？')) clearDrawingCanvas(); });
@@ -604,8 +606,8 @@
             $('.drawing-size').on('input', function() { drawingState.lineWidth = parseInt($(this).val()); if (!drawingState.isEraser) { applyDrawingSettings(); } });
             $('#add-tool').on('click', () => $('#tool-dropdown').toggleClass('hidden'));
             $(document).on('click', (e) => { if (!$(e.target).closest('#add-tool, #tool-dropdown').length) $('#tool-dropdown').addClass('hidden'); });
-            $('.add-tool-item').on('click', function(e) { e.preventDefault(); addTool($(this).data('tool')); $('#tool-dropdown').addClass('hidden'); });
             $('#clear-board').on('click', () => { if (confirm('確定要清除白板上的所有工具和繪圖嗎？')) clearWhiteboard(); });
+            $('.add-tool-item').on('click', function(e) { e.preventDefault(); createTool($(this).data('tool')); $('#tool-dropdown').addClass('hidden'); });
 
             // --- Utility Functions ---
             function clearDrawingCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); localStorage.removeItem(STORAGE_KEY_DRAWING); applyDrawingSettings(); drawingState.isDrawing = false; }
@@ -614,125 +616,69 @@
             function clearToolResources(tool) { const $tool = $(tool); const toolType = $tool.data('type'); if (toolType === 'timer') { clearInterval($tool.data('countdownInterval')); const audio = timerAudio; if (audio && !audio.paused) { audio.pause(); audio.currentTime = 0; } } else if (toolType === 'clock') { clearInterval($tool.data('clockIntervalId')); } else if (toolType === 'picker') { $tool.removeData('originalNames'); } }
             function lightenColor(hex, percent) { hex = hex.replace(/^\s*#|\s*$/g, ''); if(hex.length == 3) hex = hex.replace(/(.)/g, '$1$1'); let r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16); const p = percent / 100; r = Math.round(Math.min(255, Math.max(0, r * (1 + p)))); g = Math.round(Math.min(255, Math.max(0, g * (1 + p)))); b = Math.round(Math.min(255, Math.max(0, b * (1 + p)))); return `#${(r).toString(16).padStart(2, '0')}${(g).toString(16).padStart(2, '0')}${(b).toString(16).padStart(2, '0')}`; }
 
-            // --- Tool Management ---
-            function addTool(toolType, savedState = {}) {
+            // --- Tool Creation & Management ---
+            function createTool(toolType, savedState = {}) {
                 toolCounter++;
-                const toolId = savedState.id || `tool-${toolType}-${Date.now()}-${toolCounter}`;
-                const tool = document.createElement('div');
-                tool.id = toolId;
-                tool.className = `tool-widget ${toolType}-widget`;
-                tool.dataset.type = toolType;
+                const toolId = `tool-${toolCounter}`;
+                let toolContentHTML = '', toolTitle = '', toolClasses = '';
 
-                // 計算新工具的位置
-                function findEmptySpace() {
-                    const gridSize = 25; // 網格大小
-                    const padding = 80; // 預設往下移動，避免被標籤列擋住
-                    const maxAttempts = 100; // 最大嘗試次數
-                    const existingTools = $('.tool-widget');
-                    
-                    // 如果沒有現有工具，返回預設位置
-                    if (existingTools.length === 0) {
-                        return { left: padding, top: padding };
-                    }
+                // Define tool dimensions
+                const toolWidth = toolType === 'timer' ? 320 :
+                                toolType === 'picker' ? 300 :
+                                toolType === 'sticky' ? 230 :
+                                toolType === 'youtube' ? 400 : 280;
+                const toolHeight = toolType === 'picker' ? 420 : 180;
 
-                    // 創建網格來記錄已佔用的位置
-                    const grid = {};
-                    existingTools.each(function() {
-                        const $tool = $(this);
-                        const left = parseInt($tool.css('left'));
-                        const top = parseInt($tool.css('top'));
-                        const width = $tool.outerWidth();
-                        const height = $tool.outerHeight();
-                        
-                        // 將工具佔用的網格標記為已使用
-                        for (let x = Math.floor(left / gridSize); x < Math.ceil((left + width) / gridSize); x++) {
-                            for (let y = Math.floor(top / gridSize); y < Math.ceil((top + height) / gridSize); y++) {
-                                grid[`${x},${y}`] = true;
-                            }
-                        }
-                    });
 
-                    // 從左上角開始尋找空白位置
-                    for (let y = 0; y < maxAttempts; y++) {
-                        for (let x = 0; x < maxAttempts; x++) {
-                            const posX = x * gridSize + padding;
-                            const posY = y * gridSize + padding;
-                            
-                            // 檢查這個位置是否有足夠的空間
-                            let hasSpace = true;
-                            const toolWidth = toolType === 'timer' ? 320 : 
-                                            toolType === 'picker' ? 300 :
-                                            toolType === 'sticky' ? 230 :
-                                            toolType === 'clock' ? 220 :
-                                            toolType === 'calendar' ? 260 :
-                                            toolType === 'youtube' ? 400 : 280;
-                            const toolHeight = toolType === 'picker' ? 420 : 180;
-                            
-                            // 檢查這個位置是否有足夠的空間放置工具
-                            for (let checkX = Math.floor(posX / gridSize); checkX < Math.ceil((posX + toolWidth) / gridSize); checkX++) {
-                                for (let checkY = Math.floor(posY / gridSize); checkY < Math.ceil((posY + toolHeight) / gridSize); checkY++) {
-                                    if (grid[`${checkX},${checkY}`]) {
-                                        hasSpace = false;
-                                        break;
-                                    }
-                                }
-                                if (!hasSpace) break;
-                            }
-                            
-                            if (hasSpace) {
-                                return { left: posX, top: posY };
-                            }
-                        }
-                    }
-                    
-                    // 如果找不到合適的位置，返回預設位置
-                    return { left: padding, top: padding };
-                }
-
-                const position = findEmptySpace();
-                tool.style.left = savedState.left || `${position.left}px`;
-                tool.style.top = savedState.top || `${position.top}px`;
-                tool.style.width = savedState.width || 'auto';
-                tool.style.height = savedState.height || 'auto';
-                tool.style.zIndex = savedState.zIndex || '10';
-
-                let toolTitle = ''; let toolContentHTML = '';
-                // --- Tool HTML Generation ---
-                switch(toolType) {
-                    case 'timer':
+                // Build tool-specific HTML
+                switch (toolType) {
+                    case 'sticky':
+                        toolClasses = 'sticky-note';
+                        toolTitle = '便利貼';
+                        toolContentHTML = `<div class="sticky-note-body">
+                            <div class="sticky-note-colors">
+                                <span class="color-dot w-5 h-5 rounded-full inline-block cursor-pointer" style="background-color: #fef9c3;" data-color="#fef9c3"></span>
+                                <span class="color-dot w-5 h-5 rounded-full inline-block cursor-pointer" style="background-color: #dbeafe;" data-color="#dbeafe"></span>
+                                <span class="color-dot w-5 h-5 rounded-full inline-block cursor-pointer" style="background-color: #dcfce7;" data-color="#dcfce7"></span>
+                                <span class="color-dot w-5 h-5 rounded-full inline-block cursor-pointer" style="background-color: #fce7f3;" data-color="#fce7f3"></span>
+                                <span class="color-dot w-5 h-5 rounded-full inline-block cursor-pointer" style="background-color: #fae8ff;" data-color="#fae8ff"></span>
+                            </div>
+                            <textarea class="sticky-content p-3 w-full h-full bg-transparent border-0 resize-none focus:outline-none" placeholder="輸入文字..."></textarea>
+                        </div>`;
+                        break;
+                     case 'timer':
                         toolTitle = '倒數計時器';
-                        toolContentHTML = `<div class="timer-widget flex flex-col space-y-3">
-                            <div class="timer-display">${savedState.display || '05:00'}</div>
-                            <div class="flex flex-wrap gap-1 mb-2 justify-center">
-                                <button class="time-preset rounded-md" data-seconds="30">30秒</button>
-                                <button class="time-preset rounded-md" data-minutes="1">1分</button>
-                                <button class="time-preset rounded-md" data-minutes="2">2分</button>
-                                <button class="time-preset rounded-md" data-minutes="3">3分</button>
-                                <button class="time-preset rounded-md" data-minutes="5">5分</button>
-                                <button class="time-preset rounded-md" data-minutes="10">10分</button>
+                        toolContentHTML = `<div class="flex flex-col items-center justify-center p-4 timer-widget">
+                            <div class="timer-display">
+                                <span class="timer-minutes">05</span>:<span class="timer-seconds">00</span>
                             </div>
-                            <div class="flex space-x-2 justify-center items-center mt-1">
-                                <input type="number" min="0" max="999" class="timer-minutes w-20 px-1 py-1" placeholder="分" value="${savedState.minutes || '5'}">
-                                <span class="text-lg font-semibold">:</span>
-                                <input type="number" min="0" max="59" class="timer-seconds w-20 px-1 py-1" placeholder="秒" value="${savedState.seconds || '0'}">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <label for="${toolId}-minutes" class="text-sm">分:</label>
+                                <input type="number" id="${toolId}-minutes" min="0" max="99" value="5" class="w-16 text-center timer-minutes-input">
+                                <label for="${toolId}-seconds" class="text-sm">秒:</label>
+                                <input type="number" id="${toolId}-seconds" min="0" max="59" value="0" class="w-16 text-center timer-seconds-input">
                             </div>
-                            <div class="flex space-x-2 mt-2">
-                                <button class="btn-primary timer-start flex-1 rounded-md">${savedState.timerRunning ? '暫停' : '開始'}</button>
-                                <button class="btn-secondary timer-reset flex-1 rounded-md">重設</button>
+                            <div class="flex space-x-2 mb-3">
+                                <button class="btn-secondary time-preset" data-min="1" data-sec="0">1分</button>
+                                <button class="btn-secondary time-preset" data-min="3" data-sec="0">3分</button>
+                                <button class="btn-secondary time-preset" data-min="5" data-sec="0">5分</button>
+                                <button class="btn-secondary time-preset" data-min="10" data-sec="0">10分</button>
+                            </div>
+                            <div class="flex space-x-2 w-full">
+                                <button class="btn-primary timer-start flex-1">開始</button>
+                                <button class="btn-outline timer-reset flex-1">重設</button>
                             </div>
                         </div>`;
-                        if (!savedState.id && tool.style.width === 'auto') tool.style.width = '320px';
                         break;
                     case 'picker':
                          toolTitle = '隨機抽籤';
                          toolContentHTML = `<div class="flex flex-col space-y-2 picker-widget">
                              <div class="flex border-b border-gray-200 -mt-4 -mx-4 px-4">
-                                 <button class="tab-button active" data-tab="names">名單</button>
-                                 <button class="tab-button" data-tab="classes">班級管理</button>
+                                 <button class="tab-button active" data-tab="names">抽籤</button>
+                                 <button class="tab-button" data-tab="manage">班級管理</button>
                              </div>
                              <div class="tab-content active" data-tab="names">
-                                 <div class="flex flex-col space-y-1">
-                                     <div class="flex space-x-2 items-center">
+                                     <div class="flex space-x-2 items-center mb-2">
                                          <label for="${toolId}-class-select" class="text-xs text-gray-600 flex-shrink-0">班級:</label>
                                          <select id="${toolId}-class-select" class="class-select flex-1 text-sm">
                                              <option value="">-- 無班級 --</option>
@@ -743,436 +689,372 @@
                                          <input type="checkbox" id="${toolId}-remove-picked" class="remove-picked-checkbox" ${savedState.removePicked ? 'checked' : ''}>
                                          <label for="${toolId}-remove-picked">抽出後自動移除</label>
                                      </div>
-                                 </div>
                              </div>
-                             <div class="tab-content" data-tab="classes">
-                                 <div class="flex flex-col space-y-1">
-                                     <div class="flex space-x-2">
-                                         <input type="text" class="class-name flex-none w-24 text-sm" placeholder="新班級名稱">
-                                         <button class="btn-secondary add-class px-3 py-1 text-xs rounded-md">新增</button>
-                                     </div>
-                                     <div class="class-list-container mt-1">
-                                         <div class="class-list text-sm"></div>
-                                     </div>
+                             <div class="tab-content" data-tab="manage">
+                                 <div class="flex items-center space-x-2 mb-2">
+                                     <input type="text" class="class-name flex-1 text-sm" placeholder="新班級名稱...">
+                                     <button class="btn-primary add-class text-sm">新增</button>
+                                 </div>
+                                 <div class="class-list-container">
+                                     <p class="text-center text-gray-500 text-xs p-2">尚未新增任何班級</p>
                                  </div>
                              </div>
                              <div class="text-center border rounded picker-result flex items-center justify-center">--</div>
                              <div class="picker-controls">
                                  <button class="btn-primary picker-pick py-2 rounded-md">抽籤</button>
                                  <button class="btn-secondary restore-list-btn" title="恢復目前班級的原始名單" disabled>
-                                     <i class="fas fa-undo"></i> 恢復
+                                     <i class="fas fa-undo"></i>
                                  </button>
                              </div>
                          </div>`;
-                         if (!savedState.id && tool.style.width === 'auto') tool.style.width = '300px';
-                         break;
-                    case 'sticky':
-                         toolTitle = '便利貼';
-                         tool.classList.add('sticky-note');
-                         tool.style.backgroundColor = savedState.backgroundColor || '#fef9c3';
-                         toolContentHTML = `<div class="sticky-note-body">
-                             <div class="sticky-note-colors flex flex-wrap space-x-1">
-                                 <span class="color-dot w-4 h-4 rounded-full cursor-pointer" style="background-color: #fef9c3;" data-color="#fef9c3" title="淡黃"></span>
-                                 <span class="color-dot w-4 h-4 rounded-full cursor-pointer" style="background-color: #ecfccb;" data-color="#ecfccb" title="淡綠"></span>
-                                 <span class="color-dot w-4 h-4 rounded-full cursor-pointer" style="background-color: #dbeafe;" data-color="#dbeafe" title="淡藍"></span>
-                                 <span class="color-dot w-4 h-4 rounded-full cursor-pointer" style="background-color: #fce7f3;" data-color="#fce7f3" title="淡粉"></span>
-                                 <span class="color-dot w-4 h-4 rounded-full cursor-pointer" style="background-color: #f5d0fe;" data-color="#f5d0fe" title="淡紫"></span>
-                                 <span class="color-dot w-4 h-4 rounded-full cursor-pointer" style="background-color: #f1f5f9;" data-color="#f1f5f9" title="淺灰"></span>
-                             </div>
-                             <textarea class="sticky-content text-sm" placeholder="寫些什麼...">${savedState.content || ''}</textarea>
-                         </div>`;
-                         if (!savedState.id && tool.style.width === 'auto') tool.style.width = '230px';
-                         break;
-                    case 'clock':
-                         toolTitle = '現在時間';
-                         toolContentHTML = `<div class="clock-widget p-3">
-                             <div class="clock-time">00:00:00</div>
-                             <div class="clock-date mt-1"></div>
-                         </div>`;
-                         if (!savedState.id && tool.style.width === 'auto') tool.style.width = '220px';
-                         break;
-                    case 'calendar':
-                         toolTitle = '日曆';
-                         const today = new Date();
-                         toolContentHTML = `<div class="calendar-widget flex flex-col space-y-2 p-3">
-                             <div class="flex justify-between items-center">
-                                 <button class="btn-icon calendar-prev w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200">
-                                     <i class="fas fa-chevron-left text-xs"></i>
-                                 </button>
-                                 <div class="calendar-month-year font-medium">${today.getFullYear()}年 ${today.getMonth() + 1}月</div>
-                                 <button class="btn-icon calendar-next w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200">
-                                     <i class="fas fa-chevron-right text-xs"></i>
-                                 </button>
-                             </div>
-                             <div class="calendar-container">
-                                 <div class="calendar-grid text-xs font-medium text-center text-gray-400 mb-1">
-                                     <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
-                                 </div>
-                                 <div class="calendar-days calendar-grid"></div>
-                             </div>
-                         </div>`;
-                         if (!savedState.id && tool.style.width === 'auto') tool.style.width = '260px';
-                         break;
+                        break;
                     case 'youtube':
-                         toolTitle = 'YouTube 影片';
-                         toolContentHTML = `<div class="youtube-widget flex flex-col space-y-2 h-full p-3">
-                             <div class="flex space-x-2 flex-shrink-0">
-                                 <input type="text" class="youtube-url flex-1 px-2 py-1 border border-gray-300 rounded" placeholder="輸入 YouTube 網址或 ID" value="${savedState.url || ''}">
-                                 <button class="btn-primary youtube-load px-3 py-1 rounded">載入</button>
-                             </div>
-                             <div class="youtube-container flex-grow relative">
-                                 <div class="youtube-placeholder absolute inset-0 flex items-center justify-center">
-                                     <div class="text-center">
-                                         <i class="fab fa-youtube text-3xl mb-1 text-red-500"></i>
-                                         <p class="text-xs text-gray-500">輸入 YouTube 網址或 ID</p>
-                                     </div>
-                                 </div>
-                             </div>
-                         </div>`;
-                         if (!savedState.id && tool.style.width === 'auto') tool.style.width = '400px';
-                         break;
-                    case 'bookmark':
+                        toolTitle = 'YouTube';
+                        toolContentHTML = `<div class="youtube-widget p-2 space-y-2">
+                            <div class="flex space-x-2">
+                                <input type="text" class="youtube-url-input flex-1 text-sm" placeholder="貼上 YouTube 網址或影片 ID">
+                                <button class="btn-primary youtube-load">載入</button>
+                            </div>
+                            <div class="youtube-container rounded-md overflow-hidden">
+                                <div class="youtube-placeholder">
+                                    <i class="fab fa-youtube text-4xl"></i>
+                                </div>
+                            </div>
+                        </div>`;
+                        break;
+                    case 'clock':
+                        toolTitle = '時鐘';
+                        toolContentHTML = `<div class="clock-widget p-4">
+                            <div class="clock-time">12:00:00</div>
+                            <div class="clock-date">2023年10月27日 星期五</div>
+                        </div>`;
+                        break;
+                    case 'calendar':
+                        toolTitle = '日曆';
+                        toolContentHTML = `<div class="calendar-widget p-2 text-sm">
+                            <div class="flex items-center justify-between mb-2 px-2">
+                                <button class="btn-icon prev-month w-7 h-7 flex items-center justify-center rounded-full"><i class="fas fa-chevron-left"></i></button>
+                                <div class="calendar-month-year font-medium"></div>
+                                <button class="btn-icon next-month w-7 h-7 flex items-center justify-center rounded-full"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <div class="calendar-grid weekdays text-xs text-gray-500 mb-1">
+                                <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+                            </div>
+                            <div class="calendar-grid calendar-days"></div>
+                        </div>`;
+                        break;
+                     case 'bookmark':
                         toolTitle = '書籤';
-                        toolContentHTML = `<div class="bookmark-widget flex flex-col h-full p-1">
-                            <div class="bookmark-list"></div>
-                            <form class="bookmark-add-form mt-2">
-                                <input type="text" class="bookmark-title flex-1 min-w-0" placeholder="網站名稱" maxlength="20">
-                                <input type="text" class="bookmark-url flex-1 min-w-0" placeholder="https://...">
-                                <button type="submit" class="btn-primary flex-shrink-0">新增</button>
-                            </form>
-                        </div>`;
-                        if (!savedState.id && tool.style.width === 'auto') tool.style.width = '320px';
+                        toolContentHTML = `
+                            <div class="bookmark-widget p-2">
+                                <div class="bookmark-list"></div>
+                                <div class="bookmark-add-form">
+                                    <input type="text" name="name" placeholder="名稱" class="w-1/3">
+                                    <input type="text" name="url" placeholder="https://..." class="flex-1">
+                                    <button class="btn-primary add-bookmark">新增</button>
+                                </div>
+                            </div>`;
                         break;
-                    case 'group':
-                        toolTitle = '隨機分組';
-                        toolContentHTML = `<div class="group-widget flex flex-col h-full p-1">
-                            <div class="flex border-b border-gray-200 -mt-4 -mx-4 px-4">
-                                <button class="tab-button active" data-tab="names">名單</button>
-                                <button class="tab-button" data-tab="classes">班級管理</button>
-                            </div>
-                            <div class="tab-content active" data-tab="names">
-                                <div class="flex flex-col space-y-1">
-                                    <div class="flex space-x-2 items-center">
-                                        <label class="text-xs text-gray-600 flex-shrink-0">班級:</label>
-                                        <select class="class-select flex-1 text-sm">
-                                            <option value="">-- 無班級 --</option>
-                                        </select>
-                                    </div>
-                                    <textarea class="group-names p-2 h-20 text-sm" placeholder="輸入名稱，每行一個"></textarea>
-                                </div>
-                                <div class="group-options mt-2">
-                                    <label><input type="radio" name="group-mode" value="count" checked> 組數</label>
-                                    <input type="number" class="group-count" min="2" max="99" value="4">
-                                    <label><input type="radio" name="group-mode" value="size"> 每組人數</label>
-                                    <input type="number" class="group-size" min="2" max="99" value="4" disabled>
-                                </div>
-                                <div class="group-actions mt-2">
-                                    <button type="button" class="btn-primary group-do">分組</button>
-                                    <button type="button" class="btn-secondary group-reshuffle">重新分組</button>
-                                    <button type="button" class="btn-secondary group-clear">清空結果</button>
-                                </div>
-                            </div>
-                            <div class="tab-content" data-tab="classes">
-                                <div class="flex flex-col space-y-1">
-                                    <div class="flex space-x-2">
-                                        <input type="text" class="class-name flex-1 text-sm" placeholder="新班級名稱">
-                                        <button class="btn-secondary add-class px-3 py-1 text-xs rounded-md">新增</button>
-                                    </div>
-                                    <div class="class-list-container mt-1">
-                                        <div class="class-list text-sm"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="group-result mt-2"></div>
-                        </div>`;
-                        if (!savedState.id && tool.style.width === 'auto') tool.style.width = '340px';
+                     case 'group':
+                        toolTitle = '分組工具';
+                        toolContentHTML = `<div class="flex flex-col space-y-2 group-widget">
+                                     <div class="flex border-b border-gray-200 -mt-4 -mx-4 px-4">
+                                         <button class="tab-button active" data-tab="grouping">分組</button>
+                                         <button class="tab-button" data-tab="manage">名單管理</button>
+                                     </div>
+                                     <div class="tab-content active" data-tab="grouping">
+                                         <div class="flex space-x-2 items-center mb-2">
+                                             <label class="text-xs text-gray-600 flex-shrink-0">班級:</label>
+                                             <select class="class-select flex-1 text-sm">
+                                                 <option value="">-- 無班級 --</option>
+                                             </select>
+                                         </div>
+                                         <textarea class="group-names p-2 h-20 text-sm" placeholder="使用班級名單或手動輸入..."></textarea>
+                                         <div class="group-options grid grid-cols-2 gap-2 my-2 text-sm">
+                                             <label><input type="radio" name="${toolId}-group-type" value="by-count" checked> 分成 <input type="number" class="group-count" value="2" min="2"> 組</label>
+                                             <label><input type="radio" name="${toolId}-group-type" value="by-size"> 每組 <input type="number" class="group-size" value="2" min="2"> 人</label>
+                                         </div>
+                                         <button class="btn-primary do-group w-full">開始分組</button>
+                                          <div class="remove-option">
+                                             <input type="checkbox" id="${toolId}-remove-picked" class="remove-picked-checkbox">
+                                             <label for="${toolId}-remove-picked">從名單中移除已分組者</label>
+                                         </div>
+                                     </div>
+                                     <div class="tab-content" data-tab="manage">
+                                         <div class="flex items-center space-x-2 mb-2">
+                                             <input type="text" class="class-name flex-1 text-sm" placeholder="新班級名稱...">
+                                             <button class="btn-primary add-class text-sm">新增</button>
+                                         </div>
+                                         <div class="class-list-container"><p class="text-center text-gray-500 text-xs p-2">尚未新增任何班級</p></div>
+                                     </div>
+                                     <div class="group-result-container mt-2"></div>
+                                 </div>`;
                         break;
                 }
-                // --- End Tool HTML Generation ---
 
-                tool.innerHTML = `<div class="tool-header"><div class="font-medium">${toolTitle}</div><div class="flex space-x-1"><button class="btn-icon collapse-tool w-5 h-5 flex items-center justify-center rounded"><i class="fas ${savedState.collapsed ? 'fa-plus' : 'fa-minus'} text-xs"></i></button><button class="btn-icon close-tool w-5 h-5 flex items-center justify-center rounded"><i class="fas fa-times text-xs"></i></button></div></div><div class="tool-content ${savedState.collapsed ? 'hidden' : ''}\">${savedState.collapsed ? '' : toolContentHTML}</div>`;
-                if(savedState.collapsed){
-                    tool.classList.add('collapsed');
-                    const $tool = $(tool);
-                    $tool.find('.tool-content').addClass('hidden').html('');
-                    $tool.css('height', 'auto');
-                    $tool.find('.tool-header').css({
-                        'border-bottom-left-radius': '0.5rem',
-                        'border-bottom-right-radius': '0.5rem',
-                        'border-bottom': 'none'
-                    });
-                } else {
-                    initializeTool(tool, toolType, savedState);
-                }
-                whiteboard.appendChild(tool);
-                const $tool = $(tool);
+                // Create the tool widget HTML
+                const $tool = $(`
+                    <div id="${toolId}" class="tool-widget ${toolClasses}" data-type="${toolType}">
+                        <div class="tool-header">
+                            <span class="font-medium">${toolTitle}</span>
+                            <div>
+                                <button class="btn-icon collapse-tool w-7 h-7 rounded-md" title="收合"><i class="fas fa-minus"></i></button>
+                                <button class="btn-icon close-tool w-7 h-7 rounded-md" title="關閉"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="tool-content">${toolContentHTML}</div>
+                    </div>`);
 
-                // Initialize jQuery UI behaviors
-                $tool.draggable({ handle: ".tool-header", containment: "parent", cancel: "", stop: saveToolsState });
-                $tool.resizable({ handles: "n, e, s, w, ne, se, sw, nw", minHeight: 80, minWidth: 180, cancel: "",
+                // Set initial position and size, applying saved state if it exists
+                const initialPos = savedState.position || {
+                    left: Math.random() * (whiteboard.width() - toolWidth - 20) + 10,
+                    top: Math.random() * (whiteboard.height() - toolHeight - 20) + 10
+                };
+                $tool.css({
+                    left: initialPos.left, top: initialPos.top,
+                    width: savedState.size?.width || toolWidth,
+                    height: savedState.size?.height || toolHeight
+                });
+                if (savedState.zIndex) $tool.css('zIndex', savedState.zIndex);
+                if (savedState.collapsed) { $tool.addClass('collapsed'); }
+
+
+                // Append tool to the whiteboard and make it interactive
+                whiteboard.append($tool);
+                $tool.draggable({
+                    handle: ".tool-header",
+                    containment: "parent",
+                    stop: saveToolsState
+                }).resizable({
+                    minHeight: 120, minWidth: 180,
+                    handles: 'n, e, s, w, ne, se, sw, nw',
                     stop: function(event, ui) {
-                        // Update savedHeight on resize stop
-                        $tool.data('savedHeight', ui.size.height + 'px');
                         saveToolsState();
+                        // Manually trigger resize for responsive elements if needed
+                         window.dispatchEvent(new Event('resize'));
                     }
-                });
-                $tool.on('mousedown', () => bringToFront(tool));
+                }).on('mousedown', () => bringToFront($tool));
 
-                // collapse-tool 按鈕點擊即可展開/收合
-                $tool.find('.collapse-tool').off('click').on('click', function() {
-                    const $content = $tool.find('.tool-content');
-                    const $icon = $tool.find('.collapse-tool i');
-                    const $header = $tool.find('.tool-header');
-                    $tool.toggleClass('collapsed');
-                    $content.toggleClass('hidden');
-                    $icon.toggleClass('fa-minus fa-plus');
-                    if ($tool.hasClass('collapsed')) {
-                        if (!$tool.data('savedHeight')) {
-                            $tool.data('savedHeight', $tool.css('height'));
-                        }
-                        $tool.css('height', 'auto');
-                        $header.css({
-                            'border-bottom-left-radius': '0.5rem',
-                            'border-bottom-right-radius': '0.5rem',
-                            'border-bottom': 'none'
-                        });
-                        // 收合時清空內容並移除 interval/timer
-                        $content.html('');
-                        clearToolResources(tool);
-                    } else {
-                        // 展開時取得最新狀態再初始化內容
-                        let tools = [];
-                        try { tools = JSON.parse(localStorage.getItem(STORAGE_KEY_TOOLS) || '[]'); } catch(e){}
-                        const thisToolState = tools.find(t => t.id === tool.id) || {};
-                        $content.html(toolContentHTML);
-                        initializeTool(tool, toolType, thisToolState);
-                    }
-                    saveToolsState();
-                });
+                // Add tool-specific logic via event handlers
+                $tool.find('.close-tool').on('click', () => { clearToolResources($tool[0]); $tool.remove(); saveToolsState(); });
+                $tool.find('.collapse-tool').on('click', () => { $tool.toggleClass('collapsed'); saveToolsState(); });
 
-                // 添加關閉按鈕功能
-                $tool.find('.close-tool').on('click', () => {
-                    clearToolResources(tool);
-                    // Trigger a custom event for cleanup before removing
-                    $tool.trigger('remove');
-                    $tool.remove();
-                    saveToolsState();
-                });
-
-                // Initialize tool-specific JS
-                initializeTool(tool, toolType, savedState);
-
-                // Final setup for loaded/new tools
-                 if (savedState.id) { // If loaded
-                     // Ensure loaded height is stored in data for collapse/expand
-                     $tool.data('savedHeight', savedState.height || $tool.css('height')); // Use saved height or current CSS height
-                     if (savedState.collapsed) { // Apply collapsed styles if loaded collapsed
-                          $tool.find('.tool-header').css({'border-bottom-left-radius': '0.5rem', 'border-bottom-right-radius': '0.5rem', 'border-bottom': 'none'});
-                     }
-                 } else { // If new tool, calculate and save initial size/height *after* content is rendered
-                      // Use setTimeout to allow rendering engine to calculate dimensions
-                      setTimeout(() => {
-                          if (tool.style.width === 'auto') {
-                              tool.style.width = $tool.outerWidth() + 'px';
-                          }
-                          // Capture height after content rendering, especially if default was 'auto'
-                          const currentHeight = $tool.outerHeight() + 'px';
-                          tool.style.height = currentHeight;
-                          $tool.data('savedHeight', currentHeight); // Store the calculated height
-                          saveToolsState(); // Save state for the newly added tool with calculated dimensions
-                      }, 0);
-                 }
-                return tool;
-            }
-
-            // --- Tool Initializers ---
-            function initializeTool(tool, toolType, savedState = {}) {
-                const $tool = $(tool);
-                switch(toolType) {
+                // Initialize tool-specific functionality based on type
+                switch (toolType) {
                     case 'timer': initializeTimer($tool, savedState); break;
                     case 'picker': initializePicker($tool, savedState); break;
                     case 'sticky': initializeSticky($tool, savedState); break;
+                    case 'youtube': initializeYoutube($tool, savedState); break;
                     case 'clock': initializeClock($tool, savedState); break;
                     case 'calendar': initializeCalendar($tool, savedState); break;
-                    case 'youtube': initializeYoutube($tool, savedState); break;
                     case 'bookmark': initializeBookmark($tool, savedState); break;
                     case 'group': initializeGroup($tool, savedState); break;
                 }
-                // Ensure saved height is set after initialization (important for collapse/expand)
-                // Use savedState.height if available, otherwise the current element height
-                const initialHeight = savedState.height || $tool.css('height');
-                $tool.data('savedHeight', initialHeight);
+                saveToolsState(); // Save initial state of the new tool
+                window.dispatchEvent(new Event('resize')); // Trigger font adjustment for new tool
             }
 
-             // Timer Initializer (No color change on button)
-             function initializeTimer($tool, savedState = {}) {
-                 const minutesInput = $tool.find('.timer-minutes'); const secondsInput = $tool.find('.timer-seconds');
-                 const display = $tool.find('.timer-display'); const startBtn = $tool.find('.timer-start');
-                 const resetBtn = $tool.find('.timer-reset'); const presetBtns = $tool.find('.time-preset');
-                 let countdown = null; let timerRunning = savedState.timerRunning || false;
-                 let timerInstance = { totalSeconds: 0 }; $tool.data('timerInstance', timerInstance);
-                 const audio = timerAudio;
+            // --- Tool Initializers ---
+            function initializeTimer($tool, savedState = {}) {
+                const minutesDisplay = $tool.find('.timer-minutes');
+                const secondsDisplay = $tool.find('.timer-seconds');
+                const startBtn = $tool.find('.timer-start');
+                const resetBtn = $tool.find('.timer-reset');
+                const minutesInput = $tool.find('.timer-minutes-input');
+                const secondsInput = $tool.find('.timer-seconds-input');
+                let countdownInterval = null;
+                let totalSeconds, isRunning = false;
 
-                 function stopAudio() { if (audio && !audio.paused) { audio.pause(); audio.currentTime = 0; } }
-                 function playAudio() { if (audio && audio.src && audio.src !== window.location.href) { audio.play().catch(e => console.warn("Audio play failed:", e)); } else { console.warn("Timer audio source invalid."); } }
-                 function updateDisplay() { const minutes = Math.floor(timerInstance.totalSeconds / 60); const seconds = timerInstance.totalSeconds % 60; display.text(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`); display.toggleClass('times-up', timerInstance.totalSeconds <= 0 && !timerRunning); }
-                 function updateFromInputs() { const minutes = parseInt(minutesInput.val() || '0') || 0; const seconds = parseInt(secondsInput.val() || '0') || 0; timerInstance.totalSeconds = Math.max(0, minutes * 60 + seconds); if (!timerRunning) updateDisplay(); saveToolsState(); }
+                function updateDisplay() {
+                    const mins = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+                    const secs = (totalSeconds % 60).toString().padStart(2, '0');
+                    minutesDisplay.text(mins);
+                    secondsDisplay.text(secs);
+                }
 
-                 function startTimer() {
-                     clearInterval(countdown); countdown = null; $tool.removeData('countdownInterval');
-                     if (timerRunning) { // Pause
-                         timerRunning = false; startBtn.text('繼續'); stopAudio();
-                     } else { // Start/Resume
-                          if (timerInstance.totalSeconds <= 0) { updateFromInputs(); if(timerInstance.totalSeconds <= 0) { updateDisplay(); return; } }
-                          timerRunning = true; startBtn.text('暫停'); playAudio();
-                          countdown = setInterval(() => {
-                              timerInstance.totalSeconds--; updateDisplay();
-                              if (timerInstance.totalSeconds <= 0) { clearInterval(countdown); countdown = null; $tool.removeData('countdownInterval'); timerRunning = false; startBtn.text('開始'); display.addClass('times-up'); stopAudio(); console.log("Time's up!"); }
-                          }, 1000); $tool.data('countdownInterval', countdown);
-                     } saveToolsState();
-                 }
+                function setTime(mins, secs) {
+                    minutesInput.val(mins);
+                    secondsInput.val(secs);
+                    totalSeconds = parseInt(mins, 10) * 60 + parseInt(secs, 10);
+                    updateDisplay();
+                }
 
-                 minutesInput.on('input change', updateFromInputs); secondsInput.on('input change', updateFromInputs);
-                 presetBtns.on('click', function() { const seconds = parseInt($(this).data('seconds') || '0') || 0; const minutes = parseInt($(this).data('minutes') || '0') || 0; minutesInput.val(minutes); secondsInput.val(seconds); timerInstance.totalSeconds = minutes * 60 + seconds; updateDisplay(); clearInterval(countdown); countdown = null; $tool.removeData('countdownInterval'); timerRunning = false; stopAudio(); startTimer(); });
-                 startBtn.on('click', startTimer);
-                 resetBtn.on('click', () => { clearInterval(countdown); countdown = null; $tool.removeData('countdownInterval'); timerRunning = false; stopAudio(); startBtn.text('開始'); updateFromInputs(); updateDisplay(); saveToolsState(); });
+                function startTimer() {
+                    if (isRunning) return;
+                    if (totalSeconds <= 0) return;
+                    isRunning = true;
+                    startBtn.text('暫停');
+                    countdownInterval = setInterval(() => {
+                        totalSeconds--;
+                        updateDisplay();
+                        if (totalSeconds <= 0) {
+                            stopTimer();
+                            timerAudio.play();
+                            $tool.find('.timer-display').addClass('times-up');
+                        }
+                    }, 1000);
+                     $tool.data('countdownInterval', countdownInterval);
+                }
 
-                 // Restore state
-                 timerInstance.totalSeconds = Math.max(0, parseInt(savedState.totalSeconds || 0));
-                 timerRunning = savedState.timerRunning || false;
-                 updateDisplay(); // Update display first
-                 if (timerRunning && timerInstance.totalSeconds > 0) { startTimer(); startBtn.text('暫停'); }
-                 else { startBtn.text(timerInstance.totalSeconds > 0 ? '繼續' : '開始'); }
+                function stopTimer() {
+                    clearInterval(countdownInterval);
+                    isRunning = false;
+                    startBtn.text('開始');
+                }
+
+                function resetTimer() {
+                    stopTimer();
+                    setTime(minutesInput.val(), secondsInput.val());
+                    $tool.find('.timer-display').removeClass('times-up');
+                    timerAudio.pause();
+                    timerAudio.currentTime = 0;
+                }
+
+                startBtn.on('click', () => { isRunning ? stopTimer() : startTimer(); saveToolsState(); });
+                resetBtn.on('click', resetTimer);
+                $tool.find('.time-preset').on('click', function() {
+                    setTime($(this).data('min'), $(this).data('sec') || 0);
+                    resetTimer();
+                });
+                minutesInput.add(secondsInput).on('change', () => {
+                     let mins = parseInt(minutesInput.val()) || 0;
+                     let secs = parseInt(secondsInput.val()) || 0;
+                     if (secs > 59) { secs = 59; secondsInput.val(59); }
+                     if (mins > 99) { mins = 99; minutesInput.val(99); }
+                     setTime(mins, secs);
+                     resetTimer();
+                });
+
+                // Initial setup
+                setTime(savedState.minutes || 5, savedState.seconds || 0);
+                if (savedState.isRunning) startTimer();
+            }
+             function initializePicker($tool, savedState = {}) {
+                  const namesInput = $tool.find('.picker-names'); const result = $tool.find('.picker-result');
+                  const pickBtn = $tool.find('.picker-pick'); const tabButtons = $tool.find('.tab-button');
+                  const tabContents = $tool.find('.tab-content'); const classSelect = $tool.find('.class-select');
+                  const classNameInput = $tool.find('.class-name'); const addClassBtn = $tool.find('.add-class');
+                  const classList = $tool.find('.class-list'); const removePickedCheckbox = $tool.find('.remove-picked-checkbox');
+                  const restoreBtn = $tool.find('.restore-list-btn');
+                  let savedClasses = {}; let currentOriginalNames = "";
+                  let designatedNumberStr = '';
+                  let designatedNumberTimeout;
+                  let lastClickTime = 0;
+                  let clickTimeout = null;
+                  let designatedIndexForNextPick = null; // New state variable
+  
+                  // Listen for number key presses for designated picking
+                  $(document).on('keydown.picker.' + $tool.attr('id'), function(e) {
+                     if ($(e.target).is('input, textarea')) { return; }
+                     if (e.key >= '0' && e.key <= '9') {
+                         e.preventDefault();
+                         designatedNumberStr += e.key;
+                         clearTimeout(designatedNumberTimeout);
+                         designatedNumberTimeout = setTimeout(() => { designatedNumberStr = ''; }, 1500);
+                     }
+                  });
+  
+                  $tool.on('remove', function() { $(document).off('keydown.picker.' + $tool.attr('id')); });
+ 
+                  try {
+                      const savedClassesJson = localStorage.getItem(STORAGE_KEY_PICKER_CLASSES);
+                      if (savedClassesJson) {
+                          const loadedData = JSON.parse(savedClassesJson); savedClasses = {};
+                          for (const className in loadedData) {
+                              if (typeof loadedData[className] === 'string') { savedClasses[className] = { current: loadedData[className], original: loadedData[className] }; }
+                              else if (loadedData[className] && typeof loadedData[className].current === 'string') { savedClasses[className] = { current: loadedData[className].current, original: loadedData[className].original !== undefined ? loadedData[className].original : loadedData[className].current }; }
+                          }
+                      }
+                  } catch (e) { console.error('Error loading/parsing saved classes:', e); savedClasses = {}; }
+ 
+                  function updatePickerUI(selectDefaultClass = false) { const hasClasses = Object.keys(savedClasses).length > 0; updateClassList(); updateClassSelect(hasClasses, selectDefaultClass); loadSelectedClassNames(); classSelect.find('option[value=""]').toggle(!hasClasses); }
+                  tabButtons.on('click', function() { const tabName = $(this).data('tab'); tabButtons.removeClass('active'); $(this).addClass('active'); tabContents.removeClass('active').hide(); tabContents.filter(`[data-tab="${tabName}"]`).addClass('active').show(); if (tabName === 'names') loadSelectedClassNames(); });
+                  tabContents.not('.active').hide();
+                  addClassBtn.on('click', () => { const className = classNameInput.val().trim(); if (className && !savedClasses[className]) { savedClasses[className] = { current: '', original: '' }; classNameInput.val(''); updatePickerUI(true); saveClasses(); } else if (savedClasses[className]) alert('班級名稱已存在！'); });
+                  function loadSelectedClassNames() { const selectedClass = classSelect.val(); if (selectedClass && savedClasses[selectedClass]) { namesInput.val(savedClasses[selectedClass].current); currentOriginalNames = savedClasses[selectedClass].original; restoreBtn.prop('disabled', savedClasses[selectedClass].current === currentOriginalNames); } else { namesInput.val(''); currentOriginalNames = ""; restoreBtn.prop('disabled', true); } }
+                  classSelect.on('change', loadSelectedClassNames);
+                  function updateClassList() { classList.empty(); const sortedClassNames = Object.keys(savedClasses).sort(); if (sortedClassNames.length === 0) { classList.html('<p class="text-center text-gray-500 text-xs p-2">尚未新增任何班級</p>'); return; } sortedClassNames.forEach(className => { const classItem = $(`<div class="class-item flex justify-between items-center px-2 py-1 rounded-md mb-1 text-sm"><span class="flex-1 mr-2 truncate" title="${className}">${className}</span><div class="flex space-x-1"><button class="btn-icon edit-class w-5 h-5 flex items-center justify-center rounded hover:bg-blue-100" data-class="${className}" title="編輯名單"><i class="fas fa-edit text-xs"></i></button><button class="btn-icon delete-class w-5 h-5 flex items-center justify-center rounded hover:bg-red-100" data-class="${className}" title="刪除班級"><i class="fas fa-trash-alt text-xs"></i></button></div></div>`); classList.append(classItem); }); classList.off('click').on('click', '.edit-class', function() { classSelect.val($(this).data('class')); loadSelectedClassNames(); tabButtons.filter('[data-tab="names"]').trigger('click'); }).on('click', '.delete-class', function() { const classNameToDelete = $(this).data('class'); if (confirm(`確定要永久刪除班級「${classNameToDelete}」及其名單嗎？`)) { delete savedClasses[classNameToDelete]; const currentSelection = classSelect.val(); updatePickerUI(); if (currentSelection === classNameToDelete) { const firstClass = Object.keys(savedClasses).sort()[0]; classSelect.val(firstClass || ""); loadSelectedClassNames(); } saveClasses(); } }); }
+                  function updateClassSelect(hasClasses, selectDefaultClass = false) { const currentSelection = classSelect.val(); classSelect.find('option:not([value=""])').remove(); const sortedClassNames = Object.keys(savedClasses).sort(); sortedClassNames.forEach(className => { classSelect.append(`<option value="${className}">${className}</option>`); }); let valueToSelect = ""; if (selectDefaultClass && sortedClassNames.length > 0) { valueToSelect = sortedClassNames[sortedClassNames.length - 1]; } else if (savedClasses[currentSelection] !== undefined) { valueToSelect = currentSelection; } else if (hasClasses && sortedClassNames.length > 0) { valueToSelect = sortedClassNames[0]; } classSelect.val(valueToSelect); classSelect.find('option[value=""]').toggle(!hasClasses); }
+                  function saveClasses() { try { localStorage.setItem(STORAGE_KEY_PICKER_CLASSES, JSON.stringify(savedClasses)); } catch (e) { console.error('Error saving classes:', e); alert('無法儲存班級名單，空間可能已滿。'); } }
+                  namesInput.on('input', function() { const selectedClass = classSelect.val(); if (selectedClass && savedClasses[selectedClass]) { const newContent = $(this).val(); savedClasses[selectedClass].current = newContent; savedClasses[selectedClass].original = newContent; currentOriginalNames = newContent; restoreBtn.prop('disabled', true); saveClasses(); } });
+                  removePickedCheckbox.on('change', saveToolsState);
+                  restoreBtn.on('click', () => { const selectedClass = classSelect.val(); if (selectedClass && savedClasses[selectedClass]) { namesInput.val(currentOriginalNames); savedClasses[selectedClass].current = currentOriginalNames; restoreBtn.prop('disabled', true); saveClasses(); } });
+                  
+                  const performPick = () => { // No longer accepts a parameter
+                      clearTimeout(designatedNumberTimeout);
+  
+                      const selectedClass = classSelect.val();
+                      if (!selectedClass && Object.keys(savedClasses).length > 0) {
+                          alert("請先選擇一個班級。"); designatedNumberStr = ''; return;
+                      }
+                      let currentNamesList = (savedClasses[selectedClass]?.current || namesInput.val()).split('\n').map(name => name.trim()).filter(name => name !== '');
+                      if (currentNamesList.length === 0) {
+                          result.text('名單是空的'); designatedNumberStr = ''; return;
+                      }
+  
+                      result.html('<i class="fas fa-spinner fa-spin text-purple-600"></i>');
+                      let spinCount = 0;
+                      const spinInterval = setInterval(() => {
+                          spinCount++;
+                          result.text(currentNamesList[Math.floor(Math.random() * currentNamesList.length)]);
+                          if (spinCount > 15 + Math.random() * 10) {
+                              clearInterval(spinInterval);
+                              let finalIndex;
+  
+                              if (designatedIndexForNextPick !== null) {
+                                  finalIndex = designatedIndexForNextPick;
+                                  designatedIndexForNextPick = null; // Reset after use
+                              } else if (designatedNumberStr) {
+                                  const designatedSeat = parseInt(designatedNumberStr, 10);
+                                  finalIndex = designatedSeat - 1;
+                                  designatedNumberStr = '';
+                              } else {
+                                  finalIndex = Math.floor(Math.random() * currentNamesList.length);
+                              }
+  
+                              if (finalIndex < 0 || finalIndex >= currentNamesList.length) {
+                                  finalIndex = Math.floor(Math.random() * currentNamesList.length);
+                              }
+  
+                              const pickedName = currentNamesList[finalIndex];
+                              result.html(`<span class="animate-pulse">${pickedName}</span>`).addClass('animate-pop');
+                              setTimeout(() => { result.removeClass('animate-pop').find('span').removeClass('animate-pulse'); }, 700);
+  
+                              if (removePickedCheckbox.is(':checked')) {
+                                  currentNamesList.splice(finalIndex, 1);
+                                  const updatedNamesString = currentNamesList.join('\n');
+                                  namesInput.val(updatedNamesString);
+                                  if (selectedClass && savedClasses[selectedClass]) {
+                                      savedClasses[selectedClass].current = updatedNamesString;
+                                      restoreBtn.prop('disabled', savedClasses[selectedClass].current === currentOriginalNames);
+                                      saveClasses();
+                                  }
+                              }
+                          }
+                      }, 50);
+                  };
+  
+                  pickBtn.on('click', () => {
+                      clearTimeout(clickTimeout);
+                      const currentTime = new Date().getTime();
+                      const isDoubleClick = (currentTime - lastClickTime) < 300;
+                      lastClickTime = currentTime;
+  
+                      if (isDoubleClick) {
+                          designatedIndexForNextPick = new Date().getSeconds() - 1; // Set state variable and correct for 1-based thinking
+                          pickBtn.css('transition', 'box-shadow 0.1s ease-in-out').css('box-shadow', '0 0 0 3px #c4b5fd');
+                          setTimeout(() => pickBtn.css('box-shadow', ''), 200);
+                          performPick(); // Call without params
+                          lastClickTime = 0;
+                      } else {
+                          designatedIndexForNextPick = null; // Ensure it's null for single click
+                          clickTimeout = setTimeout(() => {
+                              performPick(); // Call without params
+                          }, 250);
+                      }
+                  });
+                  updatePickerUI(); // Initial load
              }
-
-            // Picker Initializer (Same as v4)
-            function initializePicker($tool, savedState = {}) {
-                 const namesInput = $tool.find('.picker-names'); const result = $tool.find('.picker-result');
-                 const pickBtn = $tool.find('.picker-pick'); const tabButtons = $tool.find('.tab-button');
-                 const tabContents = $tool.find('.tab-content'); const classSelect = $tool.find('.class-select');
-                 const classNameInput = $tool.find('.class-name'); const addClassBtn = $tool.find('.add-class');
-                 const classList = $tool.find('.class-list'); const removePickedCheckbox = $tool.find('.remove-picked-checkbox');
-                 const restoreBtn = $tool.find('.restore-list-btn');
-                 let savedClasses = {}; let currentOriginalNames = "";
-                 let designatedNumberStr = '';
-                 let designatedNumberTimeout;
-
-                 // Listen for number key presses for designated picking
-                 $(document).on('keydown.picker.' + $tool.attr('id'), function(e) {
-                    // Ignore if typing in an input/textarea
-                    if ($(e.target).is('input, textarea')) {
-                        return;
-                    }
-
-                    if (e.key >= '0' && e.key <= '9') {
-                        e.preventDefault(); // Prevent default browser actions for number keys
-                        designatedNumberStr += e.key;
-
-                        // Reset the timeout whenever a new key is pressed
-                        clearTimeout(designatedNumberTimeout);
-                        designatedNumberTimeout = setTimeout(() => {
-                            designatedNumberStr = ''; // Reset after 1.5 seconds of inactivity
-                        }, 1500);
-                    }
-                 });
-
-                 // Unbind the keydown listener when the tool is closed
-                 $tool.on('remove', function() {
-                     $(document).off('keydown.picker.' + $tool.attr('id'));
-                 });
-
-                 try { /* Load and parse savedClasses, ensuring new format */
-                     const savedClassesJson = localStorage.getItem(STORAGE_KEY_PICKER_CLASSES);
-                     if (savedClassesJson) {
-                         const loadedData = JSON.parse(savedClassesJson); savedClasses = {};
-                         for (const className in loadedData) {
-                             if (typeof loadedData[className] === 'string') { savedClasses[className] = { current: loadedData[className], original: loadedData[className] }; }
-                             else if (loadedData[className] && typeof loadedData[className].current === 'string') { savedClasses[className] = { current: loadedData[className].current, original: loadedData[className].original !== undefined ? loadedData[className].original : loadedData[className].current }; }
-                         }
-                     }
-                 } catch (e) { console.error('Error loading/parsing saved classes:', e); savedClasses = {}; }
-
-                 function updatePickerUI(selectDefaultClass = false) { const hasClasses = Object.keys(savedClasses).length > 0; updateClassList(); updateClassSelect(hasClasses, selectDefaultClass); loadSelectedClassNames(); classSelect.find('option[value=""]').toggle(!hasClasses); }
-                 tabButtons.on('click', function() { const tabName = $(this).data('tab'); tabButtons.removeClass('active'); $(this).addClass('active'); tabContents.removeClass('active').hide(); tabContents.filter(`[data-tab="${tabName}"]`).addClass('active').show(); if (tabName === 'names') loadSelectedClassNames(); });
-                 tabContents.not('.active').hide();
-                 addClassBtn.on('click', () => { const className = classNameInput.val().trim(); if (className && !savedClasses[className]) { savedClasses[className] = { current: '', original: '' }; classNameInput.val(''); updatePickerUI(true); saveClasses(); } else if (savedClasses[className]) alert('班級名稱已存在！'); });
-                 function loadSelectedClassNames() { const selectedClass = classSelect.val(); if (selectedClass && savedClasses[selectedClass]) { namesInput.val(savedClasses[selectedClass].current); currentOriginalNames = savedClasses[selectedClass].original; restoreBtn.prop('disabled', savedClasses[selectedClass].current === currentOriginalNames); } else { namesInput.val(''); currentOriginalNames = ""; restoreBtn.prop('disabled', true); } }
-                 classSelect.on('change', loadSelectedClassNames);
-                 function updateClassList() { /* Updates the list in the management tab */ classList.empty(); const sortedClassNames = Object.keys(savedClasses).sort(); if (sortedClassNames.length === 0) { classList.html('<p class="text-center text-gray-500 text-xs p-2">尚未新增任何班級</p>'); return; } sortedClassNames.forEach(className => { const classItem = $(`<div class="class-item flex justify-between items-center px-2 py-1 rounded-md mb-1 text-sm"><span class="flex-1 mr-2 truncate" title="${className}">${className}</span><div class="flex space-x-1"><button class="btn-icon edit-class w-5 h-5 flex items-center justify-center rounded hover:bg-blue-100" data-class="${className}" title="編輯名單"><i class="fas fa-edit text-xs"></i></button><button class="btn-icon delete-class w-5 h-5 flex items-center justify-center rounded hover:bg-red-100" data-class="${className}" title="刪除班級"><i class="fas fa-trash-alt text-xs"></i></button></div></div>`); classList.append(classItem); }); classList.off('click').on('click', '.edit-class', function() { classSelect.val($(this).data('class')); loadSelectedClassNames(); tabButtons.filter('[data-tab="names"]').trigger('click'); }).on('click', '.delete-class', function() { const classNameToDelete = $(this).data('class'); if (confirm(`確定要永久刪除班級「${classNameToDelete}」及其名單嗎？`)) { delete savedClasses[classNameToDelete]; const currentSelection = classSelect.val(); updatePickerUI(); if (currentSelection === classNameToDelete) { const firstClass = Object.keys(savedClasses).sort()[0]; classSelect.val(firstClass || ""); loadSelectedClassNames(); } saveClasses(); } }); }
-                 function updateClassSelect(hasClasses, selectDefaultClass = false) { /* Updates the dropdown options */ const currentSelection = classSelect.val(); classSelect.find('option:not([value=""])').remove(); const sortedClassNames = Object.keys(savedClasses).sort(); sortedClassNames.forEach(className => { classSelect.append(`<option value="${className}">${className}</option>`); }); let valueToSelect = ""; if (selectDefaultClass && sortedClassNames.length > 0) { valueToSelect = sortedClassNames[sortedClassNames.length - 1]; } else if (savedClasses[currentSelection] !== undefined) { valueToSelect = currentSelection; } else if (hasClasses && sortedClassNames.length > 0) { valueToSelect = sortedClassNames[0]; } classSelect.val(valueToSelect); classSelect.find('option[value=""]').toggle(!hasClasses); }
-                 function saveClasses() { try { localStorage.setItem(STORAGE_KEY_PICKER_CLASSES, JSON.stringify(savedClasses)); } catch (e) { console.error('Error saving classes:', e); alert('無法儲存班級名單，空間可能已滿。'); } }
-                 namesInput.on('input', function() { const selectedClass = classSelect.val(); if (selectedClass && savedClasses[selectedClass]) { const newContent = $(this).val(); savedClasses[selectedClass].current = newContent; savedClasses[selectedClass].original = newContent; currentOriginalNames = newContent; restoreBtn.prop('disabled', true); saveClasses(); } });
-                 removePickedCheckbox.on('change', saveToolsState);
-                 restoreBtn.on('click', () => { const selectedClass = classSelect.val(); if (selectedClass && savedClasses[selectedClass]) { namesInput.val(currentOriginalNames); savedClasses[selectedClass].current = currentOriginalNames; restoreBtn.prop('disabled', true); saveClasses(); } });
-                 pickBtn.on('click', () => { /* Pick logic */
-                     clearTimeout(designatedNumberTimeout); // Stop the reset timer
-                 
-                     const selectedClass = classSelect.val();
-                     if (!selectedClass && Object.keys(savedClasses).length > 0) {
-                         alert("請先選擇一個班級。");
-                         designatedNumberStr = ''; // Clear designated number on error
-                         return;
-                     }
-                 
-                     let currentNamesList = (savedClasses[selectedClass]?.current || namesInput.val()).split('\n').map(name => name.trim()).filter(name => name !== '');
-                     if (currentNamesList.length === 0) {
-                         result.text('名單是空的');
-                         designatedNumberStr = ''; // Clear designated number on error
-                         return;
-                     }
-                 
-                     result.html('<i class="fas fa-spinner fa-spin text-purple-600"></i>');
-                     let spinCount = 0;
-                     const spinInterval = setInterval(() => {
-                         spinCount++;
-                         // Animation: show a random name from the list
-                         result.text(currentNamesList[Math.floor(Math.random() * currentNamesList.length)]);
-                 
-                         if (spinCount > 15 + Math.random() * 10) {
-                             clearInterval(spinInterval);
-                 
-                             let finalIndex;
-                             // Check for a designated number
-                             if (designatedNumberStr) {
-                                 const designatedIndex = parseInt(designatedNumberStr, 10) - 1; // Convert to 0-based index
-                                 if (designatedIndex >= 0 && designatedIndex < currentNamesList.length) {
-                                     finalIndex = designatedIndex;
-                                 } else {
-                                     // If designated number is invalid (e.g., out of bounds), pick randomly
-                                     finalIndex = Math.floor(Math.random() * currentNamesList.length);
-                                 }
-                                 designatedNumberStr = ''; // Clear after use
-                             } else {
-                                 // No designated number, proceed with random pick
-                                 finalIndex = Math.floor(Math.random() * currentNamesList.length);
-                             }
-                 
-                             const pickedName = currentNamesList[finalIndex];
-                 
-                             // Display final result with animation
-                             result.html(`<span class="animate-pulse">${pickedName}</span>`);
-                             result.addClass('animate-pop');
-                             setTimeout(() => {
-                                 result.removeClass('animate-pop');
-                                 result.find('span').removeClass('animate-pulse');
-                             }, 700);
-                 
-                             // If "remove after picking" is checked
-                             if (removePickedCheckbox.is(':checked')) {
-                                 currentNamesList.splice(finalIndex, 1);
-                                 const updatedNamesString = currentNamesList.join('\n');
-                                 namesInput.val(updatedNamesString);
-                                 if (selectedClass && savedClasses[selectedClass]) {
-                                     savedClasses[selectedClass].current = updatedNamesString;
-                                     restoreBtn.prop('disabled', savedClasses[selectedClass].current === currentOriginalNames);
-                                     saveClasses();
-                                 }
-                             }
-                         }
-                     }, 80);
-                 });
-                 updatePickerUI(); // Initial load
-            }
 
             // Sticky Note Initializer (Added color bar background setting)
             function initializeSticky($tool, savedState = {}) {
@@ -1211,109 +1093,130 @@
             // Clock Initializer (Same as v4)
              function initializeClock($tool, savedState = {}) {
                  const timeDisplay = $tool.find('.clock-time'); const dateDisplay = $tool.find('.clock-date'); let clockInterval = null;
-                 function updateClock() { const now = new Date(); timeDisplay.text(now.toLocaleTimeString('zh-TW', { hour12: false })); dateDisplay.text(now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })); }
-                 updateClock(); clockInterval = setInterval(updateClock, 1000); $tool.data('clockIntervalId', clockInterval);
-             }
+                function updateClock() {
+                    const now = new Date();
+                    timeDisplay.text(now.toLocaleTimeString('en-US', { hour12: false }));
+                    dateDisplay.text(now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }));
+                }
+                updateClock();
+                clockInterval = setInterval(updateClock, 1000);
+                 $tool.data('clockIntervalId', clockInterval); // Store for cleanup
+            }
 
             // Calendar Initializer (Same as v4)
             function initializeCalendar($tool, savedState = {}) {
-                 const prevBtn = $tool.find('.calendar-prev'); const nextBtn = $tool.find('.calendar-next'); const monthYearDisplay = $tool.find('.calendar-month-year'); const daysContainer = $tool.find('.calendar-days'); let currentDate = new Date();
-                 function renderCalendar(year, month) { monthYearDisplay.text(`${year}年 ${month + 1}月`); daysContainer.empty(); const firstDayOfMonth = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); for (let i = 0; i < firstDayOfMonth; i++) daysContainer.append('<div class="calendar-day opacity-50"></div>'); const today = new Date(); const todayStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`; for (let i = 1; i <= daysInMonth; i++) { const dayEl = $('<div class="calendar-day"></div>').text(i); if (`${year}-${month}-${i}` === todayStr) dayEl.addClass('today'); daysContainer.append(dayEl); } const totalCells = firstDayOfMonth + daysInMonth; for (let i = 0; i < (7 * Math.ceil(totalCells / 7)) - totalCells; i++) daysContainer.append('<div class="calendar-day opacity-50"></div>'); }
-                 prevBtn.on('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate.getFullYear(), currentDate.getMonth()); });
-                 nextBtn.on('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate.getFullYear(), currentDate.getMonth()); });
-                 renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
-             }
+                const monthYearDisplay = $tool.find('.calendar-month-year');
+                const daysContainer = $tool.find('.calendar-days');
+                let currentDate = new Date();
 
-            // YouTube Initializer
-            function initializeYoutube($tool, savedState = {}) {
-                 const urlInput = $tool.find('.youtube-url');
+                function renderCalendar() {
+                    daysContainer.empty();
+                    const year = currentDate.getFullYear();
+                    const month = currentDate.getMonth();
+                    monthYearDisplay.text(`${year}年 ${month + 1}月`);
+
+                    const firstDay = new Date(year, month, 1).getDay();
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const today = new Date();
+
+                    for (let i = 0; i < firstDay; i++) { daysContainer.append('<div></div>'); }
+                    for (let i = 1; i <= daysInMonth; i++) {
+                        const dayEl = $(`<div class="calendar-day">${i}</div>`);
+                        if (year === today.getFullYear() && month === today.getMonth() && i === today.getDate()) {
+                            dayEl.addClass('today');
+                        }
+                        daysContainer.append(dayEl);
+                    }
+                }
+
+                $tool.find('.prev-month').on('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+                $tool.find('.next-month').on('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+
+                renderCalendar();
+            }
+
+             // YouTube Initializer
+             function initializeYoutube($tool, savedState = {}) {
+                 const urlInput = $tool.find('.youtube-url-input');
                  const loadBtn = $tool.find('.youtube-load');
                  const container = $tool.find('.youtube-container');
-                 const placeholderHTML = container.find('.youtube-placeholder').prop('outerHTML');
-
-                 function extractYouTubeId(url) {
-                     if (!url) return null;
-                     const patterns = [
-                         /[?&]v=([^&]+)/,
-                         /youtu.be\/([^?]+)/,
-                         /\/embed\/([^?]+)/,
-                         /\/shorts\/([^?]+)/,
-                         /^[a-zA-Z0-9_-]{11}$/
-                     ];
-                     for (const pattern of patterns) {
-                         const match = url.match(pattern);
-                         if (match && match[1]) return match[1];
-                         if (pattern.test(url) && url.length === 11) return url;
-                     }
-                     return null;
-                 }
 
                  function loadVideo(videoId) {
                      if (!videoId) {
-                         container.html(placeholderHTML);
-                         $tool.removeData('videoId');
-                         saveToolsState();
-                         return;
+                        container.html('<div class="youtube-placeholder"><i class="fab fa-youtube text-4xl"></i></div>');
+                        return;
                      }
-                     container.html(`<iframe src="https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0" title="YouTube video player" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`);
-                     $tool.data('videoId', videoId);
-                     saveToolsState();
+                      const iframeHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                     container.html(iframeHTML);
                  }
 
-                 loadBtn.on('click', () => {
-                     const videoId = extractYouTubeId(urlInput.val().trim());
-                     if (videoId) {
-                         loadVideo(videoId);
-                     } else {
-                         alert('無法識別的 YouTube 網址或影片 ID。');
+                 function extractVideoID(url) {
+                    if (!url) return null;
+                    let videoId = url.split('v=')[1];
+                    if (videoId) {
+                        const ampersandPosition = videoId.indexOf('&');
+                        if (ampersandPosition !== -1) {
+                            videoId = videoId.substring(0, ampersandPosition);
+                        }
+                        return videoId;
+                    }
+                     // Handle youtu.be short URLs
+                     if (url.includes('youtu.be/')) {
+                         videoId = url.split('youtu.be/')[1];
+                         return videoId;
                      }
+                    // If it's just the ID
+                    if (url.length === 11 && !url.includes('/')) {
+                        return url;
+                    }
+                    return null;
+                }
+
+                 loadBtn.on('click', () => {
+                     const videoId = extractVideoID(urlInput.val());
+                     loadVideo(videoId);
+                     saveToolsState();
                  });
 
                  urlInput.on('keypress', (e) => {
                      if (e.key === 'Enter') {
-                         e.preventDefault();
                          loadBtn.click();
                      }
                  });
 
-                 // 載入已保存的影片
-                 const savedVideoId = savedState.videoId;
-                 if (savedVideoId) {
-                     urlInput.val(savedState.url || `https://www.youtube.com/watch?v=${savedVideoId}`);
-                     loadVideo(savedVideoId);
-                 } else {
-                     container.html(placeholderHTML);
+                 if (savedState.videoId) {
+                     urlInput.val(`https://www.youtube.com/watch?v=${savedState.videoId}`);
+                     loadVideo(savedState.videoId);
                  }
-            }
+             }
 
-            // --- Save & Load State ---
+            // --- State Management ---
             function saveToolsState() {
-                 try {
-                     const tools = [];
-                     $('.tool-widget').each(function() {
-                         const $tool = $(this);
-                         // Ensure width/height are pixel values before saving
-                         const currentWidth = this.style.width || ($tool.outerWidth() + 'px');
-                         const currentHeight = $tool.data('savedHeight') || this.style.height || ($tool.outerHeight() + 'px');
-
-                         const toolData = {
-                             id: this.id, type: $tool.data('type'),
-                             left: this.style.left, top: this.style.top,
-                             width: currentWidth, // Save calculated or style width
-                             height: currentHeight, // Save calculated or style height (prefer savedHeight)
-                             zIndex: $tool.css('zIndex') || '10', collapsed: $tool.hasClass('collapsed')
-                         };
-                         // --- Tool Specific Data Saving ---
-                         const toolType = toolData.type;
-                         if (toolType === 'sticky') { toolData.backgroundColor = this.style.backgroundColor; toolData.content = $tool.find('.sticky-content').val(); }
-                         else if (toolType === 'youtube') { toolData.videoId = $tool.data('videoId'); toolData.url = $tool.find('.youtube-url').val(); }
+                const toolsState = [];
+                $('.tool-widget').each(function() {
+                    const $tool = $(this);
+                    const toolType = $tool.data('type');
+                    const toolData = {
+                        type: toolType,
+                        id: $tool.attr('id'),
+                        position: $tool.position(),
+                        size: { width: $tool.width(), height: $tool.height() },
+                        zIndex: $tool.css('zIndex'),
+                        collapsed: $tool.hasClass('collapsed')
+                    };
+                    // --- Add Tool Specific Data Saving ---
+                         if (toolType === 'sticky') { toolData.content = $tool.find('.sticky-content').val(); toolData.backgroundColor = $tool.css('background-color'); }
+                         else if (toolType === 'youtube') { const iframe = $tool.find('iframe'); if (iframe.length) { const url = new URL(iframe.attr('src')); const videoId = url.pathname.split('/').pop(); toolData.videoId = videoId; } }
                          else if (toolType === 'timer') { const timerInstance = $tool.data('timerInstance'); toolData.minutes = $tool.find('.timer-minutes').val(); toolData.seconds = $tool.find('.timer-seconds').val(); toolData.timerRunning = $tool.find('.timer-start').text() === '暫停'; toolData.totalSeconds = timerInstance ? timerInstance.totalSeconds : 0; }
                          else if (toolType === 'picker') { toolData.removePicked = $tool.find('.remove-picked-checkbox').is(':checked'); }
                          // --- End Tool Specific Data Saving ---
-                         tools.push(toolData);
-                     });
-                     localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(tools));
-                 } catch (e) { console.error('Error saving tools state:', e); if (e.name === 'QuotaExceededError') alert('無法儲存工具狀態，空間可能已滿。'); }
+                    toolsState.push(toolData);
+                });
+                try {
+                     localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(toolsState));
+                } catch (e) {
+                     console.error("Error saving tools state:", e);
+                }
             }
 
             function loadToolsState() {
@@ -1322,52 +1225,41 @@
                  if (savedDrawing) { const img = new Image(); img.onload = () => { setTimeout(() => { if(canvas.width > 0 && canvas.height > 0) { ctx.drawImage(img, 0, 0); applyDrawingSettings(); } }, 150); }; img.onerror = () => { console.error('Error loading drawing.'); localStorage.removeItem(STORAGE_KEY_DRAWING); }; img.src = savedDrawing; }
                  else { applyDrawingSettings(); }
                  // Load tools
-                 try {
-                     const savedToolsJson = localStorage.getItem(STORAGE_KEY_TOOLS);
-                     if (savedToolsJson) {
-                         const tools = JSON.parse(savedToolsJson);
-                         $('.tool-widget').each((_, tool) => clearToolResources(tool)).remove();
-                         tools.forEach((toolData) => { if (toolData.left && toolData.top && toolData.width && toolData.height) { addTool(toolData.type, toolData); } else { console.warn("Skipping tool with invalid state:", toolData); } });
-                         toolCounter = tools.length;
-                     } else { addTool('timer'); addTool('sticky'); }
-                 } catch (e) { console.error('Error loading tools state:', e); localStorage.removeItem(STORAGE_KEY_TOOLS); localStorage.removeItem(STORAGE_KEY_PICKER_CLASSES); $('.tool-widget').remove(); addTool('timer'); addTool('sticky'); }
-                 finally { resizeCanvas(); }
+                const savedTools = localStorage.getItem(STORAGE_KEY_TOOLS);
+                if (savedTools) {
+                    try {
+                         const toolsState = JSON.parse(savedTools);
+                         toolsState.sort((a, b) => (parseInt(a.zIndex) || 0) - (parseInt(b.zIndex) || 0)); // Render in correct z-index order
+                         toolsState.forEach(toolState => createTool(toolState.type, toolState));
+                    } catch (e) {
+                         console.error("Error parsing saved tools state:", e);
+                         localStorage.removeItem(STORAGE_KEY_TOOLS);
+                    }
+                }
             }
-
-             // Cleanup on unload
-             $(window).on('beforeunload', () => { $('.tool-widget').each((_, tool) => clearToolResources(tool)); });
-
-            // Initial Load
-            loadToolsState();
 
             // 添加繪圖歷史記錄
             let drawingHistory = [];
             let currentHistoryIndex = -1;
-            const maxHistoryLength = 50;
+            const maxHistoryLength = 20; // 設置最大歷史記錄長度
 
             function saveToHistory() {
                 // 如果當前不在歷史記錄的末尾，刪除當前位置之後的所有記錄
                 if (currentHistoryIndex < drawingHistory.length - 1) {
                     drawingHistory = drawingHistory.slice(0, currentHistoryIndex + 1);
                 }
-                
+
                 // 添加新的繪圖狀態到歷史記錄
                 drawingHistory.push(canvas.toDataURL());
-                
+
                 // 如果歷史記錄太長，刪除最舊的記錄
                 if (drawingHistory.length > maxHistoryLength) {
                     drawingHistory.shift();
                 } else {
                     currentHistoryIndex++;
                 }
-                
-                // 更新按鈕狀態
-                updateUndoRedoButtons();
-            }
 
-            function updateUndoRedoButtons() {
-                $('#undo-drawing').prop('disabled', currentHistoryIndex <= 0);
-                $('#redo-drawing').prop('disabled', currentHistoryIndex >= drawingHistory.length - 1);
+                updateUndoRedoButtons();
             }
 
             function undoDrawing() {
@@ -1378,7 +1270,6 @@
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0);
                         updateUndoRedoButtons();
-                        saveDrawing();
                     };
                     img.src = drawingHistory[currentHistoryIndex];
                 }
@@ -1392,13 +1283,18 @@
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0);
                         updateUndoRedoButtons();
-                        saveDrawing();
                     };
                     img.src = drawingHistory[currentHistoryIndex];
                 }
             }
 
-            // 修改現有的繪圖函數
+            function updateUndoRedoButtons() {
+                $('#undo-drawing').prop('disabled', currentHistoryIndex <= 0);
+                $('#redo-drawing').prop('disabled', currentHistoryIndex >= drawingHistory.length - 1);
+            }
+
+
+            // 修改 startDrawing 和 stopDrawing 以集成歷史記錄
             function startDrawing(e) {
                 if (e.button !== 0 && e.type === 'mousedown') return;
                 drawingState.isDrawing = true;
@@ -1424,8 +1320,6 @@
                     applyDrawingSettings();
                 }
             }
-
-            // 修改清除繪圖函數
             function clearDrawingCanvas() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 localStorage.removeItem(STORAGE_KEY_DRAWING);
@@ -1435,92 +1329,85 @@
                 saveToHistory();
             }
 
+
             // 添加事件監聽器
             $('#undo-drawing').on('click', undoDrawing);
             $('#redo-drawing').on('click', redoDrawing);
 
-            // 初始化時保存空白畫布到歷史記錄
-            saveToHistory();
-
             // Bookmark Initializer
             function initializeBookmark($tool, savedState = {}) {
-                const STORAGE_KEY = 'classroom_whiteboard_bookmarks_v1';
                 const list = $tool.find('.bookmark-list');
-                const form = $tool.find('.bookmark-add-form');
-                const titleInput = $tool.find('.bookmark-title');
-                const urlInput = $tool.find('.bookmark-url');
+                const addForm = $tool.find('.bookmark-add-form');
+                const nameInput = addForm.find('input[name="name"]');
+                const urlInput = addForm.find('input[name="url"]');
+                const KEY = 'classroom_whiteboard_bookmarks_v1';
                 let bookmarks = [];
-                // 載入
-                try {
-                    const saved = localStorage.getItem(STORAGE_KEY);
-                    if (saved) bookmarks = JSON.parse(saved).filter(bm => bm?.title && bm?.url);
-                } catch(e) { bookmarks = []; }
-                function save() {
-    try {
-        // 過濾無效書籤
-        const validBookmarks = bookmarks.filter(bm =>
-            bm?.url && new URL(bm.url).protocol.startsWith('http')
-        );
-        
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(validBookmarks));
-        alert('書籤儲存成功！');  // 添加成功提示
-    } catch(e) {
-        console.error('儲存失敗:', e);
-        alert(`儲存錯誤: ${e.message}`);
-    }
-}
-                function render() {
+
+                function saveBookmarks() {
+                    try {
+                        localStorage.setItem(KEY, JSON.stringify(bookmarks));
+                    } catch (e) {
+                        console.error('Error saving bookmarks:', e);
+                    }
+                }
+
+                function renderBookmarks() {
                     list.empty();
                     if (bookmarks.length === 0) {
-                        list.html('<div class="text-gray-400 text-sm text-center py-2">尚無書籤</div>');
+                        list.html('<p class="text-center text-xs text-gray-400 p-2">尚無書籤</p>');
                         return;
                     }
-                    bookmarks.forEach((bm, idx) => {
-                        const item = $(`<div class="bookmark-item">
-                            <a class="bookmark-link" href="${bm.url}" target="_blank" rel="noopener">${bm.title}</a>
-                            <div class="bookmark-actions">
-                                <button class="btn-icon edit-bookmark" title="編輯" data-idx="${idx}"><i class="fas fa-edit"></i></button>
-                                <button class="btn-icon delete-bookmark" title="刪除" data-idx="${idx}"><i class="fas fa-trash-alt"></i></button>
-                            </div>
-                        </div>`);
+                    bookmarks.forEach((bm, index) => {
+                        const item = $(`
+                            <div class="bookmark-item" data-index="${index}">
+                                <a href="${bm.url}" target="_blank" class="bookmark-link" title="${bm.url}">${bm.name}</a>
+                                <div class="bookmark-actions">
+                                    <button class="btn-icon delete-bookmark" title="刪除"><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>`);
                         list.append(item);
                     });
                 }
-                form.on('submit', function(e) {
+
+                addForm.on('submit', (e) => {
                     e.preventDefault();
-                    const title = titleInput.val().trim();
-                    if (!title) { return; }  // 移除 alert
+                    const name = nameInput.val().trim();
                     let url = urlInput.val().trim();
-                    if (!/^https?:\/\//.test(url)) url = 'https://' + url;
-                    if (!/^https?:\/\//.test(url)) { return; }  // 移除 alert
-                    bookmarks.push({ title, url });
-                    titleInput.val(''); urlInput.val('');
-                    save();
-                    render();  // 移除成功提示
+                    if (name && url) {
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            url = 'https://' + url;
+                        }
+                        bookmarks.push({ name, url });
+                        saveBookmarks();
+                        renderBookmarks();
+                        nameInput.val('');
+                        urlInput.val('');
+                    }
                 });
+                 addForm.find('.add-bookmark').on('click', () => addForm.submit());
+
+
                 list.on('click', '.delete-bookmark', function() {
-                    const idx = $(this).data('idx');
-                    bookmarks.splice(idx, 1); save(); render();  // 移除 confirm
-                });
-                list.on('click', '.edit-bookmark', function() {
-                    const idx = $(this).data('idx');
-                    const bm = bookmarks[idx];
-                    const newTitle = '';  // 移除 prompt，使用空字串或直接更新
-                    if (newTitle !== null && newTitle.trim() !== '') {
-                        bookmarks[idx].title = newTitle.trim();
-                    } else {
-                        bookmarks[idx].title = '未命名';  // 預設值
-                    }
-                    save(); render();
-                    if (newTitle !== null) {
-                        bookmarks[idx].title = newTitle.trim() || '未命名';
-                        save(); render();
+                    const item = $(this).closest('.bookmark-item');
+                    const index = parseInt(item.data('index'));
+                    if (confirm(`確定要刪除書籤「${bookmarks[index].name}」嗎？`)) {
+                        bookmarks.splice(index, 1);
+                        saveBookmarks();
+                        renderBookmarks();
                     }
                 });
-                render();
+
+
+                // Load initial bookmarks
+                try {
+                    bookmarks = JSON.parse(localStorage.getItem(KEY)) || [];
+                } catch (e) {
+                    bookmarks = [];
+                }
+                renderBookmarks();
             }
 
-            // Group Initializer（共用班級名單）
+            // Grouping Tool Initializer
             function initializeGroup($tool, savedState = {}) {
                 // 共用 picker 的班級名單 localStorage
                 const STORAGE_KEY_PICKER_CLASSES = 'classroom_whiteboard_picker_classes_v5';
@@ -1533,45 +1420,40 @@
                 const namesInput = $tool.find('.group-names');
                 const removePickedCheckbox = $tool.find('.remove-picked-checkbox');
                 const restoreBtn = null; // 分組暫不提供恢復原始名單
-                const groupCountInput = $tool.find('.group-count');
-                const groupSizeInput = $tool.find('.group-size');
-                const modeRadios = $tool.find('input[name="group-mode"]');
-                const resultDiv = $tool.find('.group-result');
-                const reshuffleBtn = $tool.find('.group-reshuffle');
-                const clearBtn = $tool.find('.group-clear');
-                const doBtn = $tool.find('.group-do');
+                const doGroupBtn = $tool.find('.do-group');
+                const resultDiv = $tool.find('.group-result-container');
+
+
                 let savedClasses = {};
                 let currentOriginalNames = "";
-                let lastGroups = [];
-                // 載入班級名單
+
+
                 try {
                     const savedClassesJson = localStorage.getItem(STORAGE_KEY_PICKER_CLASSES);
                     if (savedClassesJson) {
-                        const loadedData = JSON.parse(savedClassesJson); savedClasses = {};
-                        for (const className in loadedData) {
-                            if (typeof loadedData[className] === 'string') { savedClasses[className] = { current: loadedData[className], original: loadedData[className] }; }
-                            else if (loadedData[className] && typeof loadedData[className].current === 'string') { savedClasses[className] = { current: loadedData[className].current, original: loadedData[className].original !== undefined ? loadedData[className].original : loadedData[className].current }; }
-                        }
+                         const loadedData = JSON.parse(savedClassesJson); savedClasses = {};
+                         for (const className in loadedData) {
+                             if (typeof loadedData[className] === 'string') { savedClasses[className] = { current: loadedData[className], original: loadedData[className] }; }
+                             else if (loadedData[className] && typeof loadedData[className].current === 'string') { savedClasses[className] = { current: loadedData[className].current, original: loadedData[className].original !== undefined ? loadedData[className].original : loadedData[className].current }; }
+                         }
                     }
-                } catch (e) { savedClasses = {}; }
-                function saveClasses() {
-                    try { localStorage.setItem(STORAGE_KEY_PICKER_CLASSES, JSON.stringify(savedClasses)); } catch (e) { alert('無法儲存班級名單，空間可能已滿。'); }
-                }
+                } catch (e) { console.error('Error loading/parsing saved classes:', e); savedClasses = {}; }
+
                 function updateGroupUI(selectDefaultClass = false) {
                     updateClassList();
                     updateClassSelect(Object.keys(savedClasses).length > 0, selectDefaultClass);
                     loadSelectedClassNames();
-                    classSelect.find('option[value=""]').toggle(Object.keys(savedClasses).length === 0);
                 }
                 tabButtons.on('click', function() {
-                    const tabName = $(this).data('tab');
-                    tabButtons.removeClass('active');
-                    $(this).addClass('active');
-                    tabContents.removeClass('active').hide();
-                    tabContents.filter(`[data-tab="${tabName}"]`).addClass('active').show();
-                    if (tabName === 'names') loadSelectedClassNames();
+                     const tabName = $(this).data('tab');
+                     tabButtons.removeClass('active');
+                     $(this).addClass('active');
+                     tabContents.removeClass('active').hide();
+                     tabContents.filter(`[data-tab="${tabName}"]`).addClass('active').show();
+                     if (tabName === 'grouping') loadSelectedClassNames();
                 });
-                tabContents.not('.active').hide();
+                 tabContents.not('.active').hide();
+
                 addClassBtn.on('click', () => {
                     const className = classNameInput.val().trim();
                     if (className && !savedClasses[className]) {
@@ -1579,8 +1461,11 @@
                         classNameInput.val('');
                         updateGroupUI(true);
                         saveClasses();
-                    } else if (savedClasses[className]) alert('班級名稱已存在！');
+                    } else if (savedClasses[className]) {
+                        alert('班級名稱已存在！');
+                    }
                 });
+
                 function loadSelectedClassNames() {
                     const selectedClass = classSelect.val();
                     if (selectedClass && savedClasses[selectedClass]) {
@@ -1592,36 +1477,7 @@
                     }
                 }
                 classSelect.on('change', loadSelectedClassNames);
-                function updateClassList() {
-                    classList.empty();
-                    const sortedClassNames = Object.keys(savedClasses).sort();
-                    if (sortedClassNames.length === 0) {
-                        classList.html('<p class="text-center text-gray-500 text-xs p-2">尚未新增任何班級</p>');
-                        return;
-                    }
-                    sortedClassNames.forEach(className => {
-                        const classItem = $(`<div class="class-item flex justify-between items-center px-2 py-1 rounded-md mb-1 text-sm"><span class="flex-1 mr-2 truncate" title="${className}">${className}</span><div class="flex space-x-1"><button class="btn-icon edit-class w-5 h-5 flex items-center justify-center rounded hover:bg-blue-100" data-class="${className}" title="編輯名單"><i class="fas fa-edit text-xs"></i></button><button class="btn-icon delete-class w-5 h-5 flex items-center justify-center rounded hover:bg-red-100" data-class="${className}" title="刪除班級"><i class="fas fa-trash-alt text-xs"></i></button></div></div>`);
-                        classList.append(classItem);
-                    });
-                    classList.off('click').on('click', '.edit-class', function() {
-                        classSelect.val($(this).data('class'));
-                        loadSelectedClassNames();
-                        tabButtons.filter('[data-tab="names"]').trigger('click');
-                    }).on('click', '.delete-class', function() {
-                        const classNameToDelete = $(this).data('class');
-                        if (confirm(`確定要永久刪除班級「${classNameToDelete}」及其名單嗎？`)) {
-                            delete savedClasses[classNameToDelete];
-                            const currentSelection = classSelect.val();
-                            updateGroupUI();
-                            if (currentSelection === classNameToDelete) {
-                                const firstClass = Object.keys(savedClasses).sort()[0];
-                                classSelect.val(firstClass || "");
-                                loadSelectedClassNames();
-                            }
-                            saveClasses();
-                        }
-                    });
-                }
+                function updateClassList() { /* Updates the list in the management tab */ classList.empty(); const sortedClassNames = Object.keys(savedClasses).sort(); if (sortedClassNames.length === 0) { classList.html('<p class="text-center text-gray-500 text-xs p-2">尚未新增任何班級</p>'); return; } sortedClassNames.forEach(className => { const classItem = $(`<div class="class-item flex justify-between items-center px-2 py-1 rounded-md mb-1 text-sm"><span class="flex-1 mr-2 truncate" title="${className}">${className}</span><div class="flex space-x-1"><button class="btn-icon edit-class w-5 h-5 flex items-center justify-center rounded hover:bg-blue-100" data-class="${className}" title="編輯名單"><i class="fas fa-edit text-xs"></i></button><button class="btn-icon delete-class w-5 h-5 flex items-center justify-center rounded hover:bg-red-100" data-class="${className}" title="刪除班級"><i class="fas fa-trash-alt text-xs"></i></button></div></div>`); classList.append(classItem); }); classList.off('click').on('click', '.edit-class', function() { classSelect.val($(this).data('class')); loadSelectedClassNames(); tabButtons.filter('[data-tab="grouping"]').trigger('click'); }).on('click', '.delete-class', function() { const classNameToDelete = $(this).data('class'); if (confirm(`確定要永久刪除班級「${classNameToDelete}」及其名單嗎？`)) { delete savedClasses[classNameToDelete]; const currentSelection = classSelect.val(); updateGroupUI(); if (currentSelection === classNameToDelete) { const firstClass = Object.keys(savedClasses).sort()[0]; classSelect.val(firstClass || ""); loadSelectedClassNames(); } saveClasses(); } }); }
                 function updateClassSelect(hasClasses, selectDefaultClass = false) {
                     const currentSelection = classSelect.val();
                     classSelect.find('option:not([value=""])').remove();
@@ -1638,8 +1494,8 @@
                         valueToSelect = sortedClassNames[0];
                     }
                     classSelect.val(valueToSelect);
-                    classSelect.find('option[value=""]').toggle(!hasClasses);
                 }
+                function saveClasses() { try { localStorage.setItem(STORAGE_KEY_PICKER_CLASSES, JSON.stringify(savedClasses)); } catch (e) { console.error('Error saving classes:', e); alert('無法儲存班級名單，空間可能已滿。'); } }
                 namesInput.on('input', function() {
                     const selectedClass = classSelect.val();
                     if (selectedClass && savedClasses[selectedClass]) {
@@ -1650,34 +1506,42 @@
                         saveClasses();
                     }
                 });
-                // 分組邏輯
-                function shuffle(array) {
-                    for (let i = array.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [array[i], array[j]] = [array[j], array[i]];
-                    }
-                }
+                removePickedCheckbox.on('change', saveToolsState);
+                doGroupBtn.on('click', doGroup);
+
                 function doGroup() {
                     const selectedClass = classSelect.val();
                     let names = (selectedClass && savedClasses[selectedClass]) ? savedClasses[selectedClass].current.split('\n').map(x => x.trim()).filter(x => x) : namesInput.val().split('\n').map(x => x.trim()).filter(x => x);
                     if (names.length < 2) { resultDiv.html('<span class="text-gray-400">名單太少，無法分組</span>'); return; }
-                    shuffle(names);
-                    let groups = [];
-                    if (modeRadios.filter(':checked').val() === 'count') {
-                        let count = parseInt(groupCountInput.val()) || 2;
-                        if (count < 2) count = 2;
-                        for (let i = 0; i < count; i++) groups.push([]);
-                        names.forEach((name, idx) => { groups[idx % count].push(name); });
-                    } else {
-                        let size = parseInt(groupSizeInput.val()) || 2;
-                        if (size < 2) size = 2;
-                        let count = Math.ceil(names.length / size);
-                        for (let i = 0; i < count; i++) groups.push([]);
-                        names.forEach((name, idx) => { groups[Math.floor(idx / size)].push(name); });
+                    
+                    // Shuffle names
+                    for (let i = names.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [names[i], names[j]] = [names[j], names[i]];
                     }
-                    lastGroups = groups;
-                    renderGroups(groups);
-                    // 分組後自動移除
+
+                    const groupType = $(`input[name="${toolId}-group-type"]:checked`).val();
+                    let groups = [];
+
+                    if (groupType === 'by-count') {
+                        const count = parseInt($tool.find('.group-count').val()) || 2;
+                        for (let i = 0; i < count; i++) groups.push([]);
+                        names.forEach((name, i) => groups[i % count].push(name));
+                    } else { // by-size
+                        const size = parseInt($tool.find('.group-size').val()) || 2;
+                        for (let i = 0; i < names.length; i += size) {
+                            groups.push(names.slice(i, i + size));
+                        }
+                    }
+
+                    // Display results
+                    let html = '<div class="grid grid-cols-2 gap-2 text-sm">';
+                    groups.forEach((group, i) => {
+                        html += `<div class="p-2 border rounded-md bg-gray-50"><div class="font-bold mb-1 text-purple-600">第 ${i + 1} 組</div><div>${group.join('<br>')}</div></div>`;
+                    });
+                    html += '</div>';
+                    resultDiv.html(html);
+
                     if (removePickedCheckbox.is(':checked')) {
                         const selectedClass = classSelect.val();
                         if (selectedClass && savedClasses[selectedClass]) {
@@ -1688,34 +1552,18 @@
                         }
                     }
                 }
-                function renderGroups(groups) {
-                    let html = '';
-                    groups.forEach((g, i) => {
-                        html += `<div class="group-list"><div class="group-title">第${i+1}組</div>`;
-                        html += g.map(name => `<span class="group-member">${name}</span>`).join(' ');
-                        html += '</div>';
-                    });
-                    resultDiv.html(html);
-                }
-                doBtn.on('click', function() { doGroup(); });
-                reshuffleBtn.on('click', function() { doGroup(); });
-                clearBtn.on('click', function() {
-                    resultDiv.empty();
-                    lastGroups = [];
-                });
-                modeRadios.on('change', function() {
-                    if (modeRadios.filter(':checked').val() === 'count') {
-                        groupCountInput.prop('disabled', false);
-                        groupSizeInput.prop('disabled', true);
-                    } else {
-                        groupCountInput.prop('disabled', true);
-                        groupSizeInput.prop('disabled', false);
-                    }
-                });
                 updateGroupUI();
             }
+
+
+            // --- Initial Load ---
+            resizeCanvas();
+            loadToolsState();
+            saveToHistory();
+            updateUndoRedoButtons();
+            window.addEventListener('resize', adjustFontSize);
+            adjustFontSize();
         });
     </script>
-
 </body>
 </html>
