@@ -3431,32 +3431,41 @@ ${JSON.stringify(analysisData, null, 2)}
                     const completionRate = dueAssignments.length > 0 ? (completedDueAssignmentIds.size / dueAssignments.length) * 100 : 100; // If no assignments are due, completion is 100%
 
                     // --- Weekly Score Chart Logic ---
-                    const weeklyScores = {};
+                    const weeklyData = {};
 
                     studentSubmissions.forEach(sub => {
                         if (!sub.submittedAt) return;
                         const date = sub.submittedAt.toDate();
                         const startOfWeek = getStartOfWeek(date).toISOString().split('T')[0];
-                        if (!weeklyScores[startOfWeek]) {
-                            weeklyScores[startOfWeek] = [];
+                        if (!weeklyData[startOfWeek]) {
+                            weeklyData[startOfWeek] = { scores: [], count: 0 };
                         }
-                        weeklyScores[startOfWeek].push(sub.score);
+                        weeklyData[startOfWeek].scores.push(sub.score);
+                        weeklyData[startOfWeek].count++;
                     });
 
-                    const sortedWeeks = Object.keys(weeklyScores).sort();
-                    const chartLabels = sortedWeeks.map(week => week.slice(5)); // Format to "MM-DD"
-                    const chartData = sortedWeeks.map(week => {
-                        const scores = weeklyScores[week];
+                    const sortedWeeks = Object.keys(weeklyData).sort();
+                    const chartLabels = sortedWeeks.map(week => {
+                        const startDate = new Date(week);
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 6);
+                        const format = (d) => `${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+                        return `${format(startDate)}~${format(endDate)}`;
+                    });
+                    
+                    const scoreData = sortedWeeks.map(week => {
+                        const { scores } = weeklyData[week];
                         const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
                         return avg.toFixed(0);
                     });
+                    const completionData = sortedWeeks.map(week => weeklyData[week].count || 0);
 
                     const chartHtml = sortedWeeks.length > 1 ? `
-                        <h3 class="font-bold text-lg mb-2">每週平均成績趨勢</h3>
+                        <h3 class="font-bold text-lg mb-2">每週學習趨勢分析</h3>
                         <div class="p-4 bg-white rounded-lg shadow">
                             <canvas id="weekly-score-chart"></canvas>
                         </div>
-                    ` : '<div class="p-4 bg-white rounded-lg shadow text-center text-slate-500">尚無足夠資料可繪製成績趨勢圖，完成兩週以上的課業後將會顯示。</div>';
+                    ` : '<div class="p-4 bg-white rounded-lg shadow text-center text-slate-500">尚無足夠資料可繪製學習趨勢圖，完成兩週以上的課業後將會顯示。</div>';
 
                     contentEl.innerHTML = `
                         <div class="p-2">
@@ -3475,23 +3484,61 @@ ${JSON.stringify(analysisData, null, 2)}
                             const ctx = document.getElementById('weekly-score-chart')?.getContext('2d');
                             if (ctx) {
                                 new Chart(ctx, {
-                                    type: 'line',
+                                    type: 'bar',
                                     data: {
                                         labels: chartLabels,
                                         datasets: [{
+                                            label: '每週完成篇數',
+                                            data: completionData,
+                                            backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                                            borderColor: 'rgba(255, 159, 64, 1)',
+                                            yAxisID: 'y1',
+                                            order: 2
+                                        }, {
+                                            type: 'line',
                                             label: '每週平均分數',
-                                            data: chartData,
+                                            data: scoreData,
                                             fill: true,
                                             backgroundColor: 'rgba(75, 192, 192, 0.2)',
                                             borderColor: 'rgba(75, 192, 192, 1)',
-                                            tension: 0.1
+                                            tension: 0.1,
+                                            yAxisID: 'y',
+                                            order: 1
                                         }]
                                     },
                                     options: {
+                                        responsive: true,
+                                        interaction: {
+                                            mode: 'index',
+                                            intersect: false,
+                                        },
                                         scales: {
                                             y: {
+                                                type: 'linear',
+                                                display: true,
+                                                position: 'left',
                                                 beginAtZero: true,
-                                                max: 100
+                                                max: 100,
+                                                title: {
+                                                    display: true,
+                                                    text: '平均分數'
+                                                }
+                                            },
+                                            y1: {
+                                                type: 'linear',
+                                                display: true,
+                                                position: 'right',
+                                                beginAtZero: true,
+                                                title: {
+                                                    display: true,
+                                                    text: '完成篇數'
+                                                },
+                                                grid: {
+                                                    drawOnChartArea: false,
+                                                },
+                                                ticks: {
+                                                    stepSize: 1
+                                                }
                                             }
                                         }
                                     }
