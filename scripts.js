@@ -6,6 +6,8 @@
         const appState = {
             currentUser: null,
             currentView: 'login', // 'login', 'student', 'teacher'
+            geminiApiKey: null,
+            geminiModel: 'gemini-2.5-flash',
             assignments: [], // Holds the currently displayed list of assignments (paginated)
             allSubmissions: [],
             allClasses: [],
@@ -61,6 +63,14 @@
             mainAppView: document.getElementById('main-app-view'),
             modalContainer: document.getElementById('modal-container'),
             highlightToolbar: document.getElementById('highlight-toolbar'),
+        };
+        const firebaseConfig = {
+          apiKey: "AIzaSyB8uTu47VRp8WKnZ5QJ5IaVH1X2K2SJQwo",
+          authDomain: "my-reading-platform.firebaseapp.com",
+          projectId: "my-reading-platform",
+          storageBucket: "my-reading-platform.firebasestorage.app",
+          messagingSenderId: "200192012324",
+          appId: "1:200192012324:web:fa181310ca103e269268b1"
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -910,6 +920,18 @@
             setupEventListeners();
             setupTeacherEventListeners();
             try {
+               // First, fetch the API Key from Firestore
+               const settingsDoc = await getDoc(doc(db, "settings", "api_keys"));
+               if (settingsDoc.exists()) {
+                   const settings = settingsDoc.data();
+                   appState.geminiApiKey = settings.gemini || null;
+                   appState.geminiModel = settings.model || 'gemini-1.5-flash'; // Default model
+               } else {
+                   console.error("Gemini API Key not found in Firestore under settings/api_keys");
+                   // We don't show a fatal error here, but AI features will fail.
+                   // The error will be caught when an AI function is called.
+               }
+
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
@@ -2375,8 +2397,8 @@ ${difficultyInstruction}
 4.  **產出格式**：請嚴格按照指定的 JSON 格式輸出，不要包含 JSON 格式以外的任何文字。`;
             const schema = {type:"OBJECT",properties:{title:{type:"STRING"},article:{type:"STRING"},questions:{type:"ARRAY",items:{type:"OBJECT",properties:{questionText:{type:"STRING"},options:{type:"ARRAY",items:{type:"STRING"}},correctAnswerIndex:{type:"NUMBER"},explanation:{type:"STRING"}},required:["questionText","options","correctAnswerIndex","explanation"]}},tags:{type:"OBJECT",properties:{format:{type:"STRING"},contentType:{type:"STRING"},difficulty:{type:"STRING"}},required:["format","contentType","difficulty"]}},required:["title","article","questions","tags"]};
             try {
-                if (!window.GEMINI_API_KEY) throw new Error("AI API 金鑰未設定。");
-                const apiKey = window.GEMINI_API_KEY;
+                if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
+                const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema } };
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API 請求失敗`);
@@ -2438,8 +2460,8 @@ ${difficultyInstruction}
 **篇章內容如下**：\`\`\`${article}\`\`\``;
             const schema = {type:"OBJECT",properties:{questions:{type:"ARRAY",items:{type:"OBJECT",properties:{questionText:{type:"STRING"},options:{type:"ARRAY",items:{type:"STRING"}},correctAnswerIndex:{type:"NUMBER"},explanation:{type:"STRING"}},required:["questionText","options","correctAnswerIndex","explanation"]}},tags:{type:"OBJECT",properties:{format:{type:"STRING"},contentType:{type:"STRING"},difficulty:{type:"STRING"}},required:["format","contentType","difficulty"]}},required:["questions","tags"]};
             try {
-                if (!window.GEMINI_API_KEY) throw new Error("AI API 金鑰未設定。");
-                const apiKey = window.GEMINI_API_KEY;
+                if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
+                const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema } };
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API 請求失敗`);
@@ -2508,8 +2530,8 @@ ${JSON.stringify(analysisData, null, 2)}
 3.  **綜合評估與教學建議**：總結學子在 PISA 三層次上的整體表現，並提出 2-3 點具體、可行的教學方向。
 4.  **格式**: 請使用 Markdown 格式，讓報告清晰易讀，並帶有鼓勵與專業的語氣。`;
             try {
-                if (!window.GEMINI_API_KEY) throw new Error("AI API 金鑰未設定。");
-                const apiKey = window.GEMINI_API_KEY;
+                if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
+                const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API 請求失敗`);
@@ -3560,8 +3582,8 @@ ${JSON.stringify(analysisData, null, 2)}
   - **省思與評鑑**：${pisa3_accuracy === -1 ? '無數據' : pisa3_accuracy.toFixed(0) + '%'}
 `;
             try {
-                if (!window.GEMINI_API_KEY) throw new Error("AI API 金鑰未設定。");
-                const apiKey = window.GEMINI_API_KEY;
+                if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
+                const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API 請求失敗`);
@@ -3588,8 +3610,8 @@ ${JSON.stringify(analysisData, null, 2)}
             const prompt = `請根據以下指令，潤飾這篇文稿。\n請嚴格遵守以下格式要求：\n1.  **輸出格式**：請只輸出潤飾後的文稿全文，不要包含任何額外的說明或標題。\n2.  **段落縮排**：所有文字段落（包含第一段）的開頭都必須加上兩個全形空格「　　」來進行縮排。\n\n指令："""${command}"""\n原文："""${articleText}"""`;
             
             try {
-                if (!window.GEMINI_API_KEY) throw new Error("AI API 金鑰未設定。");
-                const apiKey = window.GEMINI_API_KEY;
+                if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
+                const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 
@@ -3628,8 +3650,8 @@ ${JSON.stringify(analysisData, null, 2)}
             const multipleQuestionsSchema = {type:"ARRAY", items: singleQuestionSchema};
             const finalSchema = { type: "OBJECT", properties: { [isSingle ? "question" : "questions"]: isSingle ? singleQuestionSchema : multipleQuestionsSchema }, required: [isSingle ? "question" : "questions"] };
             try {
-                if (!window.GEMINI_API_KEY) throw new Error("AI API 金鑰未設定。");
-                const apiKey = window.GEMINI_API_KEY;
+                if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
+                const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: finalSchema } };
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API 請求失敗: ${response.statusText}`);
@@ -3675,7 +3697,7 @@ ${JSON.stringify(analysisData, null, 2)}
             button.innerHTML = '<div class="loader-sm"></div> 整理中';
 
             try {
-                if (!window.GEMINI_API_KEY) throw new Error("AI API 金鑰未設定。");
+                if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
                 
                 const prompt = `你是一位專業且細心的中文文本編輯。你的唯一任務是根據以下規則，清理並優化使用者提供的文本，不做任何內容上的增刪或修改。
 
@@ -3703,7 +3725,7 @@ ${JSON.stringify(analysisData, null, 2)}
 ${rawText}
 """`;
 
-                const apiKey = window.GEMINI_API_KEY;
+                const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 
@@ -4086,6 +4108,9 @@ ${rawText}
                     case 'teacher-analysis-btn':
                         displayStudentAnalysis('teacher_user');
                         return;
+                    case 'save-api-key-btn':
+                        handleSaveApiKey();
+                        return;
                     case 'format-text-btn':
                         handleFormatText();
                         return;
@@ -4281,7 +4306,7 @@ ${rawText}
         }
 
         function switchTeacherTab(tabName, classId = null, articleId = null) {
-            const panels = ['class-overview', 'article-library', 'achievement-management'];
+            const panels = ['class-overview', 'article-library', 'achievement-management', 'system-settings'];
             
             panels.forEach(panel => {
                 const panelEl = document.getElementById(`tab-panel-${panel}`);
@@ -4307,6 +4332,9 @@ ${rawText}
                 case 'achievement-management':
                     renderAchievementManagement();
                     break;
+               case 'system-settings':
+                   renderSystemSettings();
+                   break;
             }
         }
         
@@ -5033,8 +5061,8 @@ async function callAchievementAI(prompt) {
     if (!aiButton || !errorEl) return;
 
     // 使用 config.js 中的變數
-    if (typeof window.GEMINI_API_KEY === 'undefined' || !window.GEMINI_API_KEY) {
-        errorEl.textContent = '錯誤：找不到或尚未設定您的 AI API 金鑰。請在 config.js 中設定。';
+    if (!appState.geminiApiKey) {
+        errorEl.textContent = '錯誤：找不到或尚未設定您的 AI API 金鑰，請至「系統設定」頁面設定。';
         return;
     }
 
@@ -5044,7 +5072,7 @@ async function callAchievementAI(prompt) {
     errorEl.textContent = '';
 
     try {
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${window.GEMINI_API_KEY}`;
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${appState.geminiApiKey}`;
 
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -5170,3 +5198,78 @@ async function callAchievementAI(prompt) {
         aiButton.innerHTML = originalText;
     }
 }
+
+
+        async function renderSystemSettings() {
+            const container = document.getElementById('teacher-main-content');
+            let panel = document.getElementById('tab-panel-system-settings');
+
+            if (!panel) {
+                panel = el('div', { id: 'tab-panel-system-settings' });
+                container.appendChild(panel);
+            }
+            
+            // Fetch the current settings to display
+            const settingsDoc = await getDoc(doc(db, "settings", "api_keys"));
+            const currentSettings = settingsDoc.exists() ? settingsDoc.data() : {};
+            const currentApiKey = currentSettings.gemini || "";
+            const currentModel = currentSettings.model || "gemini-1.5-flash";
+
+            const settingsHtml = el('div', { class: 'card max-w-2xl mx-auto' }, [
+                el('h2', { class: 'text-2xl font-bold mb-6 text-gray-800 font-rounded', textContent: '系統設定' }),
+                el('div', { class: 'space-y-6' }, [
+                    el('div', {}, [
+                        el('label', { for: 'gemini-api-key-input', class: 'font-bold text-sm text-gray-600', textContent: 'Gemini API 金鑰' }),
+                        el('input', { type: 'text', id: 'gemini-api-key-input', class: 'w-full form-element-ink mt-1', value: currentApiKey, placeholder: '請在此貼上您的 Gemini API 金鑰' }),
+                        el('p', { class: 'text-xs text-gray-500 mt-2', textContent: '此金鑰將被安全地儲存在您的 Firestore 資料庫中。' })
+                    ]),
+                    el('div', {}, [
+                        el('label', { for: 'gemini-model-input', class: 'font-bold text-sm text-gray-600', textContent: 'Gemini AI 模型' }),
+                        el('input', { type: 'text', id: 'gemini-model-input', class: 'w-full form-element-ink mt-1', value: currentModel, placeholder: '例如：gemini-1.5-flash' }),
+                         el('p', { class: 'text-xs text-gray-500 mt-2', textContent: '請輸入您希望使用的 Gemini 模型名稱。' })
+                    ])
+                ]),
+                el('p', { id: 'settings-feedback', class: 'text-sm h-4 mt-4' }),
+                el('div', { class: 'flex justify-end mt-6' }, [
+                    el('button', { id: 'save-api-key-btn', class: 'btn-primary py-2 px-6 font-bold', textContent: '儲存設定' })
+                ])
+            ]);
+
+            panel.innerHTML = '';
+            panel.appendChild(settingsHtml);
+        }
+
+        async function handleSaveApiKey() {
+            const keyInput = document.getElementById('gemini-api-key-input');
+            const modelInput = document.getElementById('gemini-model-input');
+            const feedbackEl = document.getElementById('settings-feedback');
+            
+            const newApiKey = keyInput.value.trim();
+            const newModel = modelInput.value.trim();
+
+            if (!newApiKey || !newModel) {
+                feedbackEl.textContent = '金鑰和模型名稱皆不可為空。';
+                feedbackEl.className = 'text-red-500 text-sm h-4 mt-4';
+                return;
+            }
+
+            showLoading('儲存中...');
+            try {
+                const docRef = doc(db, "settings", "api_keys");
+                await setDoc(docRef, { gemini: newApiKey, model: newModel }, { merge: true });
+
+                // Update the state immediately
+                appState.geminiApiKey = newApiKey;
+                appState.geminiModel = newModel;
+
+                feedbackEl.textContent = '設定已成功儲存！';
+                feedbackEl.className = 'text-green-600 text-sm h-4 mt-4';
+
+            } catch (error) {
+                console.error("Error saving API key:", error);
+                feedbackEl.textContent = `儲存失敗: ${error.message}`;
+                feedbackEl.className = 'text-red-500 text-sm h-4 mt-4';
+            } finally {
+                hideLoading();
+            }
+        }
