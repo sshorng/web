@@ -77,6 +77,122 @@
         const auth = getAuth(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-reading-app-adventure-v2-full';
 
+        async function callGenerativeAI(prompt) {
+            if (!appState.geminiApiKey) {
+                renderModal('message', { type: 'error', title: '設定錯誤', message: '尚未設定 Gemini API 金鑰，請夫子至「系統設定」頁面設定。' });
+                throw new Error("Gemini API key is not set.");
+            }
+            
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${appState.geminiModel}:generateContent?key=${appState.geminiApiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.6,
+                    topK: 1,
+                    topP: 1,
+                    maxOutputTokens: 8192,
+                },
+                 safetySettings: [
+                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+                ]
+            };
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json();
+                console.error("Gemini API Error:", errorBody);
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            const body = await response.json();
+            if (body.candidates && body.candidates.length > 0 && body.candidates[0].content && body.candidates[0].content.parts && body.candidates[0].content.parts.length > 0) {
+                if (body.candidates[0].finishReason && body.candidates[0].finishReason !== "STOP") {
+                    console.warn(`Gemini API response finished with reason: ${body.candidates[0].finishReason}. Full response:`, body);
+                }
+                return body.candidates[0].content.parts[0].text;
+            } else {
+                let errorMessage = "Invalid or empty 'candidates' in response from Gemini API.";
+                if (body.promptFeedback) {
+                    errorMessage = `Prompt was blocked. Reason: ${body.promptFeedback.blockReason}.`;
+                    console.error("Gemini API Prompt Feedback:", body.promptFeedback);
+                }
+                console.error("Full API response:", body);
+                throw new Error(errorMessage);
+            }
+        }
+
+        async function callFullGeminiAnalysis(articleText) {
+            const prompt = `
+              你是一位專業的國文老師，擅長針對文章進行深入分析。請為以下文章提供三項資訊：
+
+              文章內容：
+              """
+              ${articleText}
+              """
+
+              請嚴格按照以下 JSON 格式回傳，不要有任何其他的文字或解釋：
+              {
+                "mindmap": "一個 Mermaid.js 的 graph TD 格式的心智圖。請確保語法絕對正確，節點文字應簡潔有力，避免使用任何特殊字元或引號。例如：graph TD; A[核心主題] --> B(論點一); A --> C(論點二);",
+                "explanation": "一篇至少 300 字的短文，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。",
+                "thinking_questions": "一個 Markdown 格式的無序清單，提供三個與文章主題相關、能引導學生進行深度探究的思考題。問題應連結學生的生活經驗或引發思辨，且不應提供標準答案。例如：\\n* 根據文章，作者認為「勇敢」的定義是什麼？你生活中有沒有類似的經驗，讓你對「勇敢」有不同的看法？\\n* 文章中的主角做了一個困難的決定，如果換作是你，你會怎麼選擇？為什麼？"
+              }
+            `;
+            
+            const rawText = await callGenerativeAI(prompt);
+            if (!rawText) return null;
+
+            try {
+                const cleanedText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+                return JSON.parse(cleanedText);
+            } catch(e) {
+                console.error("Failed to parse JSON from callGeminiAPI response:", e);
+                console.error("Raw text received from AI:", rawText);
+                throw new Error("AI did not return valid JSON.");
+            }
+        }
+        async function callSingleGeminiAnalysis(articleText, target, action, originalContent = '', refinePrompt = '') {
+            const targets = {
+                mindmap: "一個 Mermaid.js 的 graph TD 格式的心智圖。請確保語法絕對正確，節點文字應簡潔有力，避免使用任何特殊字元或引號。",
+                explanation: "一篇至少 300 字的短文，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。",
+                thinking_questions: "一個 Markdown 格式的無序清單，提供三個與文章主題相關、能引導學生進行深度探究的思考題。問題應連結學生的生活經驗或引發思辨，且不應提供標準答案。"
+            };
+
+            let actionInstruction;
+            if (action === 'refine') {
+                actionInstruction = `請根據以下使用者提供的版本進行潤飾。潤飾指令為：「${refinePrompt}」。\n原版本：\n"""\n${originalContent}\n"""`;
+            } else { // regenerate
+                actionInstruction = `請完全重新生成此內容。`;
+            }
+
+            const prompt = `
+              你是一位專業的國文老師，擅長針對文章進行深入分析。請為以下文章提供指定的單一資訊。
+              文章內容：
+              """
+              ${articleText}
+              """
+              
+              請求的資訊類型：${targets[target]}
+
+              操作指令：${actionInstruction}
+
+              請直接回傳該項資訊的純文字內容，不要包含任何 JSON 格式或其他的標記。
+            `;
+            
+            const rawContent = await callGenerativeAI(prompt);
+            if (target === 'mindmap') {
+                return rawContent.replace(/```mermaid/g, "").replace(/```/g, "").trim();
+            }
+            return rawContent;
+        }
         // --- View Management ---
         function showView(viewName, data = {}) {
             dom.loginView.classList.add('hidden');
@@ -159,7 +275,9 @@
                         el('p', { class: `text-5xl font-bold my-4 text-center ${scoreColor}`, textContent: data.score }),
                         el('p', { class: 'text-gray-600 mb-6 text-center', textContent: scoreFeedback }),
                         el('div', { class: 'text-left mb-6 max-h-[50vh] overflow-y-auto p-4 bg-gray-50 rounded-lg' }, reviewItems),
-                        el('button', { id: 'close-result-modal', class: 'w-full btn-primary py-2 font-bold', textContent: '關閉' })
+                        el('div', { class: 'flex gap-4 mt-6' }, [
+                            el('button', { id: 'close-result-modal', class: 'w-full btn-secondary py-2 font-bold', textContent: '關閉' })
+                        ])
                     ]);
                     
                     const base = this._base('', 50); // Create base structure with a placeholder
@@ -230,6 +348,42 @@
                                     el('input', { type: 'date', id: 'edit-deadline', class: 'w-full form-element-ink mt-1', value: deadline })
                                 ]),
                                 el('textarea', { id: 'edit-article', rows: '10', class: 'w-full form-element-ink mt-1', textContent: assignment.article }),
+                                
+                                // AI Analysis Fields
+                                el('div', { class: 'pt-4 border-t mt-4' }, [ el('h3', { class: 'font-bold', textContent: 'AI 深度解析 (可選)' }) ]),
+                                el('div', { class: 'space-y-3 mt-2' }, [
+                                    el('div', {}, [
+                                        el('div', { class: 'flex justify-between items-center' }, [
+                                            el('label', { class: 'font-semibold text-sm', textContent: '心智圖 (Mermaid 語法)'}),
+                                            el('div', { class: 'flex gap-2' }, [
+                                                el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'refine', 'data-target': 'mindmap', textContent: 'AI 潤飾' }),
+                                                el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'regenerate', 'data-target': 'mindmap', textContent: '重新生成' })
+                                            ])
+                                        ]),
+                                        el('textarea', { id: 'edit-analysis-mindmap', rows: '6', class: 'w-full form-element-ink mt-1 font-mono text-xs', textContent: (assignment.analysis && assignment.analysis.mindmap) || '' })
+                                    ]),
+                                    el('div', {}, [
+                                        el('div', { class: 'flex justify-between items-center' }, [
+                                            el('label', { class: 'font-semibold text-sm', textContent: '文章解析'}),
+                                            el('div', { class: 'flex gap-2' }, [
+                                                el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'refine', 'data-target': 'explanation', textContent: 'AI 潤飾' }),
+                                                el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'regenerate', 'data-target': 'explanation', textContent: '重新生成' })
+                                            ])
+                                        ]),
+                                        el('textarea', { id: 'edit-analysis-explanation', rows: '6', class: 'w-full form-element-ink mt-1', textContent: (assignment.analysis && assignment.analysis.explanation) || '' })
+                                    ]),
+                                    el('div', {}, [
+                                        el('div', { class: 'flex justify-between items-center' }, [
+                                            el('label', { class: 'font-semibold text-sm', textContent: '延伸思考 (Markdown 格式)'}),
+                                            el('div', { class: 'flex gap-2' }, [
+                                                el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'refine', 'data-target': 'thinking_questions', textContent: 'AI 潤飾' }),
+                                                el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'regenerate', 'data-target': 'thinking_questions', textContent: '重新生成' })
+                                            ])
+                                        ]),
+                                        el('textarea', { id: 'edit-analysis-thinking-questions', rows: '4', class: 'w-full form-element-ink mt-1', textContent: (assignment.analysis && assignment.analysis.thinking_questions) || '' })
+                                    ])
+                                ]),
+
                                 el('div', { class: 'pt-4 border-t' }, [ el('h3', { class: 'font-bold', textContent: '分類' }) ]),
                                 el('div', { class: 'grid grid-cols-1 md:grid-cols-3 gap-4' }, [
                                     createSelect('edit-tag-format', ['純文', '圖表', '圖文'], '形式'),
@@ -263,6 +417,13 @@
                     baseElement.innerHTML = base;
                     baseElement.querySelector('.modal-backdrop').appendChild(modalContent);
                     resolve(baseElement.innerHTML);
+                });
+            },
+
+            aiAnalysisRefine(data) {
+                return new Promise(resolve => {
+                    const content = `<div class="card w-full max-w-lg"><h2 class="text-xl font-bold mb-4 text-center font-rounded">AI 潤飾指令</h2><p class="text-sm text-gray-600 mb-4">請輸入您的潤飾要求，例如：「請讓語氣更活潑」、「增加一個關於家庭的比喻」。</p><textarea id="ai-analysis-refine-prompt" class="w-full form-element-ink mb-4" rows="3" placeholder="請輸入指令..."></textarea><div class="flex justify-end gap-4"><button id="cancel-ai-analysis-refine-btn" class="btn-secondary py-2 px-5 font-bold">返回</button><button id="confirm-ai-analysis-refine-btn" class="btn-primary py-2 px-5 font-bold">開始潤飾</button></div></div>`;
+                    resolve(this._base(content, 60));
                 });
             },
 
@@ -591,14 +752,14 @@
           if (typeof children === 'function') {
               children(element);
           } else if (Array.isArray(children)) {
-              children.forEach(child => {
-                  if (child === null || child === undefined) return;
+              for (const child of children) {
+                  if (child === null || child === undefined) continue;
                   if (typeof child === 'string') {
                       element.appendChild(document.createTextNode(child));
                   } else if (child instanceof HTMLElement) {
                       element.appendChild(child);
                   }
-              });
+              }
           } else if (typeof children === 'string') {
               element.appendChild(document.createTextNode(children));
           } else if (children instanceof HTMLElement) {
@@ -648,29 +809,55 @@
           }
       }
 
-        async function renderModal(type, data = {}) {
-            const generator = modalHtmlGenerators[type];
+        function renderModal(type, data = {}) {
+            return new Promise(async (resolve, reject) => {
+                const generator = modalHtmlGenerators[type];
+                if (!generator) {
+                    console.error(`Modal type "${type}" not found.`);
+                    return reject(new Error(`Modal type "${type}" not found.`));
+                }
 
-            if (generator) {
                 try {
                     showLoading('載入中...');
                     const modalHtml = await generator.call(modalHtmlGenerators, data);
-                    if (modalHtml) {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = modalHtml;
-                        const modalElement = tempDiv.firstElementChild;
-                        dom.modalContainer.appendChild(modalElement);
+                    
+                    if (!modalHtml) {
+                        hideLoading();
+                        return resolve(null);
+                    }
+                    
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = modalHtml;
+                    const modalElement = tempDiv.firstElementChild;
+                    dom.modalContainer.appendChild(modalElement);
+
+                    // Handle prompt-like modals that need to return a value
+                    if (type === 'aiAnalysisRefine') {
+                        const confirmBtn = modalElement.querySelector('#confirm-ai-analysis-refine-btn');
+                        const cancelBtn = modalElement.querySelector('#cancel-ai-analysis-refine-btn');
+                        const input = modalElement.querySelector('#ai-analysis-refine-prompt');
+
+                        const close = (value) => {
+                            modalElement.remove();
+                            resolve(value); // Resolve the promise with the input value or null
+                        };
+
+                        confirmBtn.onclick = () => close(input.value);
+                        cancelBtn.onclick = () => close(null);
+                        
+                    } else {
+                        // For other modals, attach standard listeners and resolve without a specific value
                         attachModalEventListeners(type, data);
+                        resolve();
                     }
                 } catch (error) {
                     console.error(`Error rendering modal "${type}":`, error);
                     renderModal('message', { title: '錯誤', message: '無法載入視窗內容。' });
+                    reject(error);
                 } finally {
                     hideLoading();
                 }
-            } else {
-                console.error(`Modal type "${type}" not found.`);
-            }
+            });
         }
 
         function attachModalEventListeners(type, data = {}) {
@@ -700,6 +887,14 @@
                 // Specific button actions within the modal
                 switch (targetId) {
                     case 'password-submit-btn': handleTeacherLogin(e); break;
+                    case 'view-analysis-btn':
+                        const assignment = data.assignment; // Assuming assignment data is passed to the result modal
+                        if (assignment) {
+                            displayAnalysis(assignment);
+                        } else {
+                            console.error("No assignment data available for analysis.");
+                        }
+                        break;
                     case 'save-edit-btn': handleSaveEdit(e); break;
                     case 'edit-ai-assistant-btn':
                         const articleText = document.getElementById('edit-article').value;
@@ -775,7 +970,10 @@
         }
 
         function markdownToHtml(text) {
-            if (!text) return '';
+            // Ensure input is a string to prevent .replace errors
+            if (typeof text !== 'string' || !text) {
+                return '';
+            }
 
             // Regex to find mermaid blocks, allowing for nested content and empty lines.
             const mermaidRegex = /```mermaid([\s\S]*?)```/g;
@@ -840,14 +1038,21 @@
                 if (trimmedBlock.startsWith('* ') || trimmedBlock.startsWith('- ')) {
                     html += '<ul class="list-disc list-inside my-4 space-y-2">';
                     trimmedBlock.split('\n').forEach(item => {
-                         html += `<li>${item.substring(item.indexOf(' ')+1).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</li>`;
+                         let listItemContent = item.substring(item.indexOf(' ') + 1);
+                         listItemContent = listItemContent
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-red-700 hover:underline">$1</a>');
+                         html += `<li>${listItemContent}</li>`;
                     });
                     html += '</ul>';
                     return;
                 }
 
                 // Paragraph processing
-                const processedContent = trimmedBlock.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                let processedContent = trimmedBlock
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-red-700 hover:underline">$1</a>')
+                    .replace(/\n/g, '<br>');
 
                 if (hasIndent) {
                     html += `<div style="position: relative; margin-bottom: 1rem;">` +
@@ -1116,10 +1321,11 @@
             readingView.style.padding = ''; // Let the .card style restore padding
 
             document.getElementById('article-grid-view')?.classList.remove('hidden');
+            document.getElementById('analysis-display')?.classList.add('hidden'); // Hide analysis view
             const contentView = document.getElementById('content-display');
-            if (contentView) { 
-                contentView.classList.add('hidden'); 
-                contentView.innerHTML = ''; 
+            if (contentView) {
+                contentView.classList.add('hidden');
+                contentView.innerHTML = '';
             }
             appState.currentAssignment = null;
         }
@@ -2405,8 +2611,13 @@ ${difficultyInstruction}
                 const result = await response.json();
                 if (result.candidates?.length > 0) {
                     const content = JSON.parse(result.candidates[0].content.parts[0].text);
-                    const newAssignment = { ...content, createdAt: new Date() };
+                    
+                    showLoading('AI 書僮正在生成深度解析...');
+                    const analysis = await callFullGeminiAnalysis(content.article);
+
+                    const newAssignment = { ...content, analysis: analysis, createdAt: new Date() };
                     if (deadline) newAssignment.deadline = Timestamp.fromDate(new Date(deadline + "T23:59:59"));
+                    
                     await addDoc(collection(db, `assignments`), newAssignment);
                     await getAssignments(true); // Force refresh cache
                     document.getElementById('topic-input').value = '';
@@ -2468,7 +2679,11 @@ ${difficultyInstruction}
                 const result = await response.json();
                 if (result.candidates?.length > 0) {
                     const content = JSON.parse(result.candidates[0].content.parts[0].text);
-                    const newAssignment = { title, article, ...content, createdAt: new Date() };
+
+                    showLoading('AI 書僮正在生成深度解析...');
+                    const analysis = await callGeminiAPI(article);
+
+                    const newAssignment = { title, article, ...content, analysis: analysis, createdAt: new Date() };
                     if (deadline) newAssignment.deadline = Timestamp.fromDate(new Date(deadline + "T23:59:59"));
                     await addDoc(collection(db, `assignments`), newAssignment);
                     await getAssignments(true); // Force refresh cache
@@ -2884,6 +3099,23 @@ ${JSON.stringify(analysisData, null, 2)}
             return assignments;
         }
 
+        function renderAnalysisContent(container, analysis) {
+            container.innerHTML = ''; // Clear existing content
+            if (analysis.mindmap) {
+                container.appendChild(el('h2', { class: 'text-2xl font-bold mb-4', textContent: '心智圖' }));
+                const mindmapDiv = el('div', { class: 'mermaid' }, [analysis.mindmap]);
+                container.appendChild(mindmapDiv);
+            }
+            if (analysis.explanation) {
+                container.appendChild(el('h2', { class: 'text-2xl font-bold mt-8 mb-4', textContent: '深度解析' }));
+                container.appendChild(el('div', { innerHTML: markdownToHtml(analysis.explanation) }));
+            }
+            if (analysis.thinking_questions) {
+                container.appendChild(el('h2', { class: 'text-2xl font-bold mt-8 mb-4', textContent: '延伸思考' }));
+                container.appendChild(el('div', { innerHTML: markdownToHtml(analysis.thinking_questions) }));
+            }
+        }
+
         async function displayAssignment(assignment) {
             appState.currentAssignment = assignment;
             const contentDisplay = document.getElementById('content-display');
@@ -2937,7 +3169,6 @@ ${JSON.stringify(analysisData, null, 2)}
             ]);
 
             // Assemble the view
-            const articleBody = el('div', { id: 'article-body', class: 'prose-custom', innerHTML: markdownToHtml(assignment.article) });
             const quizForm = el('form', { id: 'quiz-form' }, [
                 el('h2', { class: 'text-2xl font-bold py-4 mb-4', textContent: '閱讀試煉' }),
                 ...questionElements,
@@ -2965,6 +3196,24 @@ ${JSON.stringify(analysisData, null, 2)}
             
             topRightContainer.appendChild(timerDisplay);
 
+            const hasAnalysis = assignment.analysis && (assignment.analysis.mindmap || assignment.analysis.explanation || assignment.analysis.resources);
+
+            // --- Tab Interface ---
+            const articleTab = el('button', { 'data-tab': 'article', class: 'content-tab tab-btn active', textContent: '文章' });
+            const analysisTab = el('button', { 'data-tab': 'analysis', class: 'content-tab tab-btn', textContent: '解析' });
+            if (!isCompleted || !hasAnalysis) {
+                analysisTab.disabled = true;
+                analysisTab.title = "完成作答後即可查看";
+            }
+            const tabContainer = el('div', { class: 'border-b-2 border-gray-200 mb-6 flex space-x-1' }, [articleTab, analysisTab]);
+
+            // --- Content Panels ---
+            const articleBody = el('div', { id: 'article-body', class: 'prose-custom content-panel', innerHTML: markdownToHtml(assignment.article) });
+            const analysisBody = el('div', { id: 'analysis-body', class: 'prose-custom content-panel hidden' });
+            if (hasAnalysis) {
+                renderAnalysisContent(analysisBody, assignment.analysis);
+            }
+            
             const mainContent = el('div', { class: 'p-6 relative' }, [
                 backButton,
                 topRightContainer,
@@ -2973,7 +3222,9 @@ ${JSON.stringify(analysisData, null, 2)}
                         el('article', {}, [
                             el('h1', { class: 'text-3xl font-bold mb-2', textContent: assignment.title }),
                             tagContainer,
-                            articleBody
+                            tabContainer, // Add tabs here
+                            articleBody,
+                            analysisBody
                         ])
                     ]),
                     el('div', { class: 'lg:col-span-1 mt-8 lg:mt-0' }, [
@@ -2986,118 +3237,96 @@ ${JSON.stringify(analysisData, null, 2)}
 
             contentDisplay.appendChild(mainContent);
             
-            showArticleContent();
-            // Manually trigger Mermaid to render any diagrams in the new content
-            // This needs to happen BEFORE highlights are loaded, because loading highlights
-            // overwrites the innerHTML with saved content that does not have the .mermaid class.
-            // Manually trigger Mermaid to render any diagrams in the new content
-            // This needs to happen BEFORE highlights are loaded, because loading highlights
-            // overwrites the innerHTML with saved content that does not have the .mermaid class.
-            if (window.mermaid) {
-                try {
-                    if (!mermaidInitialized) {
-                        // Use 'neutral' theme to prevent mermaid from injecting its own styles.
-                        window.mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
-                        mermaidInitialized = true;
-                    }
-                    
-                    // Use the callback to apply custom styles after rendering is complete.
-                    // Defer rendering to ensure DOM is fully updated.
-                    setTimeout(() => {
-                        const mermaidElements = contentDisplay.querySelectorAll('.mermaid');
-                        if (mermaidElements.length > 0) {
-                            console.log(`Found ${mermaidElements.length} mermaid diagram(s) to render.`);
-                            window.mermaid.run({
-                                nodes: mermaidElements,
-                                callback: (id) => {
-                                    console.log(`Rendered diagram: ${id}`);
-                                    const container = document.getElementById(id);
-                                    if (container) {
-                                        const svg = container.querySelector('svg');
-                                        if (svg) {
-                                            // Force a transparent background to match the app's theme
-                                            svg.style.backgroundColor = 'transparent';
-        
-                                            // --- Website Theme Palette (Gray, White, Red, Yellow) ---
-
-                                            // Default task: Light gray background, dark gray text
-                                            svg.querySelectorAll('.task').forEach(task => {
-                                                task.style.fill = '#F3F4F6'; // Gray-100
-                                                task.style.stroke = '#9CA3AF'; // Gray-400
-                                            });
-                                            svg.querySelectorAll('.taskText').forEach(text => {
-                                                text.style.fill = '#1F2937'; // Gray-800
-                                                text.style.fontWeight = '500';
-                                            });
-
-                                            // Completed task: White background, gray text
-                                            svg.querySelectorAll('.task.done').forEach(task => {
-                                                task.style.fill = '#FFFFFF'; // White
-                                                task.style.stroke = '#D1D5DB'; // Gray-300
-                                            });
-                                            svg.querySelectorAll('.doneText').forEach(text => {
-                                                text.style.fill = '#9CA3AF'; // Gray-400
-                                            });
-
-                                            // Active task: Yellow background, dark gray text
-                                            svg.querySelectorAll('.task.active').forEach(task => {
-                                                task.style.fill = '#FBBF24'; // Amber-400
-                                                task.style.stroke = '#F59E0B'; // Amber-500
-                                            });
-                                            svg.querySelectorAll('.activeText').forEach(text => {
-                                                text.style.fill = '#1F2937'; // Gray-800
-                                            });
-
-                                            // Critical task: Red background, white text
-                                            svg.querySelectorAll('.task.crit').forEach(task => {
-                                                task.style.fill = '#F87171'; // Red-400
-                                                task.style.stroke = '#EF4444'; // Red-500
-                                            });
-                                            svg.querySelectorAll('.critText').forEach(text => {
-                                                text.style.fill = '#FFFFFF';
-                                            });
-
-                                            // Other text elements
-                                            svg.querySelectorAll('.taskTextOutside, .sectionTitle').forEach(text => {
-                                                text.style.fill = '#374151'; // Gray-700
-                                                text.style.fontWeight = '500';
-                                            });
-                                            svg.querySelectorAll('.grid .tick text').forEach(text => {
-                                                text.style.fill = '#6B7280'; // Gray-500
-                                            });
-
-                                            // Section backgrounds
-                                            svg.querySelectorAll('.section0').forEach(sec => {
-                                                sec.style.fill = 'rgba(243, 244, 246, 0.7)'; // Gray-100 with transparency
-                                            });
-                                            svg.querySelectorAll('.section1').forEach(sec => {
-                                                sec.style.fill = 'transparent';
-                                            });
-                                        }
-                                    }
-                                }
-                            });
-                        } else {
-                            console.log("No mermaid diagrams found to render.");
-                        }
-                    }, 0);
-                } catch(e) {
-                    console.error("Mermaid rendering or styling failed:", e);
-                }
-            }
-
-            loadAndApplyHighlights(assignment.id);
+            let mindmapRendered = false;
             
-            // Add event listeners
+            showArticleContent();
+            loadAndApplyHighlights(assignment.id);
+
+            // --- Event Listeners ---
             backButton.addEventListener('click', () => {
                 stopQuizTimer();
                 showArticleGrid();
             });
             articleBody.addEventListener('mouseup', handleTextSelection);
+            
+            tabContainer.addEventListener('click', (e) => {
+                const targetTab = e.target.closest('.tab-btn');
+                if (!targetTab || targetTab.disabled) return;
+
+                const tabName = targetTab.dataset.tab;
+
+                // Update tab styles
+                tabContainer.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
+                targetTab.classList.add('active');
+
+                // Update content visibility
+                contentDisplay.querySelectorAll('.content-panel').forEach(panel => panel.classList.add('hidden'));
+                const targetPanel = contentDisplay.querySelector(`#${tabName}-body`);
+                if(targetPanel) targetPanel.classList.remove('hidden');
+
+                // Render mermaid on analysis tab click, only once
+                if (tabName === 'analysis' && !mindmapRendered && hasAnalysis) {
+                    if (window.mermaid) {
+                        try {
+                             if (!mermaidInitialized) {
+                                window.mermaid.initialize({
+                                    startOnLoad: false,
+                                    theme: 'neutral',
+                                    themeVariables: {
+                                        'fontSize': '16px'
+                                    }
+                                });
+                                mermaidInitialized = true;
+                            }
+                            
+                            const mermaidElements = contentDisplay.querySelectorAll('.mermaid');
+                            if (mermaidElements.length > 0) {
+                                console.log(`Found ${mermaidElements.length} mermaid diagram(s). Triggering render on visible tab.`);
+                                window.mermaid.run({
+                                    nodes: mermaidElements,
+                                    callback: (id) => {
+                                        console.log(`Rendered diagram: ${id}`);
+                                        const container = document.getElementById(id);
+                                        if (container) {
+                                            const svg = container.querySelector('svg');
+                                            if (svg) {
+                                                svg.style.backgroundColor = 'transparent';
+                                                svg.querySelectorAll('.task').forEach(task => { task.style.fill = '#F3F4F6'; task.style.stroke = '#9CA3AF'; });
+                                                svg.querySelectorAll('.taskText').forEach(text => { text.style.fill = '#1F2937'; text.style.fontWeight = '500'; });
+                                                svg.querySelectorAll('.task.done').forEach(task => { task.style.fill = '#FFFFFF'; task.style.stroke = '#D1D5DB'; });
+                                                svg.querySelectorAll('.doneText').forEach(text => { text.style.fill = '#9CA3AF'; });
+                                                svg.querySelectorAll('.task.active').forEach(task => { task.style.fill = '#FBBF24'; task.style.stroke = '#F59E0B'; });
+                                                svg.querySelectorAll('.activeText').forEach(text => { text.style.fill = '#1F2937'; });
+                                                svg.querySelectorAll('.task.crit').forEach(task => { task.style.fill = '#F87171'; task.style.stroke = '#EF4444'; });
+                                                svg.querySelectorAll('.critText').forEach(text => { text.style.fill = '#FFFFFF'; });
+                                                svg.querySelectorAll('.taskTextOutside, .sectionTitle').forEach(text => { text.style.fill = '#374151'; text.style.fontWeight = '500'; });
+                                                svg.querySelectorAll('.grid .tick text').forEach(text => { text.style.fill = '#6B7280'; });
+                                            }
+                                        }
+                                    }
+                                });
+                                mindmapRendered = true;
+                            }
+                        } catch (err) {
+                            console.error("Error rendering Mermaid diagram on tab click:", err);
+                            const mermaidContainer = contentDisplay.querySelector('.mermaid');
+                            if (mermaidContainer) {
+                                mermaidContainer.innerHTML = `<div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-700"><p class="font-bold">心智圖渲染失敗</p><p>AI生成的圖表語法可能有誤，或發生其他錯誤。</p></div>`;
+                            }
+                        }
+                    }
+                }
+            });
+
             if (isCompleted) {
-                submitButton.addEventListener('click', () => { if (submission) displayResults(submission.score, assignment, submission.answers); });
+                submitButton.addEventListener('click', () => {
+                    if (submission) displayResults(submission.score, assignment, submission.answers);
+                });
             } else {
-                quizForm.addEventListener('submit', (e) => { e.preventDefault(); submitQuiz(assignment); });
+                quizForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    submitQuiz(assignment);
+                });
             }
             if (isCompleted) {
                 stopQuizTimer(); // Ensure no timers are running
@@ -3152,6 +3381,13 @@ ${JSON.stringify(analysisData, null, 2)}
             fetchAssignmentsPage(true);
 
             displayResults(finalScore, assignment, userAnswers);
+            
+            // Enable the analysis tab
+            const analysisTab = document.querySelector('.content-tab[data-tab="analysis"]');
+            if (analysisTab) {
+                analysisTab.disabled = false;
+                analysisTab.title = "查看解析";
+            }
             
             // --- Upsert Student Stats and Check Achievements ---
             try {
@@ -3209,8 +3445,14 @@ ${JSON.stringify(analysisData, null, 2)}
         }
 
         function displayResults(score, assignment, userAnswers) {
+            appState.currentAssignment = assignment; // Ensure current assignment is set for the modal
             renderModal('result', { score, assignment, userAnswers });
         }
+
+        // --- Analysis View ---
+
+
+
 
         async function renderArticleAnalysisModal(assignmentId) {
             if (!assignmentId) return;
@@ -3349,9 +3591,18 @@ ${JSON.stringify(analysisData, null, 2)}
                 title: title,
                 article: article,
                 questions: questionsData,
-                tags: tags
+                tags: tags,
+                analysis: {
+                    mindmap: modal.querySelector('#edit-analysis-mindmap')?.value || "",
+                    explanation: modal.querySelector('#edit-analysis-explanation')?.value || "",
+                    thinking_questions: modal.querySelector('#edit-analysis-thinking-questions')?.value || ""
+                }
             };
-            updatedData.deadline = deadlineValue ? Timestamp.fromDate(new Date(deadlineValue + "T23:59:59")) : null;
+            if (deadlineValue) {
+                updatedData.deadline = Timestamp.fromDate(new Date(deadlineValue + "T23:59:59"));
+            } else {
+                updatedData.deadline = null;
+            }
             
             try {
                 console.log("Attempting to save data:", JSON.stringify(updatedData, null, 2));
@@ -3376,6 +3627,66 @@ ${JSON.stringify(analysisData, null, 2)}
                 if (errorEl) errorEl.textContent = '修訂失敗，請按 F12 打開開發者工具，查看 Console 中的詳細錯誤訊息。';
             }
         }
+
+        async function handleAnalysisAI(e) {
+            const button = e.target.closest('.edit-analysis-ai-btn');
+            const modal = button.closest('.modal-instance');
+            const articleText = modal.querySelector('#edit-article').value;
+            
+            const target = button.dataset.target;
+            const action = button.dataset.action;
+            
+            const textareas = {
+                mindmap: modal.querySelector('#edit-analysis-mindmap'),
+                explanation: modal.querySelector('#edit-analysis-explanation'),
+                thinking_questions: modal.querySelector('#edit-analysis-thinking-questions')
+            };
+            const targetTextarea = textareas[target];
+
+            if (!articleText) {
+                renderModal('message', { type: 'error', title: '錯誤', message: '必須先有文章內容才能生成解析。' });
+                return;
+            }
+            if (!targetTextarea) return;
+
+            const originalContent = targetTextarea.value;
+
+            if (action === 'refine') {
+                const refinePrompt = await renderModal('aiAnalysisRefine', {});
+                if (refinePrompt === null) return; // User cancelled
+
+                showLoading('AI 書僮正在潤飾中...');
+                try {
+                    const newContent = await callSingleGeminiAnalysis(articleText, target, 'refine', originalContent, refinePrompt);
+                    if (newContent) {
+                        targetTextarea.value = newContent;
+                    } else {
+                        throw new Error("AI 未能回傳有效內容。");
+                    }
+                } catch (error) {
+                    console.error(`AI analysis error for ${target}:`, error);
+                    renderModal('message', { type: 'error', title: 'AI 操作失敗', message: `AI 書僮處理時發生錯誤：${error.message}` });
+                } finally {
+                    hideLoading();
+                }
+            } else { // regenerate
+                showLoading('AI 書僮正在生成中...');
+                try {
+                    const newContent = await callSingleGeminiAnalysis(articleText, target, 'regenerate', originalContent);
+                    if (newContent) {
+                        targetTextarea.value = newContent;
+                    } else {
+                        throw new Error("AI 未能回傳有效內容。");
+                    }
+                } catch (error) {
+                    console.error(`AI analysis error for ${target}:`, error);
+                    renderModal('message', { type: 'error', title: 'AI 操作失敗', message: `AI 書僮處理時發生錯誤：${error.message}` });
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
 
         async function displayStudentAnalysis(studentId, classId) {
             await renderModal('studentAnalysis');
@@ -4037,6 +4348,28 @@ ${rawText}
                         displayStudentAnalysis(appState.currentUser.studentId);
                     }
                 }
+
+                if (target.closest('#toggle-analysis-btn')) {
+                    const articleBody = document.getElementById('article-body');
+                    const analysisBody = document.getElementById('analysis-body');
+                    const isShowingArticle = target.getAttribute('data-view') === 'article';
+
+                    if (isShowingArticle) {
+                        articleBody.classList.add('hidden');
+                        analysisBody.classList.remove('hidden');
+                        target.textContent = '返回原文';
+                        target.setAttribute('data-view', 'analysis');
+                    } else {
+                        articleBody.classList.remove('hidden');
+                        analysisBody.classList.add('hidden');
+                        target.textContent = '查看解析';
+                        target.setAttribute('data-view', 'article');
+                    }
+                }
+
+                if(target.closest('.edit-analysis-ai-btn')) {
+                    handleAnalysisAI(e);
+                }
                 if (target.closest('#student-view-achievements-btn')) {
                     renderAchievementsList();
                 }
@@ -4060,6 +4393,7 @@ ${rawText}
                     // Fetch articles with cleared filters
                     fetchAssignmentsPage(true);
                 }
+
 
                 if (target.closest('#load-more-btn')) {
                     fetchAssignmentsPage(false);

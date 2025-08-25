@@ -150,3 +150,17 @@
 <script type="module" src="scripts.js"></script>
 </body>
 </html>
+
+    <!-- Mindmap Zoom Modal -->
+    <div id="mindmap-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+        <div id="mindmap-modal-content" class="relative bg-white rounded-lg shadow-xl w-full max-w-6xl h-full max-h-[90vh] overflow-auto p-6">
+            <button id="mindmap-modal-close" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-10">
+                <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="mindmap-modal-container" class="w-full h-full flex items-center justify-center">
+                <!-- Zoomed mindmap SVG will be inserted here -->
+            </div>
+        </div>
+    </div>

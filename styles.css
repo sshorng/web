@@ -312,3 +312,27 @@
 .mermaid svg .bar-plot-1 rect {
     fill: #c0392b !important; /* Cinnabar Red */
 }
+
+.content-tab {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #4b5563; /* Gray-600 */
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease-in-out;
+}
+
+.content-tab:hover:not([disabled]) {
+    color: #1f2937; /* Gray-800 */
+}
+
+.content-tab.active {
+    color: #c0392b; /* Cinnabar Red */
+    border-bottom-color: #c0392b;
+    font-weight: 800;
+}
+
+.content-tab:disabled {
+    color: #9ca3af; /* Gray-400 */
+    cursor: not-allowed;
+}
