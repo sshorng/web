@@ -141,8 +141,8 @@
 
               請嚴格按照以下 JSON 格式回傳，不要有任何其他的文字或解釋：
               {
-                "mindmap": "一個 Mermaid.js 的 graph TD 格式的心智圖。請確保語法絕對正確，節點文字應簡潔有力，避免使用任何特殊字元或引號。例如：graph TD; A[核心主題] --> B(論點一); A --> C(論點二);",
-                "explanation": "一篇至少 300 字的短文，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。",
+                "mindmap": "一個 Mermaid.js 的 graph TD 格式的文章結構圖。請確保語法絕對正確，節點文字應簡潔有力，避免使用任何特殊字元或引號。例如：graph TD; A[核心主題] --> B(論點一); A --> C(論點二);",
+                "explanation": "一篇至少 300 字的短文，對象是國中生，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。",
                 "thinking_questions": "一個 Markdown 格式的無序清單，提供三個與文章主題相關、能引導學生進行深度探究的思考題。問題應連結學生的生活經驗或引發思辨，且不應提供標準答案。例如：\\n* 根據文章，作者認為「勇敢」的定義是什麼？你生活中有沒有類似的經驗，讓你對「勇敢」有不同的看法？\\n* 文章中的主角做了一個困難的決定，如果換作是你，你會怎麼選擇？為什麼？"
               }
             `;
@@ -161,7 +161,7 @@
         }
         async function callSingleGeminiAnalysis(articleText, target, action, originalContent = '', refinePrompt = '') {
             const targets = {
-                mindmap: "一個 Mermaid.js 的 graph TD 格式的心智圖。請確保語法絕對正確，節點文字應簡潔有力，避免使用任何特殊字元或引號。",
+                mindmap: "一個 Mermaid.js 的 graph TD 格式的文章結構圖。請確保語法絕對正確，節點文字應簡潔有力，避免使用任何特殊字元或引號。",
                 explanation: "一篇至少 300 字的短文，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。",
                 thinking_questions: "一個 Markdown 格式的無序清單，提供三個與文章主題相關、能引導學生進行深度探究的思考題。問題應連結學生的生活經驗或引發思辨，且不應提供標準答案。"
             };
@@ -354,7 +354,7 @@
                                 el('div', { class: 'space-y-3 mt-2' }, [
                                     el('div', {}, [
                                         el('div', { class: 'flex justify-between items-center' }, [
-                                            el('label', { class: 'font-semibold text-sm', textContent: '心智圖 (Mermaid 語法)'}),
+                                            el('label', { class: 'font-semibold text-sm', textContent: '文章結構圖 (Mermaid 語法)'}),
                                             el('div', { class: 'flex gap-2' }, [
                                                 el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'refine', 'data-target': 'mindmap', textContent: 'AI 潤飾' }),
                                                 el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'regenerate', 'data-target': 'mindmap', textContent: '重新生成' })
@@ -3102,7 +3102,7 @@ ${JSON.stringify(analysisData, null, 2)}
         function renderAnalysisContent(container, analysis) {
             container.innerHTML = ''; // Clear existing content
             if (analysis.mindmap) {
-                container.appendChild(el('h2', { class: 'text-2xl font-bold mb-4', textContent: '心智圖' }));
+                container.appendChild(el('h2', { class: 'text-2xl font-bold mb-4', textContent: '文章結構圖' }));
                 const mindmapDiv = el('div', { class: 'mermaid' }, [analysis.mindmap]);
                 container.appendChild(mindmapDiv);
             }
@@ -3311,7 +3311,7 @@ ${JSON.stringify(analysisData, null, 2)}
                             console.error("Error rendering Mermaid diagram on tab click:", err);
                             const mermaidContainer = contentDisplay.querySelector('.mermaid');
                             if (mermaidContainer) {
-                                mermaidContainer.innerHTML = `<div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-700"><p class="font-bold">心智圖渲染失敗</p><p>AI生成的圖表語法可能有誤，或發生其他錯誤。</p></div>`;
+                                mermaidContainer.innerHTML = `<div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-700"><p class="font-bold">結構圖渲染失敗</p><p>AI生成的圖表語法可能有誤，或發生其他錯誤。</p></div>`;
                             }
                         }
                     }
