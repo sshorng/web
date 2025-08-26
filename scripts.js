@@ -141,7 +141,7 @@
 
               請嚴格按照以下 JSON 格式回傳，不要有任何其他的文字或解釋：
               {
-                "mindmap": "一個 Mermaid.js 的 graph TD 格式的文章結構圖。請確保語法絕對正確，節點文字應簡潔有力，避免使用任何特殊字元或引號。例如：graph TD; A[核心主題] --> B(論點一); A --> C(論點二);",
+                "mindmap": "一個 Mermaid.js 的 mindmap格式的心智圖。請確保語法絕對正確，節點文字應簡潔有力，擷取文章重點，從右上角順時針依照文章順序排列，如文章有明確結構則以結構為第一層(如總分總、今昔今、起承轉合、開頭發展高潮結尾），避免使用任何特殊字元或引號。",
                 "explanation": "一篇至少 300 字的短文，對象是國中生，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。",
                 "thinking_questions": "一個 Markdown 格式的無序清單，提供三個與文章主題相關、能引導學生進行深度探究的思考題。問題應連結學生的生活經驗或引發思辨，且不應提供標準答案。例如：\\n* 根據文章，作者認為「勇敢」的定義是什麼？你生活中有沒有類似的經驗，讓你對「勇敢」有不同的看法？\\n* 文章中的主角做了一個困難的決定，如果換作是你，你會怎麼選擇？為什麼？"
               }
@@ -161,7 +161,7 @@
         }
         async function callSingleGeminiAnalysis(articleText, target, action, originalContent = '', refinePrompt = '') {
             const targets = {
-                mindmap: "一個 Mermaid.js 的 graph TD 格式的文章結構圖。請確保語法絕對正確，節點文字應簡潔有力，避免使用任何特殊字元或引號。",
+                mindmap: "一個 Mermaid.js 的 mindmap格式的心智圖。請確保語法絕對正確，節點文字應簡潔有力，擷取文章重點，從右上角順時針依照文章順序排列，如文章有明確結構則以結構為第一層(如總分總、今昔今、起承轉合、開頭發展高潮結尾），避免使用任何特殊字元或引號。",
                 explanation: "一篇至少 300 字的短文，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。",
                 thinking_questions: "一個 Markdown 格式的無序清單，提供三個與文章主題相關、能引導學生進行深度探究的思考題。問題應連結學生的生活經驗或引發思辨，且不應提供標準答案。"
             };
@@ -354,7 +354,7 @@
                                 el('div', { class: 'space-y-3 mt-2' }, [
                                     el('div', {}, [
                                         el('div', { class: 'flex justify-between items-center' }, [
-                                            el('label', { class: 'font-semibold text-sm', textContent: '文章結構圖 (Mermaid 語法)'}),
+                                            el('label', { class: 'font-semibold text-sm', textContent: '心智圖 (Mermaid 語法)'}),
                                             el('div', { class: 'flex gap-2' }, [
                                                 el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'refine', 'data-target': 'mindmap', textContent: 'AI 潤飾' }),
                                                 el('button', { class: 'edit-analysis-ai-btn btn-secondary py-1 px-2 text-xs', 'data-action': 'regenerate', 'data-target': 'mindmap', textContent: '重新生成' })
@@ -3102,7 +3102,7 @@ ${JSON.stringify(analysisData, null, 2)}
         function renderAnalysisContent(container, analysis) {
             container.innerHTML = ''; // Clear existing content
             if (analysis.mindmap) {
-                container.appendChild(el('h2', { class: 'text-2xl font-bold mb-4', textContent: '文章結構圖' }));
+                container.appendChild(el('h2', { class: 'text-2xl font-bold mb-4', textContent: '心智圖' }));
                 const mindmapDiv = el('div', { class: 'mermaid' }, [analysis.mindmap]);
                 container.appendChild(mindmapDiv);
             }
@@ -3239,6 +3239,9 @@ ${JSON.stringify(analysisData, null, 2)}
             
             let mindmapRendered = false;
             
+            // Render Mermaid diagrams in the article body now that it's in the DOM
+            renderAllMermaidDiagrams(contentDisplay.querySelector('#article-body'));
+
             showArticleContent();
             loadAndApplyHighlights(assignment.id);
 
@@ -3264,58 +3267,11 @@ ${JSON.stringify(analysisData, null, 2)}
                 const targetPanel = contentDisplay.querySelector(`#${tabName}-body`);
                 if(targetPanel) targetPanel.classList.remove('hidden');
 
-                // Render mermaid on analysis tab click, only once
-                if (tabName === 'analysis' && !mindmapRendered && hasAnalysis) {
-                    if (window.mermaid) {
-                        try {
-                             if (!mermaidInitialized) {
-                                window.mermaid.initialize({
-                                    startOnLoad: false,
-                                    theme: 'neutral',
-                                    themeVariables: {
-                                        'fontSize': '16px'
-                                    }
-                                });
-                                mermaidInitialized = true;
-                            }
-                            
-                            const mermaidElements = contentDisplay.querySelectorAll('.mermaid');
-                            if (mermaidElements.length > 0) {
-                                console.log(`Found ${mermaidElements.length} mermaid diagram(s). Triggering render on visible tab.`);
-                                window.mermaid.run({
-                                    nodes: mermaidElements,
-                                    callback: (id) => {
-                                        console.log(`Rendered diagram: ${id}`);
-                                        const container = document.getElementById(id);
-                                        if (container) {
-                                            const svg = container.querySelector('svg');
-                                            if (svg) {
-                                                svg.style.backgroundColor = 'transparent';
-                                                svg.querySelectorAll('.task').forEach(task => { task.style.fill = '#F3F4F6'; task.style.stroke = '#9CA3AF'; });
-                                                svg.querySelectorAll('.taskText').forEach(text => { text.style.fill = '#1F2937'; text.style.fontWeight = '500'; });
-                                                svg.querySelectorAll('.task.done').forEach(task => { task.style.fill = '#FFFFFF'; task.style.stroke = '#D1D5DB'; });
-                                                svg.querySelectorAll('.doneText').forEach(text => { text.style.fill = '#9CA3AF'; });
-                                                svg.querySelectorAll('.task.active').forEach(task => { task.style.fill = '#FBBF24'; task.style.stroke = '#F59E0B'; });
-                                                svg.querySelectorAll('.activeText').forEach(text => { text.style.fill = '#1F2937'; });
-                                                svg.querySelectorAll('.task.crit').forEach(task => { task.style.fill = '#F87171'; task.style.stroke = '#EF4444'; });
-                                                svg.querySelectorAll('.critText').forEach(text => { text.style.fill = '#FFFFFF'; });
-                                                svg.querySelectorAll('.taskTextOutside, .sectionTitle').forEach(text => { text.style.fill = '#374151'; text.style.fontWeight = '500'; });
-                                                svg.querySelectorAll('.grid .tick text').forEach(text => { text.style.fill = '#6B7280'; });
-                                            }
-                                        }
-                                    }
-                                });
-                                mindmapRendered = true;
-                            }
-                        } catch (err) {
-                            console.error("Error rendering Mermaid diagram on tab click:", err);
-                            const mermaidContainer = contentDisplay.querySelector('.mermaid');
-                            if (mermaidContainer) {
-                                mermaidContainer.innerHTML = `<div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-700"><p class="font-bold">結構圖渲染失敗</p><p>AI生成的圖表語法可能有誤，或發生其他錯誤。</p></div>`;
-                            }
-                        }
-                    }
-                }
+               // Render mermaid in analysis tab using the new centralized function
+               if (tabName === 'analysis' && !mindmapRendered && hasAnalysis) {
+                   renderAllMermaidDiagrams(contentDisplay.querySelector('#analysis-body'));
+                   mindmapRendered = true;
+               }
             });
 
             if (isCompleted) {
@@ -3336,6 +3292,50 @@ ${JSON.stringify(analysisData, null, 2)}
                 }
             } else {
                 startQuizTimer();
+            }
+        }
+
+        async function renderAllMermaidDiagrams(container) {
+            try {
+                // Ensure Mermaid is initialized only once with our theme
+                if (!mermaidInitialized) {
+                    const elegantTheme = {
+                        background: '#FFFFFF', // White background for the chart area
+                        fontFamily: "'GenWanNeoSCjk', 'Noto Sans TC', sans-serif",
+                        fontSize: '16px',
+                        // Node Styles
+                        primaryColor: '#F3F4F6', // Light gray background for nodes
+                        primaryBorderColor: '#D1D5DB', // Slightly darker border
+                        primaryTextColor: '#111827', // Dark text for contrast
+                        // Edge (Line) Styles
+                        lineColor: '#6B7280', // Medium gray for lines
+                        nodeTextColor: '#111827', // Ensure text on nodes is dark
+                    };
+                    window.mermaid.initialize({
+                        startOnLoad: false,
+                        theme: 'base',
+                        themeVariables: elegantTheme
+                    });
+                    mermaidInitialized = true;
+                }
+                
+                const mermaidElements = container.querySelectorAll('.mermaid');
+                if (mermaidElements.length > 0) {
+                     // Use mermaid.run() which is the modern replacement for render
+                    await window.mermaid.run({
+                        nodes: mermaidElements,
+                    });
+                    console.log(`Successfully rendered ${mermaidElements.length} Mermaid diagram(s) in the specified container.`);
+                }
+            } catch (err) {
+                console.error("Error rendering Mermaid diagram:", err);
+                // Gracefully handle failure by showing an error message in place of the diagram
+                container.querySelectorAll('.mermaid').forEach(el => {
+                    // Check if it hasn't been processed to avoid replacing already rendered charts or valid error messages
+                    if (!el.getAttribute('data-processed')) {
+                        el.innerHTML = '<div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-700"><p class="font-bold">圖表渲染失敗</p><p>圖表語法可能有誤。</p></div>';
+                    }
+                });
             }
         }
 
