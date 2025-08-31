@@ -1,556 +1,950 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>課程工具</title>
-    <audio id="countdownSound" src="./countdown.mp3" loop></audio>
-<meta http-equiv="cache-control" content="no-cache">
-<meta http-equiv="pragma" content="no-cache"> 
-<meta http-equiv="expires" content="0"> 
-    <meta charset="utf-8">
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課堂工具 - 倒數計時與抽籤</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f5f5f5;
-      }
-
-      .container {
-        margin: 20px auto;
-        max-width: 800px;
-        text-align: center;
-        background-color: #fff;
-        padding: 20px;
-        box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.1);
-      }
-      .container-button {
-  display: flex;
-  flex-wrap: wrap; /* 讓子元素換行 */
-  justify-content: center;
-  align-items: center;
-	  }
-      h1 {
-        font-size: 36px;
-        font-weight: bold;
-        margin-bottom: 30px;
-        color: #7b5e94;
-      }
-
-      table {
-        margin: 20px auto;
-        border-collapse: collapse;
-        width: 100%;
-		table-layout: fixed;
-      }
-
-      th,
-      td {
-        padding: 8px;
-        text-align: left;
-      }
-
-      th {
-        background-color: #f2f2f2;
-        color: #7A869A;
-        font-weight: normal;
-      }
-
-      tr:nth-child(even) {
-        background-color: #f2f2f2;
-      }
-
-      tr:hover {
-        background-color: #ddd;
-      }
-
-      tr.selected {
-        background-color: #bfbfbf;
-      }
-#scoreboard th:nth-child(1),
-#scoreboard th:nth-child(2) {
-  width: 35%;
-}
-
-#scoreboard th:nth-child(3){
-  width: 20%;
-}
-#scoreboard th:nth-child(4) {
-  width: 10%;
-}
-      input,
-      button {
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 8px;
-        margin-right: 5px;
-        background-color: #fff;
-        color: #7b5e94;
-      }
-
-      input:focus,
-      button:hover {
-        outline: none;
-        border-color: #7b5e94;
-      }
-
-      button {
-        background-color: #7b5e94;
-        color: #fff;
-        border-radius: 4px;
-        border: none;
-        padding: 10px 20px;
-        margin: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-
-      button:hover {
-        background-color: #a68da8;
-        transform: translateY(-2px);
-        box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.1);
-        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-      }
-
-      #timer {
-        font-size: 100px;
-        font-weight: bold;
-        font-family: 'Helvetica Neue', sans-serif;
-        color: #7b5e94;
-        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
-        margin: 20px;
-      }
-	  .score-animation {
-animation: score-increase 0.5s ease-in-out;
-}
-@keyframes score-increase {
-0% {
-font-size: 100%;
-color: default;
-}
-50% {
-font-size: 150%;
-color: #7b5e94;
-}
-100% {
-font-size: 100%;
-color: default;
-}
-}
-    </style>
-
-  </head>
-  <body>
-    <div class="container"><div class="container-button">
-      <button onclick="startTimer(30)">30s</button>
-      <button onclick="startTimer(60)">1m</button>
-      <button onclick="startTimer(120)">2m</button>
-      <button onclick="startTimer(180)">3m</button>
-        <input type="number" id="customMinutes" placeholder="分" style="width:30px">:
-        <input type="number" id="customSeconds" placeholder="秒"  step="30" max="60" min="0" style="width:30px">
-        <button onclick="startCustomTimer()">倒數</button>
-        <button id="pauseBtn" onclick="pauseOrResumeTimer()">暫停</button>
-        <button onclick="resetTimer()">重設</button></div>
-      <h2 id="timer">00:00</h2>
-      <table id="scoreboard">
-        <tr>
-          <th>小組名稱</th>
-          <th>分數</th>
-          <th>加分</th>
-		  <th>刪</th>
-        </tr>
-      </table>
-	        <div class="container-button"><button onclick="addTeam()">+小組</button>
-	          <button onclick="resetScores()">清空</button>
-      <button onclick="addPoints(100)">+100</button>
-      <button onclick="addPoints(500)">+500</button>
-      <button onclick="addPoints(3000)">+3000</button>
-      <button onclick="addPoints(5000)">+5000</button>
-        <button onclick="addCustomPoints()">+</button>
-        <input type="number" id="customPoints" placeholder="分" step="100" style="width:50px"></div>
-<script>
-let timerId;
-let remainingTime;
-let countdownSound = document.getElementById("countdownSound");
-let pauseTime;
-
-function startTimer(time) {
-  // 如果已經有倒數計時器正在運作，則先將它清空
-  if (timerId) {
-    clearInterval(timerId);
-  }
-  // 設定新的倒數計時器
-  remainingTime = time;
-  timerId = setInterval(updateTimer, 1000);
-  countdownSound.play();
-  setTimeout(() => {
-    resetTimer();
-    countdownSound.pause();
-    countdownSound.currentTime = 0;
-  }, remainingTime * 1000);
-}
-
-function startCustomTimer() {
-  const minutesInput = document.getElementById("customMinutes");
-  const secondsInput = document.getElementById("customSeconds");
-  let minutes = minutesInput.value;
-  let seconds = secondsInput.value;
-  if (minutes === "") {
-    minutes = 0;
-  } else if (seconds === "") {
-    seconds = 0;
-  }
-  if (isNaN(minutes) || isNaN(seconds)) {
-    alert("請輸入有效的時間");
-    return;
-  }
-  startTimer(parseInt(minutes) * 60 + parseInt(seconds));
-  minutesInput.value = "";
-  secondsInput.value = "";
-}
-
-function updateTimer() {
-  let minutes = Math.floor(remainingTime / 60);
-  let seconds = remainingTime - minutes * 60;
-  document.getElementById("timer").innerHTML =
-    ("0" + minutes).slice(-2) +
-    ":" +
-    ("0" + seconds).slice(-2);
-  remainingTime--;
-}
-
-function pauseTimer() {
-  clearInterval(timerId);
-}
-
-function resetTimer() {
-  clearInterval(timerId);
-  remainingTime = 0;
-  document.getElementById("timer").innerHTML = "00:00";
-  clearTimeout(pauseTime); // 新增這行代碼
-    countdownSound.pause();
-}
-
-function formatNumber(number) {
-  return number.toString().padStart(2, "0");
-}
-
-var countdown; // 宣告一個全域變數來保存計時器
-
-function startCountdown(minutes) {
-  clearInterval(countdown); // 每次開始計時前先清除上一次計時器
-  var display = document.getElementById("countdownTimer");
-  var endTime = new Date().getTime() + minutes * 60 * 1000; // 計算結束時間
-  display.innerText = formatTime(minutes * 60); // 顯示初始倒數時間
-
-  countdown = setInterval(function() {
-    var now = new Date().getTime();
-    var distance = endTime - now;
-    var remainingTime = Math.round(distance / 1000); // 轉換為剩餘秒數
-    display.innerText = formatTime(remainingTime);
-
-  }, 1000);
-}
-
-function formatTime(seconds) {
-  var mins = Math.floor(seconds / 60);
-  var secs = seconds % 60;
-  if (mins < 10) mins = "0" + mins;
-  if (secs < 10) secs = "0" + secs;
-  return mins + ":" + secs;
-}
-let isPaused = false;
-
-function pauseOrResumeTimer() {
-  const pauseBtn = document.getElementById("pauseBtn");
-  if (pauseBtn.innerHTML === "暫停") {
-    clearInterval(timerId);
-    pauseTime = remainingTime;
-    pauseBtn.innerHTML = "繼續";
-    countdownSound.pause();
-  } else {
-    remainingTime = pauseTime;
-    timerId = setInterval(updateTimer, 1000);
-    pauseBtn.innerHTML = "暫停";
-    countdownSound.play();
-  }
-}
-
-</script>
-    <script>
-      
-var teamNumbers = [];
-function addTeam() {
-  var table = document.getElementById("scoreboard");
-  var teamNumber = teamNumbers.length + 1;
-  teamNumbers.push(teamNumber);
-
-  var row = table.insertRow(-1);
-  var nameCell = row.insertCell(0);
-  var scoreCell = row.insertCell(1);
-  var addPointsButton = row.insertCell(2);
-  var deleteCell = row.insertCell(3);
-
-  nameCell.innerHTML = "小組 " + teamNumber;
-  nameCell.ondblclick = function() {
-    editName(nameCell, teamNumber);
-  };
-  // 讀取之前的分數
-  var storedScore = localStorage.getItem("team_" + teamNumber);
-  if (storedScore !== null) {
-    scoreCell.innerHTML = storedScore;
-  } else {
-    scoreCell.innerHTML = "0";
-  }
-  deleteCell.innerHTML = "✖";
-  deleteCell.classList.add("deleteIcon");
-  deleteCell.onclick = function() {
-    deleteTeam(row, teamNumber);
-  };
-  row.onclick = function() {
-    selectRow(row);
-  };
-  scoreCell.ondblclick = function() {
-    editScore(scoreCell);
-  };
-  // 讀取之前的組別名稱
-  var storedName = localStorage.getItem("teamName_" + teamNumber);
-  if (storedName !== null) {
-    nameCell.innerHTML = storedName;
-  } else {
-    nameCell.innerHTML = "小組 " + teamNumber;
-  }
-  
-  addPointsButton.innerHTML = '<button onclick="addPointsOnClick(' + teamNumber + ',1000)">+</button>';
-}
-
-function addPointsOnClick(teamNumber, points) {
-  var table = document.getElementById("scoreboard");
-  var row = table.rows[teamNumber];
-  var scoreCell = row.cells[1];
-  var currentScore = parseInt(scoreCell.innerHTML);
-  scoreCell.innerHTML = currentScore + points;
-  // 新增分數動畫
-  scoreCell.classList.add("score-animation");
-  setTimeout(function() {
-    scoreCell.classList.remove("score-animation");
-  }, 500);
-  // 將新的分數存入本地儲存
-  localStorage.setItem("team_" + teamNumber, scoreCell.innerHTML);
-}
-
-function editName(cell, teamNumber) {
-  var currentName = cell.innerHTML;
-  cell.innerHTML = "<input type='text' value='" + currentName + "' onblur='updateName(this, " + teamNumber + ")' />";
-  cell.firstChild.focus();
-}
-
-function updateName(input, teamNumber) {
-  var cell = input.parentElement;
-  cell.innerHTML = input.value;
-  // 將新的組別名稱存入本地儲存
-  localStorage.setItem("teamName_" + teamNumber, input.value);
-}
-
-function deleteTeam(row, teamNumber) {
-  var table = document.getElementById("scoreboard");
-  var index = teamNumbers.indexOf(teamNumber);
-  if (index !== -1) {
-    // 刪除時一併刪除本地儲存
-    localStorage.removeItem("team_" + teamNumber);
-    table.deleteRow(row.rowIndex);
-    teamNumbers.splice(index, 1);
-  }
-}
-
-      
-      function addPoints(points) {
-        var table = document.getElementById("scoreboard");
-        var selectedRow = table.getElementsByClassName("selected")[0];
-        if (selectedRow) {
-          var scoreCell = selectedRow.cells[1];
-          var currentScore = parseInt(scoreCell.innerHTML);
-          scoreCell.innerHTML = currentScore + points;
-// 新增分數動畫
-scoreCell.classList.add("score-animation");
-setTimeout(function() {
-scoreCell.classList.remove("score-animation");
-}, 500);
-          // 將新的分數存入本地儲存
-          var teamNumber = teamNumbers[selectedRow.rowIndex - 1];
-          localStorage.setItem("team_" + teamNumber, scoreCell.innerHTML);
-
-        } else {
-          alert("請選擇一個小組");
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --primary-color: #9d8ec7;
+            --primary-light: #d4cce3;
+            --primary-dark: #6c5b9c;
+            --gray-light: #f5f5f8;
+            --gray-medium: #e2e2e7;
+            --gray-dark: #6b7280;
         }
-      }
-      
-   function addCustomPoints() {
-var table = document.getElementById("scoreboard");
-var selectedRow = table.getElementsByClassName("selected")[0];
-var customPoints = parseInt(document.getElementById("customPoints").value);
-if (selectedRow && customPoints) {
-var scoreCell = selectedRow.cells[1];
-var currentScore = parseInt(scoreCell.innerHTML);
-scoreCell.innerHTML = currentScore + customPoints;
-} else {
-alert("請選擇一個小組並輸入分數");
-}
-}
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--gray-light);
+        }
+        
+        .tab-active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .timer-btn {
+            transition: all 0.2s;
+            border: 1px solid var(--primary-light);
+        }
+        
+        .timer-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: fall 3s ease-in infinite;
+        }
+        
+        @keyframes fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(500px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .winner-animation {
+            animation: pop 0.5s ease-out;
+        }
+        
+        @keyframes pop {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        
+        .btn {
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .modal {
+            backdrop-filter: blur(5px);
+        }
+        
+        .timer-active {
+            background-color: var(--primary-dark);
+            color: white;
+        }
+        
+        .toast {
+            animation: slideIn 0.3s ease-out forwards, fadeOut 0.5s ease-in 2s forwards;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 音訊元素 -->
+    <audio id="countdown-audio" src="https://sshorng.github.io/web/countdown.mp3" preload="auto"></audio>
 
-function selectRow(row) {
-var rows = document.getElementsByTagName("tr");
-for (var i = 1; i < rows.length; i++) {
-rows[i].classList.remove("selected");
-}
-row.classList.add("selected");
-}
+    <div class="min-h-screen bg-gradient-to-br from-[#f8f6ff] to-[#f0f0f5]">
+        <div class="container mx-auto px-4 py-8 max-w-4xl">
+            <h1 class="text-3xl font-bold text-center text-[#6c5b9c] mb-8">課堂工具</h1>
+            
+            <!-- Toast Notification -->
+            <div id="toast" class="fixed top-4 right-4 bg-[#6c5b9c] text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden">
+                <span id="toast-message"></span>
+            </div>
+            
+            <!-- Tab Navigation -->
+            <div class="flex justify-center mb-8">
+                <button id="timer-tab" class="tab-active px-6 py-3 rounded-l-lg font-medium text-lg focus:outline-none transition duration-300">
+                    ⏱️ 倒數計時
+                </button>
+                <button id="picker-tab" class="bg-[#e2e2e7] px-6 py-3 rounded-r-lg font-medium text-lg text-[#6b7280] focus:outline-none transition duration-300">
+                    🎯 抽籤工具
+                </button>
+            </div>
+            
+            <!-- Timer Section -->
+            <div id="timer-section" class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <div class="flex flex-col items-center">
+                    <div class="relative w-64 h-64 mb-8">
+                        <svg class="w-full h-full" viewBox="0 0 100 100">
+                            <circle class="text-[#e2e2e7]" stroke-width="5" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+                            <circle id="timer-progress" class="progress-ring text-[#9d8ec7]" stroke-width="5" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" stroke-dasharray="283" stroke-dashoffset="0" />
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span id="timer-display" class="text-5xl font-bold text-[#6c5b9c]">00:00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-3 md:grid-cols-6 mb-8 w-full">
+                        <button data-time="30" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                            30 秒
+                        </button>
+                        <button data-time="60" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                            1 分鐘
+                        </button>
+                        <button data-time="120" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                            2 分鐘
+                        </button>
+                        <button data-time="180" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                            3 分鐘
+                        </button>
+                        <button data-time="300" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                            5 分鐘
+                        </button>
+                        <button id="custom-time-btn" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                            自訂
+                        </button>
+                    </div>
+                    
+                    <div class="flex space-x-4">
+                        <button id="pause-btn" class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-3 px-6 rounded-lg shadow transition duration-200" disabled>
+                            暫停
+                        </button>
+                        <button id="reset-btn" class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-3 px-6 rounded-lg shadow transition duration-200" disabled>
+                            重置
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Name Picker Section -->
+            <div id="picker-section" class="bg-white rounded-xl shadow-lg p-8 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="md:border-r md:pr-6">
+                        <h2 class="text-xl font-bold text-[#6c5b9c] mb-4">班級管理</h2>
+                        
+                        <div class="mb-6">
+                            <label class="block text-[#6b7280] mb-2">選擇班級</label>
+                            <div class="flex mb-2">
+                                <select id="class-select" class="flex-grow bg-[#f5f5f8] border border-[#e2e2e7] rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]">
+                                    <option value="class1">班級 1</option>
+                                </select>
+                                <button id="add-class-btn" class="bg-[#9d8ec7] text-white px-4 py-2 rounded-r-lg hover:bg-[#8a7bb4]">
+                                    新增班級
+                                </button>
+                            </div>
+                            <div class="flex justify-between">
+                                <button id="rename-class-btn" class="text-sm text-[#9d8ec7] hover:text-[#6c5b9c]">
+                                    重新命名班級
+                                </button>
+                                <button id="delete-class-btn" class="text-sm text-[#dc2626] hover:text-[#b91c1c]">
+                                    刪除班級
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label for="name-input" class="block text-[#6b7280] mb-2">輸入名單 (每行一個名字)</label>
+                            <textarea id="name-input" class="w-full h-40 bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" placeholder="王小明&#10;李小華&#10;張小美"></textarea>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <button id="save-names-btn" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                                儲存名單
+                            </button>
+                            <button id="clear-names-btn" class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-2 px-4 rounded-lg">
+                                清空名單
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h2 class="text-xl font-bold text-[#6c5b9c] mb-4">抽籤</h2>
+                        
+                        <div id="confetti-container" class="relative w-full h-48 bg-gradient-to-r from-[#f0ebff] to-[#f5f5f8] rounded-lg flex items-center justify-center mb-6 overflow-hidden border border-[#e2e2e7]">
+                            <div id="winner-display" class="text-4xl font-bold text-[#6c5b9c] text-center px-4 z-10">
+                                準備抽籤
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-center space-x-4 mb-6">
+                            <button id="pick-btn" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-bold py-3 px-6 rounded-lg shadow transition duration-200">
+                                抽一位
+                            </button>
+                            <button id="pick-multiple-btn" class="btn bg-[#b3a8cc] hover:bg-[#a395c0] text-white font-bold py-3 px-6 rounded-lg shadow transition duration-200">
+                                抽多位
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-medium text-[#6b7280]">已抽出名單</h3>
+                                <button id="reset-picked-btn" class="text-sm text-[#9d8ec7] hover:text-[#6c5b9c]">
+                                    重置已抽出名單
+                                </button>
+                            </div>
+                            <div id="picked-list" class="bg-[#f5f5f8] rounded-lg p-4 min-h-[100px] max-h-[200px] overflow-y-auto border border-[#e2e2e7]">
+                                <!-- Picked names will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-function editScore(cell) {
-var currentScore = cell.innerHTML;
-cell.innerHTML = "<input type='number' step='1000' value='" + currentScore + "' onblur='updateScore(this)' />";
-cell.firstChild.focus();
-}
-function updateScore(input) {
-  var cell = input.parentElement;
-  cell.innerHTML = input.value;
-  var teamNumber = teamNumbers[cell.parentElement.rowIndex - 1];
-  localStorage.setItem("team_" + teamNumber, input.value);
-}
+    <!-- Custom Time Modal -->
+    <div id="custom-time-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+        <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
+            <h3 class="text-xl font-bold text-[#6c5b9c] mb-4">自訂時間</h3>
+            <div class="mb-4">
+                <label for="custom-minutes" class="block text-[#6b7280] mb-2">分鐘</label>
+                <input type="number" id="custom-minutes" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" min="0" max="60" value="0">
+            </div>
+            <div class="mb-6">
+                <label for="custom-seconds" class="block text-[#6b7280] mb-2">秒數</label>
+                <input type="number" id="custom-seconds" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" min="0" max="59" value="0">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button id="cancel-custom-time" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                    取消
+                </button>
+                <button id="confirm-custom-time" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                    確定
+                </button>
+            </div>
+        </div>
+    </div>
 
+    <!-- Multiple Pick Modal -->
+    <div id="multiple-pick-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+        <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
+            <h3 class="text-xl font-bold text-[#6c5b9c] mb-4">抽多位</h3>
+            <div class="mb-6">
+                <label for="pick-count" class="block text-[#6b7280] mb-2">抽出人數</label>
+                <input type="number" id="pick-count" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" min="1" value="3">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button id="cancel-multiple-pick" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                    取消
+                </button>
+                <button id="confirm-multiple-pick" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                    確定
+                </button>
+            </div>
+        </div>
+    </div>
 
-function resetScores() {
-  if (confirm("確定要把分數歸零並恢復名稱為預設嗎？")) {
-    var table = document.getElementById("scoreboard");
-    for (var i = 1; i < table.rows.length; i++) {
-      var row = table.rows[i];
-      var nameCell = row.cells[0];
-      var scoreCell = row.cells[1];
-      scoreCell.innerHTML = "0";
-      nameCell.innerHTML = "小組 " + teamNumbers[i - 1];
-      var teamNumber = teamNumbers[i - 1];
-      localStorage.setItem("teamName_" + teamNumber, nameCell.innerHTML);
-      localStorage.setItem("team_" + teamNumber, scoreCell.innerHTML);
-    }
-  }
-}
+    <!-- Add Class Modal -->
+    <div id="add-class-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+        <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
+            <h3 class="text-xl font-bold text-[#6c5b9c] mb-4">新增班級</h3>
+            <div class="mb-6">
+                <label for="class-name" class="block text-[#6b7280] mb-2">班級名稱</label>
+                <input type="text" id="class-name" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" placeholder="輸入班級名稱">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button id="cancel-add-class" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                    取消
+                </button>
+                <button id="confirm-add-class" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                    確定
+                </button>
+            </div>
+        </div>
+    </div>
 
-// 記錄當前排序方式，默認為升序
-var sortOrder = {
-  name: "asc",
-  score: "asc"
-};
+    <!-- Rename Class Modal -->
+    <div id="rename-class-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+        <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
+            <h3 class="text-xl font-bold text-[#6c5b9c] mb-4">重新命名班級</h3>
+            <div class="mb-6">
+                <label for="new-class-name" class="block text-[#6b7280] mb-2">新班級名稱</label>
+                <input type="text" id="new-class-name" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" placeholder="輸入新班級名稱">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button id="cancel-rename-class" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                    取消
+                </button>
+                <button id="confirm-rename-class" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                    確定
+                </button>
+            </div>
+        </div>
+    </div>
 
-// 監聽小組名稱和分數的點擊事件
-document.querySelector("#scoreboard th:nth-child(1)").addEventListener("click", sortTable.bind(this, 0));
-document.querySelector("#scoreboard th:nth-child(2)").addEventListener("click", sortTable.bind(this, 1));
+    <!-- Delete Class Confirmation Modal -->
+    <div id="delete-class-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+        <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
+            <h3 class="text-xl font-bold text-[#dc2626] mb-4">刪除班級</h3>
+            <p class="mb-6 text-[#6b7280]">確定要刪除 <span id="delete-class-name" class="font-medium"></span> 嗎？此操作無法復原。</p>
+            <div class="flex justify-end space-x-2">
+                <button id="cancel-delete-class" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                    取消
+                </button>
+                <button id="confirm-delete-class" class="btn bg-[#dc2626] hover:bg-[#b91c1c] text-white font-medium py-2 px-4 rounded-lg">
+                    刪除
+                </button>
+            </div>
+        </div>
+    </div>
 
-function sortTable(columnIndex) {
-  var rows = Array.from(document.querySelectorAll("#scoreboard tr")).slice(1);
-  var sortType = columnIndex === 0 ? "name" : "score";
-  var sortDirection = sortOrder[sortType] === "asc" ? 1 : -1;
-  rows.sort(function(a, b) {
-    var aValue = a.cells[columnIndex].textContent;
-    var bValue = b.cells[columnIndex].textContent;
-    if (sortType === "score") {
-      aValue = parseInt(aValue);
-      bValue = parseInt(bValue);
-    }
-    if (aValue < bValue) {
-      return -1 * sortDirection;
-    } else if (aValue > bValue) {
-      return 1 * sortDirection;
-    } else {
-      return 0;
-    }
-  });
-  // 重新排列行
-  rows.forEach(function(row) {
-    document.querySelector("#scoreboard tbody").appendChild(row);
-  });
-  // 更新排序方式
-  sortOrder[sortType] = sortOrder[sortType] === "asc" ? "desc" : "asc";
-}
-// 預設添加兩個小組
-window.onload = function() {
-  for (var i = 1; i <= 6; i++) {
-    addTeam();
-  }
-};
-</script>
-<br />
-<details>
-  <summary>抽籤</summary>
-  <div>
-    <textarea id="input-names" rows="5" cols="30" placeholder="抽籤名單"></textarea>
-   <select id="input-number">
-      <option value="1">抽1個</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-      <option value="7">7</option>
-      <option value="8">8</option>
-      <option value="9">9</option>
-      <option value="10">10</option>
-      <option value="11">11</option>
-      <option value="12">12</option>
-      <option value="13">13</option>
-      <option value="14">14</option>
-      <option value="15">15</option>
-      <option value="16">16</option>
-      <option value="17">17</option>
-      <option value="18">18</option>
-      <option value="19">19</option>
-      <option value="20">20</option>
-    </select>
+    <script>
+        // Timer functionality
+        let timerInterval;
+        let totalSeconds = 0;
+        let remainingSeconds = 0;
+        let isPaused = false;
+        let activeTimerBtn = null;
+        
+        const timerDisplay = document.getElementById('timer-display');
+        const timerProgress = document.getElementById('timer-progress');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const customTimeBtn = document.getElementById('custom-time-btn');
+        const customTimeModal = document.getElementById('custom-time-modal');
+        const cancelCustomTime = document.getElementById('cancel-custom-time');
+        const confirmCustomTime = document.getElementById('confirm-custom-time');
+        const customMinutes = document.getElementById('custom-minutes');
+        const customSeconds = document.getElementById('custom-seconds');
+        const countdownAudio = document.getElementById('countdown-audio'); // ** NEW **
+        
+        // Name picker functionality
+        let classes = {
+            class1: {
+                name: '班級 1',
+                students: [],
+                picked: []
+            }
+        };
+        
+        let currentClass = 'class1';
+        
+        const classSelect = document.getElementById('class-select');
+        const nameInput = document.getElementById('name-input');
+        const saveNamesBtn = document.getElementById('save-names-btn');
+        const clearNamesBtn = document.getElementById('clear-names-btn');
+        const pickBtn = document.getElementById('pick-btn');
+        const pickMultipleBtn = document.getElementById('pick-multiple-btn');
+        const winnerDisplay = document.getElementById('winner-display');
+        const pickedList = document.getElementById('picked-list');
+        const resetPickedBtn = document.getElementById('reset-picked-btn');
+        const multiplePickModal = document.getElementById('multiple-pick-modal');
+        const pickCount = document.getElementById('pick-count');
+        const cancelMultiplePick = document.getElementById('cancel-multiple-pick');
+        const confirmMultiplePick = document.getElementById('confirm-multiple-pick');
+        const addClassBtn = document.getElementById('add-class-btn');
+        const addClassModal = document.getElementById('add-class-modal');
+        const className = document.getElementById('class-name');
+        const cancelAddClass = document.getElementById('cancel-add-class');
+        const confirmAddClass = document.getElementById('confirm-add-class');
+        const renameClassBtn = document.getElementById('rename-class-btn');
+        const renameClassModal = document.getElementById('rename-class-modal');
+        const newClassName = document.getElementById('new-class-name');
+        const cancelRenameClass = document.getElementById('cancel-rename-class');
+        const confirmRenameClass = document.getElementById('confirm-rename-class');
+        const deleteClassBtn = document.getElementById('delete-class-btn');
+        const deleteClassModal = document.getElementById('delete-class-modal');
+        const deleteClassName = document.getElementById('delete-class-name');
+        const cancelDeleteClass = document.getElementById('cancel-delete-class');
+        const confirmDeleteClass = document.getElementById('confirm-delete-class');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        
+        // Tab functionality
+        const timerTab = document.getElementById('timer-tab');
+        const pickerTab = document.getElementById('picker-tab');
+        const timerSection = document.getElementById('timer-section');
+        const pickerSection = document.getElementById('picker-section');
+        
+        // Initialize
+        function init() {
+            loadClassesFromStorage();
+            updateClassSelect();
+            updateNameInput();
+            updatePickedList();
+            
+            // Set up timer buttons
+            document.querySelectorAll('.timer-btn').forEach(btn => {
+                if (btn.id !== 'custom-time-btn') {
+                    btn.addEventListener('click', () => {
+                        const seconds = parseInt(btn.dataset.time);
+                        setTimer(seconds);
+                        startTimer();
+                        
+                        // Highlight active button
+                        if (activeTimerBtn) {
+                            activeTimerBtn.classList.remove('timer-active');
+                        }
+                        btn.classList.add('timer-active');
+                        activeTimerBtn = btn;
+                    });
+                }
+            });
+        }
+        
+        // Toast notification
+        function showToast(message, duration = 2500) {
+            toastMessage.textContent = message;
+            toast.classList.remove('hidden');
+            toast.classList.add('toast');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('toast');
+            }, duration);
+        }
+        
+        // Timer functions
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function setTimer(seconds) {
+            clearInterval(timerInterval);
+            totalSeconds = seconds;
+            remainingSeconds = seconds;
+            timerDisplay.textContent = formatTime(remainingSeconds);
+            updateTimerProgress();
+        }
+        
+        function updateTimerProgress() {
+            const circumference = 2 * Math.PI * 45;
+            const offset = circumference - (remainingSeconds / totalSeconds) * circumference;
+            timerProgress.style.strokeDasharray = `${circumference} ${circumference}`;
+            timerProgress.style.strokeDashoffset = offset;
+        }
+        
+        // ** MODIFIED startTimer function **
+        function startTimer(isResuming = false) {
+            if (remainingSeconds <= 0) return;
+            
+            if (!isResuming) {
+                countdownAudio.currentTime = 0;
+            }
+            countdownAudio.play();
 
-  <button onclick="drawLots()">抽籤</button>  </div>
-</details>
+            clearInterval(timerInterval);
+            isPaused = false;
+            
+            pauseBtn.disabled = false;
+            resetBtn.disabled = false;
+            
+            pauseBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            resetBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            timerInterval = setInterval(() => {
+                if (remainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    timerComplete();
+                    return;
+                }
+                
+                remainingSeconds--;
+                timerDisplay.textContent = formatTime(remainingSeconds);
+                updateTimerProgress();
+            }, 1000);
+        }
+        
+        // ** MODIFIED pauseTimer function **
+        function pauseTimer() {
+            if (isPaused) {
+                // Resume
+                startTimer(true); // Pass true to indicate it's a resume
+                pauseBtn.textContent = '暫停';
+            } else {
+                // Pause
+                countdownAudio.pause();
+                clearInterval(timerInterval);
+                pauseBtn.textContent = '繼續';
+                isPaused = true;
+            }
+        }
+        
+        // ** MODIFIED resetTimer function **
+        function resetTimer() {
+            countdownAudio.pause();
+            countdownAudio.currentTime = 0;
 
-<script>
-  // 檢查 Web Storage 是否可用
-  const storage = window.localStorage || window.sessionStorage;
-  if (!storage) {
-    alert("瀏覽器不支持 Web Storage！");
-  }
+            clearInterval(timerInterval);
+            remainingSeconds = totalSeconds;
+            timerDisplay.textContent = formatTime(remainingSeconds);
+            updateTimerProgress();
+            
+            pauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            pauseBtn.textContent = '暫停';
+            isPaused = false;
+            
+            pauseBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            resetBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // Remove active state from button
+            if (activeTimerBtn) {
+                activeTimerBtn.classList.remove('timer-active');
+                activeTimerBtn = null;
+            }
+        }
+        
+        // ** MODIFIED timerComplete function **
+        function timerComplete() {
+            countdownAudio.pause();
+            countdownAudio.currentTime = 0;
 
-  // 讀取之前存儲的學生名單
-  const names = storage.getItem("names");
-  if (names) {
-    document.getElementById("input-names").value = names;
-  }
-
-  function drawLots() {
-    // 取得 textarea 中的學生名單
-    const textarea = document.getElementById("input-names");
-    const students = textarea.value.split("\n").filter((name) => name.trim() !== "");
-
-    // 取得要抽出的人數
-    const number = document.getElementById("input-number").value;
-
-    // 檢查人數是否合法
-    if (number < 1 || number > students.length) {
-      alert("抽取人數不合法！");
-      return;
-    }
-
-    // 亂數抽出指定數量的學生名單
-    const selected = [];
-    while (selected.length < number) {
-      const index = Math.floor(Math.random() * students.length);
-      const name = students[index];
-      if (!selected.includes(name)) {
-        selected.push(name);
-      }
-    }
-
-    // 在畫面上顯示抽出的結果
-    const result = selected.join("、");
-    alert(`抽出的學生為：${result}`);
-
-    // 將學生名單存儲到 Web Storage 中
-    storage.setItem("names", textarea.value);
-  }
-</script>
-  </body>
+            timerDisplay.textContent = "時間到!";
+            pauseBtn.disabled = true;
+            pauseBtn.textContent = '暫停';
+            isPaused = false;
+            
+            pauseBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // Visual notification
+            timerDisplay.classList.add('text-[#a94442]');
+            setTimeout(() => {
+                timerDisplay.classList.remove('text-[#a94442]');
+            }, 2000);
+            
+            // Remove active state from button
+            if (activeTimerBtn) {
+                activeTimerBtn.classList.remove('timer-active');
+                activeTimerBtn = null;
+            }
+        }
+        
+        // Name picker functions
+        function loadClassesFromStorage() {
+            const savedClasses = localStorage.getItem('classroomTool_classes');
+            if (savedClasses) {
+                classes = JSON.parse(savedClasses);
+                
+                // Make sure we have at least one class
+                if (Object.keys(classes).length === 0) {
+                    classes = {
+                        class1: {
+                            name: '班級 1',
+                            students: [],
+                            picked: []
+                        }
+                    };
+                }
+                
+                // Set current class to the first one if the current one doesn't exist
+                if (!classes[currentClass]) {
+                    currentClass = Object.keys(classes)[0];
+                }
+            }
+        }
+        
+        function saveClassesToStorage() {
+            localStorage.setItem('classroomTool_classes', JSON.stringify(classes));
+        }
+        
+        function updateClassSelect() {
+            classSelect.innerHTML = '';
+            Object.keys(classes).forEach(classId => {
+                const option = document.createElement('option');
+                option.value = classId;
+                option.textContent = classes[classId].name;
+                classSelect.appendChild(option);
+            });
+            classSelect.value = currentClass;
+        }
+        
+        function updateNameInput() {
+            if (classes[currentClass]) {
+                nameInput.value = classes[currentClass].students.join('\n');
+            }
+        }
+        
+        function updatePickedList() {
+            pickedList.innerHTML = '';
+            if (classes[currentClass]) {
+                classes[currentClass].picked.forEach(name => {
+                    const div = document.createElement('div');
+                    div.className = 'py-1 px-2 mb-1 bg-white rounded border border-[#e2e2e7]';
+                    div.textContent = name;
+                    pickedList.appendChild(div);
+                });
+            }
+        }
+        
+        function pickName() {
+            const availableStudents = classes[currentClass].students.filter(
+                student => !classes[currentClass].picked.includes(student)
+            );
+            
+            if (availableStudents.length === 0) {
+                winnerDisplay.textContent = '名單已抽完';
+                return null;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableStudents.length);
+            const winner = availableStudents[randomIndex];
+            
+            classes[currentClass].picked.push(winner);
+            saveClassesToStorage();
+            
+            return winner;
+        }
+        
+        function createConfetti() {
+            const confettiContainer = document.getElementById('confetti-container');
+            
+            // Clear previous confetti but keep the winner display
+            const winnerDisplayContent = winnerDisplay.textContent;
+            confettiContainer.innerHTML = '';
+            
+            // Re-add the winner display
+            confettiContainer.appendChild(winnerDisplay);
+            
+            const colors = ['#9d8ec7', '#b3a8cc', '#c4b5fd', '#ddd6fe', '#f5f3ff'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = `${Math.random() * 2 + 1}s`;
+                confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+                confettiContainer.appendChild(confetti);
+            }
+        }
+        
+        // Event listeners
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        
+        customTimeBtn.addEventListener('click', () => {
+            customTimeModal.classList.remove('hidden');
+        });
+        
+        cancelCustomTime.addEventListener('click', () => {
+            customTimeModal.classList.add('hidden');
+        });
+        
+        confirmCustomTime.addEventListener('click', () => {
+            const minutes = parseInt(customMinutes.value) || 0;
+            const seconds = parseInt(customSeconds.value) || 0;
+            const totalSeconds = minutes * 60 + seconds;
+            
+            if (totalSeconds > 0) {
+                setTimer(totalSeconds);
+                startTimer();
+                customTimeModal.classList.add('hidden');
+                
+                // Remove active state from any previous button
+                if (activeTimerBtn) {
+                    activeTimerBtn.classList.remove('timer-active');
+                }
+                activeTimerBtn = null;
+            }
+        });
+        
+        timerTab.addEventListener('click', () => {
+            timerTab.classList.add('tab-active');
+            timerTab.classList.remove('bg-[#e2e2e7]', 'text-[#6b7280]');
+            
+            pickerTab.classList.remove('tab-active');
+            pickerTab.classList.add('bg-[#e2e2e7]', 'text-[#6b7280]');
+            
+            timerSection.classList.remove('hidden');
+            pickerSection.classList.add('hidden');
+        });
+        
+        pickerTab.addEventListener('click', () => {
+            pickerTab.classList.add('tab-active');
+            pickerTab.classList.remove('bg-[#e2e2e7]', 'text-[#6b7280]');
+            
+            timerTab.classList.remove('tab-active');
+            timerTab.classList.add('bg-[#e2e2e7]', 'text-[#6b7280]');
+            
+            pickerSection.classList.remove('hidden');
+            timerSection.classList.add('hidden');
+        });
+        
+        classSelect.addEventListener('change', () => {
+            currentClass = classSelect.value;
+            updateNameInput();
+            updatePickedList();
+            winnerDisplay.textContent = '準備抽籤';
+        });
+        
+        saveNamesBtn.addEventListener('click', () => {
+            const names = nameInput.value.split('\n')
+                .map(name => name.trim())
+                .filter(name => name !== '');
+            
+            if (classes[currentClass]) {
+                classes[currentClass].students = names;
+                saveClassesToStorage();
+                showToast('名單已儲存！');
+            } else {
+                showToast('錯誤：找不到目前班級');
+            }
+        });
+        
+        clearNamesBtn.addEventListener('click', () => {
+            nameInput.value = '';
+        });
+        
+        pickBtn.addEventListener('click', () => {
+            if (!classes[currentClass] || classes[currentClass].students.length === 0) {
+                showToast('請先新增名單！');
+                return;
+            }
+            
+            const winner = pickName();
+            if (winner) {
+                // First update the display text
+                winnerDisplay.textContent = winner;
+                
+                // Then create confetti (which will preserve the winner display)
+                createConfetti();
+                
+                // Apply animation to the winner display
+                winnerDisplay.classList.add('winner-animation');
+                setTimeout(() => {
+                    winnerDisplay.classList.remove('winner-animation');
+                }, 500);
+                
+                updatePickedList();
+            }
+        });
+        
+        pickMultipleBtn.addEventListener('click', () => {
+            if (!classes[currentClass] || classes[currentClass].students.length === 0) {
+                showToast('請先新增名單！');
+                return;
+            }
+            
+            multiplePickModal.classList.remove('hidden');
+        });
+        
+        cancelMultiplePick.addEventListener('click', () => {
+            multiplePickModal.classList.add('hidden');
+        });
+        
+        confirmMultiplePick.addEventListener('click', () => {
+            const count = parseInt(pickCount.value) || 1;
+            multiplePickModal.classList.add('hidden');
+            
+            let winners = [];
+            for (let i = 0; i < count; i++) {
+                const winner = pickName();
+                if (winner) {
+                    winners.push(winner);
+                } else {
+                    break;
+                }
+            }
+            
+            if (winners.length > 0) {
+                // First update the display text
+                winnerDisplay.textContent = winners.join('、');
+                
+                // Then create confetti (which will preserve the winner display)
+                createConfetti();
+                
+                // Apply animation to the winner display
+                winnerDisplay.classList.add('winner-animation');
+                setTimeout(() => {
+                    winnerDisplay.classList.remove('winner-animation');
+                }, 500);
+                
+                updatePickedList();
+            }
+        });
+        
+        resetPickedBtn.addEventListener('click', () => {
+            if (classes[currentClass]) {
+                classes[currentClass].picked = [];
+                saveClassesToStorage();
+                updatePickedList();
+                winnerDisplay.textContent = '準備抽籤';
+                showToast('已重置抽籤名單');
+            }
+        });
+        
+        addClassBtn.addEventListener('click', () => {
+            addClassModal.classList.remove('hidden');
+        });
+        
+        cancelAddClass.addEventListener('click', () => {
+            addClassModal.classList.add('hidden');
+        });
+        
+        confirmAddClass.addEventListener('click', () => {
+            const name = className.value.trim();
+            if (name) {
+                const classId = 'class' + Date.now();
+                classes[classId] = {
+                    name: name,
+                    students: [],
+                    picked: []
+                };
+                
+                currentClass = classId;
+                saveClassesToStorage();
+                updateClassSelect();
+                updateNameInput();
+                updatePickedList();
+                
+                addClassModal.classList.add('hidden');
+                className.value = '';
+                
+                showToast(`已新增班級：${name}`);
+            }
+        });
+        
+        renameClassBtn.addEventListener('click', () => {
+            if (classes[currentClass]) {
+                newClassName.value = classes[currentClass].name;
+                renameClassModal.classList.remove('hidden');
+            }
+        });
+        
+        cancelRenameClass.addEventListener('click', () => {
+            renameClassModal.classList.add('hidden');
+        });
+        
+        confirmRenameClass.addEventListener('click', () => {
+            const name = newClassName.value.trim();
+            if (name && classes[currentClass]) {
+                const oldName = classes[currentClass].name;
+                classes[currentClass].name = name;
+                saveClassesToStorage();
+                updateClassSelect();
+                
+                renameClassModal.classList.add('hidden');
+                
+                showToast(`已將班級「${oldName}」重新命名為「${name}」`);
+            }
+        });
+        
+        deleteClassBtn.addEventListener('click', () => {
+            if (Object.keys(classes).length <= 1) {
+                showToast('無法刪除唯一的班級');
+                return;
+            }
+            
+            if (classes[currentClass]) {
+                deleteClassName.textContent = classes[currentClass].name;
+                deleteClassModal.classList.remove('hidden');
+            }
+        });
+        
+        cancelDeleteClass.addEventListener('click', () => {
+            deleteClassModal.classList.add('hidden');
+        });
+        
+        confirmDeleteClass.addEventListener('click', () => {
+            const deletedClassName = classes[currentClass].name;
+            
+            delete classes[currentClass];
+            currentClass = Object.keys(classes)[0];
+            
+            saveClassesToStorage();
+            updateClassSelect();
+            updateNameInput();
+            updatePickedList();
+            
+            deleteClassModal.classList.add('hidden');
+            
+            showToast(`已刪除班級：${deletedClassName}`);
+        });
+        
+        // Close modals when clicking outside
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                customTimeModal.classList.add('hidden');
+                multiplePickModal.classList.add('hidden');
+                addClassModal.classList.add('hidden');
+                renameClassModal.classList.add('hidden');
+                deleteClassModal.classList.add('hidden');
+            }
+        });
+        
+        // Initialize the app
+        init();
+    </script>
+</body>
 </html>
