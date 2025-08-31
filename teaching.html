@@ -124,6 +124,16 @@
                 opacity: 0;
             }
         }
+        
+        /* Hide number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
     </style>
 </head>
 <body>
@@ -274,21 +284,34 @@
 
     <!-- Custom Time Modal -->
     <div id="custom-time-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
-        <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
-            <h3 class="text-xl font-bold text-[#6c5b9c] mb-4">自訂時間</h3>
-            <div class="mb-4">
-                <label for="custom-minutes" class="block text-[#6b7280] mb-2">分鐘</label>
-                <input type="number" id="custom-minutes" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" min="0" max="60" value="0">
-            </div>
+        <div class="bg-white rounded-xl p-6 sm:p-8 w-auto shadow-xl mx-4">
+            <h3 class="text-2xl font-bold text-[#6c5b9c] mb-6 text-center">自訂時間</h3>
+            
+            <!-- Minutes Control -->
             <div class="mb-6">
-                <label for="custom-seconds" class="block text-[#6b7280] mb-2">秒數</label>
-                <input type="number" id="custom-seconds" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" min="0" max="59" value="0">
+                <label class="block text-center text-lg text-[#6b7280] mb-3">分鐘</label>
+                <div class="flex items-center justify-center space-x-4">
+                    <button id="decrease-minutes" class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">-</button>
+                    <input type="number" id="custom-minutes-input" class="text-6xl font-bold w-28 text-center text-[#6c5b9c] bg-transparent focus:outline-none" value="00" min="0" max="90">
+                    <button id="increase-minutes" class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">+</button>
+                </div>
             </div>
-            <div class="flex justify-end space-x-2">
-                <button id="cancel-custom-time" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+
+            <!-- Seconds Control -->
+            <div class="mb-8">
+                <label class="block text-center text-lg text-[#6b7280] mb-3">秒數</label>
+                <div class="flex items-center justify-center space-x-4">
+                    <button id="decrease-seconds" class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">-</button>
+                    <input type="number" id="custom-seconds-input" class="text-6xl font-bold w-28 text-center text-[#6c5b9c] bg-transparent focus:outline-none" value="00" min="0" max="59">
+                    <button id="increase-seconds" class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">+</button>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-custom-time" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-3 px-6 rounded-lg">
                     取消
                 </button>
-                <button id="confirm-custom-time" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                <button id="confirm-custom-time" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-3 px-6 rounded-lg">
                     確定
                 </button>
             </div>
@@ -384,9 +407,17 @@
         const customTimeModal = document.getElementById('custom-time-modal');
         const cancelCustomTime = document.getElementById('cancel-custom-time');
         const confirmCustomTime = document.getElementById('confirm-custom-time');
-        const customMinutes = document.getElementById('custom-minutes');
-        const customSeconds = document.getElementById('custom-seconds');
-        const countdownAudio = document.getElementById('countdown-audio'); // ** NEW **
+        const countdownAudio = document.getElementById('countdown-audio');
+        
+        // ** MODIFIED ** Custom Time Modal elements
+        const customMinutesInput = document.getElementById('custom-minutes-input');
+        const increaseMinutesBtn = document.getElementById('increase-minutes');
+        const decreaseMinutesBtn = document.getElementById('decrease-minutes');
+        const customSecondsInput = document.getElementById('custom-seconds-input');
+        const increaseSecondsBtn = document.getElementById('increase-seconds');
+        const decreaseSecondsBtn = document.getElementById('decrease-seconds');
+        let customTimeMinutes = 0;
+        let customTimeSeconds = 0;
         
         // Name picker functionality
         let classes = {
@@ -442,6 +473,7 @@
             updateClassSelect();
             updateNameInput();
             updatePickedList();
+            setupCustomTimeControls();
             
             // Set up timer buttons
             document.querySelectorAll('.timer-btn').forEach(btn => {
@@ -490,20 +522,20 @@
         }
         
         function updateTimerProgress() {
+            if (totalSeconds === 0) return;
             const circumference = 2 * Math.PI * 45;
             const offset = circumference - (remainingSeconds / totalSeconds) * circumference;
             timerProgress.style.strokeDasharray = `${circumference} ${circumference}`;
             timerProgress.style.strokeDashoffset = offset;
         }
         
-        // ** MODIFIED startTimer function **
         function startTimer(isResuming = false) {
             if (remainingSeconds <= 0) return;
             
             if (!isResuming) {
                 countdownAudio.currentTime = 0;
             }
-            countdownAudio.play();
+            countdownAudio.play().catch(e => console.error("Audio play failed:", e));
 
             clearInterval(timerInterval);
             isPaused = false;
@@ -511,8 +543,10 @@
             pauseBtn.disabled = false;
             resetBtn.disabled = false;
             
-            pauseBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            resetBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            pauseBtn.classList.remove('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
+            resetBtn.classList.remove('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
+            pauseBtn.classList.add('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
+            resetBtn.classList.add('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
             
             timerInterval = setInterval(() => {
                 if (remainingSeconds <= 0) {
@@ -527,28 +561,26 @@
             }, 1000);
         }
         
-        // ** MODIFIED pauseTimer function **
         function pauseTimer() {
             if (isPaused) {
-                // Resume
-                startTimer(true); // Pass true to indicate it's a resume
+                isPaused = false;
+                startTimer(true);
                 pauseBtn.textContent = '暫停';
             } else {
-                // Pause
+                isPaused = true;
                 countdownAudio.pause();
                 clearInterval(timerInterval);
                 pauseBtn.textContent = '繼續';
-                isPaused = true;
             }
         }
         
-        // ** MODIFIED resetTimer function **
         function resetTimer() {
             countdownAudio.pause();
             countdownAudio.currentTime = 0;
 
             clearInterval(timerInterval);
-            remainingSeconds = totalSeconds;
+            totalSeconds = 0;
+            remainingSeconds = 0;
             timerDisplay.textContent = formatTime(remainingSeconds);
             updateTimerProgress();
             
@@ -557,17 +589,17 @@
             pauseBtn.textContent = '暫停';
             isPaused = false;
             
-            pauseBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            resetBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            pauseBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
+            resetBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
+            pauseBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
+            resetBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
             
-            // Remove active state from button
             if (activeTimerBtn) {
                 activeTimerBtn.classList.remove('timer-active');
                 activeTimerBtn = null;
             }
         }
         
-        // ** MODIFIED timerComplete function **
         function timerComplete() {
             countdownAudio.pause();
             countdownAudio.currentTime = 0;
@@ -577,15 +609,14 @@
             pauseBtn.textContent = '暫停';
             isPaused = false;
             
-            pauseBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            pauseBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
+            pauseBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
             
-            // Visual notification
-            timerDisplay.classList.add('text-[#a94442]');
+            timerDisplay.classList.add('text-red-600');
             setTimeout(() => {
-                timerDisplay.classList.remove('text-[#a94442]');
+                timerDisplay.classList.remove('text-red-600');
             }, 2000);
             
-            // Remove active state from button
             if (activeTimerBtn) {
                 activeTimerBtn.classList.remove('timer-active');
                 activeTimerBtn = null;
@@ -598,18 +629,9 @@
             if (savedClasses) {
                 classes = JSON.parse(savedClasses);
                 
-                // Make sure we have at least one class
                 if (Object.keys(classes).length === 0) {
-                    classes = {
-                        class1: {
-                            name: '班級 1',
-                            students: [],
-                            picked: []
-                        }
-                    };
+                    classes = { class1: { name: '班級 1', students: [], picked: [] } };
                 }
-                
-                // Set current class to the first one if the current one doesn't exist
                 if (!classes[currentClass]) {
                     currentClass = Object.keys(classes)[0];
                 }
@@ -670,12 +692,7 @@
         
         function createConfetti() {
             const confettiContainer = document.getElementById('confetti-container');
-            
-            // Clear previous confetti but keep the winner display
-            const winnerDisplayContent = winnerDisplay.textContent;
-            confettiContainer.innerHTML = '';
-            
-            // Re-add the winner display
+            confettiContainer.innerHTML = ''; 
             confettiContainer.appendChild(winnerDisplay);
             
             const colors = ['#9d8ec7', '#b3a8cc', '#c4b5fd', '#ddd6fe', '#f5f3ff'];
@@ -691,11 +708,68 @@
             }
         }
         
+        // ** MODIFIED ** Custom Time Modal Logic
+        function setupCustomTimeControls() {
+            let intervalId;
+            const setupHoldableButton = (button, action) => {
+                const startAction = (e) => {
+                    e.preventDefault();
+                    action();
+                    intervalId = setInterval(action, 120);
+                };
+                const stopAction = () => {
+                    clearInterval(intervalId);
+                };
+                ['mousedown', 'touchstart'].forEach(type => button.addEventListener(type, startAction));
+                ['mouseup', 'mouseleave', 'touchend'].forEach(type => button.addEventListener(type, stopAction));
+            };
+
+            const updateMinutes = (newValue) => {
+                customTimeMinutes = Math.max(0, Math.min(90, newValue));
+                customMinutesInput.value = String(customTimeMinutes).padStart(2, '0');
+            };
+
+            const updateSeconds = (newValue) => {
+                customTimeSeconds = Math.max(0, Math.min(59, newValue));
+                customSecondsInput.value = String(customTimeSeconds).padStart(2, '0');
+            };
+
+            setupHoldableButton(increaseMinutesBtn, () => updateMinutes(customTimeMinutes + 1));
+            setupHoldableButton(decreaseMinutesBtn, () => updateMinutes(customTimeMinutes - 1));
+            
+            setupHoldableButton(increaseSecondsBtn, () => {
+                const currentSecs = parseInt(customSecondsInput.value, 10) || 0;
+                updateSeconds((Math.floor(currentSecs / 10) * 10 + 10) % 60);
+            });
+            setupHoldableButton(decreaseSecondsBtn, () => {
+                 const currentSecs = parseInt(customSecondsInput.value, 10) || 0;
+                 updateSeconds((Math.floor(currentSecs / 10) * 10 - 10 + 60) % 60);
+            });
+
+            customMinutesInput.addEventListener('input', () => {
+                updateMinutes(parseInt(customMinutesInput.value, 10) || 0);
+            });
+            customMinutesInput.addEventListener('blur', () => {
+                customMinutesInput.value = String(customTimeMinutes).padStart(2, '0');
+            });
+
+            customSecondsInput.addEventListener('input', () => {
+                updateSeconds(parseInt(customSecondsInput.value, 10) || 0);
+            });
+            customSecondsInput.addEventListener('blur', () => {
+                 customSecondsInput.value = String(customTimeSeconds).padStart(2, '0');
+            });
+        }
+
         // Event listeners
         pauseBtn.addEventListener('click', pauseTimer);
         resetBtn.addEventListener('click', resetTimer);
         
         customTimeBtn.addEventListener('click', () => {
+            customTimeMinutes = 0;
+            customTimeSeconds = 0;
+            customMinutesInput.value = '00';
+            customSecondsInput.value = '00';
             customTimeModal.classList.remove('hidden');
         });
         
@@ -704,30 +778,27 @@
         });
         
         confirmCustomTime.addEventListener('click', () => {
-            const minutes = parseInt(customMinutes.value) || 0;
-            const seconds = parseInt(customSeconds.value) || 0;
-            const totalSeconds = minutes * 60 + seconds;
+            const totalSecondsValue = (parseInt(customMinutesInput.value,10) * 60) + parseInt(customSecondsInput.value,10);
             
-            if (totalSeconds > 0) {
-                setTimer(totalSeconds);
+            if (totalSecondsValue > 0) {
+                setTimer(totalSecondsValue);
                 startTimer();
                 customTimeModal.classList.add('hidden');
                 
-                // Remove active state from any previous button
                 if (activeTimerBtn) {
                     activeTimerBtn.classList.remove('timer-active');
                 }
                 activeTimerBtn = null;
+            } else {
+                showToast('請設定大於 0 秒的時間');
             }
         });
         
         timerTab.addEventListener('click', () => {
             timerTab.classList.add('tab-active');
             timerTab.classList.remove('bg-[#e2e2e7]', 'text-[#6b7280]');
-            
             pickerTab.classList.remove('tab-active');
             pickerTab.classList.add('bg-[#e2e2e7]', 'text-[#6b7280]');
-            
             timerSection.classList.remove('hidden');
             pickerSection.classList.add('hidden');
         });
@@ -735,10 +806,8 @@
         pickerTab.addEventListener('click', () => {
             pickerTab.classList.add('tab-active');
             pickerTab.classList.remove('bg-[#e2e2e7]', 'text-[#6b7280]');
-            
             timerTab.classList.remove('tab-active');
             timerTab.classList.add('bg-[#e2e2e7]', 'text-[#6b7280]');
-            
             pickerSection.classList.remove('hidden');
             timerSection.classList.add('hidden');
         });
@@ -751,16 +820,11 @@
         });
         
         saveNamesBtn.addEventListener('click', () => {
-            const names = nameInput.value.split('\n')
-                .map(name => name.trim())
-                .filter(name => name !== '');
-            
+            const names = nameInput.value.split('\n').map(name => name.trim()).filter(name => name !== '');
             if (classes[currentClass]) {
                 classes[currentClass].students = names;
                 saveClassesToStorage();
                 showToast('名單已儲存！');
-            } else {
-                showToast('錯誤：找不到目前班級');
             }
         });
         
@@ -776,18 +840,10 @@
             
             const winner = pickName();
             if (winner) {
-                // First update the display text
                 winnerDisplay.textContent = winner;
-                
-                // Then create confetti (which will preserve the winner display)
                 createConfetti();
-                
-                // Apply animation to the winner display
                 winnerDisplay.classList.add('winner-animation');
-                setTimeout(() => {
-                    winnerDisplay.classList.remove('winner-animation');
-                }, 500);
-                
+                setTimeout(() => winnerDisplay.classList.remove('winner-animation'), 500);
                 updatePickedList();
             }
         });
@@ -797,7 +853,6 @@
                 showToast('請先新增名單！');
                 return;
             }
-            
             multiplePickModal.classList.remove('hidden');
         });
         
@@ -808,30 +863,17 @@
         confirmMultiplePick.addEventListener('click', () => {
             const count = parseInt(pickCount.value) || 1;
             multiplePickModal.classList.add('hidden');
-            
             let winners = [];
             for (let i = 0; i < count; i++) {
                 const winner = pickName();
-                if (winner) {
-                    winners.push(winner);
-                } else {
-                    break;
-                }
+                if (winner) winners.push(winner);
+                else break;
             }
-            
             if (winners.length > 0) {
-                // First update the display text
                 winnerDisplay.textContent = winners.join('、');
-                
-                // Then create confetti (which will preserve the winner display)
                 createConfetti();
-                
-                // Apply animation to the winner display
                 winnerDisplay.classList.add('winner-animation');
-                setTimeout(() => {
-                    winnerDisplay.classList.remove('winner-animation');
-                }, 500);
-                
+                setTimeout(() => winnerDisplay.classList.remove('winner-animation'), 500);
                 updatePickedList();
             }
         });
@@ -846,33 +888,20 @@
             }
         });
         
-        addClassBtn.addEventListener('click', () => {
-            addClassModal.classList.remove('hidden');
-        });
-        
-        cancelAddClass.addEventListener('click', () => {
-            addClassModal.classList.add('hidden');
-        });
-        
+        addClassBtn.addEventListener('click', () => addClassModal.classList.remove('hidden'));
+        cancelAddClass.addEventListener('click', () => addClassModal.classList.add('hidden'));
         confirmAddClass.addEventListener('click', () => {
             const name = className.value.trim();
             if (name) {
                 const classId = 'class' + Date.now();
-                classes[classId] = {
-                    name: name,
-                    students: [],
-                    picked: []
-                };
-                
+                classes[classId] = { name: name, students: [], picked: [] };
                 currentClass = classId;
                 saveClassesToStorage();
                 updateClassSelect();
                 updateNameInput();
                 updatePickedList();
-                
                 addClassModal.classList.add('hidden');
                 className.value = '';
-                
                 showToast(`已新增班級：${name}`);
             }
         });
@@ -883,11 +912,7 @@
                 renameClassModal.classList.remove('hidden');
             }
         });
-        
-        cancelRenameClass.addEventListener('click', () => {
-            renameClassModal.classList.add('hidden');
-        });
-        
+        cancelRenameClass.addEventListener('click', () => renameClassModal.classList.add('hidden'));
         confirmRenameClass.addEventListener('click', () => {
             const name = newClassName.value.trim();
             if (name && classes[currentClass]) {
@@ -895,10 +920,8 @@
                 classes[currentClass].name = name;
                 saveClassesToStorage();
                 updateClassSelect();
-                
                 renameClassModal.classList.add('hidden');
-                
-                showToast(`已將班級「${oldName}」重新命名為「${name}」`);
+                showToast(`已將「${oldName}」重新命名為「${name}」`);
             }
         });
         
@@ -907,47 +930,34 @@
                 showToast('無法刪除唯一的班級');
                 return;
             }
-            
             if (classes[currentClass]) {
                 deleteClassName.textContent = classes[currentClass].name;
                 deleteClassModal.classList.remove('hidden');
             }
         });
-        
-        cancelDeleteClass.addEventListener('click', () => {
-            deleteClassModal.classList.add('hidden');
-        });
-        
+        cancelDeleteClass.addEventListener('click', () => deleteClassModal.classList.add('hidden'));
         confirmDeleteClass.addEventListener('click', () => {
             const deletedClassName = classes[currentClass].name;
-            
             delete classes[currentClass];
             currentClass = Object.keys(classes)[0];
-            
             saveClassesToStorage();
             updateClassSelect();
             updateNameInput();
             updatePickedList();
-            
             deleteClassModal.classList.add('hidden');
-            
             showToast(`已刪除班級：${deletedClassName}`);
         });
         
-        // Close modals when clicking outside
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
-                customTimeModal.classList.add('hidden');
-                multiplePickModal.classList.add('hidden');
-                addClassModal.classList.add('hidden');
-                renameClassModal.classList.add('hidden');
-                deleteClassModal.classList.add('hidden');
+                e.target.classList.add('hidden');
             }
         });
         
-        // Initialize the app
         init();
     </script>
 </body>
 </html>
+
+
 
