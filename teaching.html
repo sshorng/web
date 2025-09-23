@@ -548,4 +548,410 @@
         
         function pauseTimer() {
             if (isPaused) {
-                is
+                isPaused = false;
+                startTimer(true);
+                pauseBtn.textContent = '暫停';
+            } else {
+                isPaused = true;
+                countdownAudio.pause();
+                clearInterval(timerInterval);
+                pauseBtn.textContent = '繼續';
+            }
+        }
+        
+        function resetTimer() {
+            countdownAudio.pause();
+            countdownAudio.currentTime = 0;
+
+            clearInterval(timerInterval);
+            totalSeconds = 0;
+            remainingSeconds = 0;
+            timerDisplay.textContent = formatTime(remainingSeconds);
+            updateTimerProgress();
+            
+            pauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            pauseBtn.textContent = '暫停';
+            isPaused = false;
+            
+            pauseBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
+            resetBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
+            pauseBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
+            resetBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
+            
+            if (activeTimerBtn) {
+                activeTimerBtn.classList.remove('timer-active');
+                activeTimerBtn = null;
+            }
+        }
+        
+        function timerComplete() {
+            countdownAudio.pause();
+            countdownAudio.currentTime = 0;
+
+            timerDisplay.textContent = "時間到!";
+            pauseBtn.disabled = true;
+            pauseBtn.textContent = '暫停';
+            isPaused = false;
+            
+            pauseBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
+            pauseBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
+            
+            timerDisplay.classList.add('text-red-600');
+            setTimeout(() => {
+                timerDisplay.classList.remove('text-red-600');
+            }, 2000);
+            
+            if (activeTimerBtn) {
+                activeTimerBtn.classList.remove('timer-active');
+                activeTimerBtn = null;
+            }
+        }
+        
+        // Name picker functions
+        function loadClassesFromStorage() {
+            const savedClasses = localStorage.getItem('classroomTool_classes');
+            if (savedClasses) {
+                classes = JSON.parse(savedClasses);
+                
+                if (Object.keys(classes).length === 0) {
+                    classes = { class1: { name: '班級 1', students: [], picked: [] } };
+                }
+                if (!classes[currentClass]) {
+                    currentClass = Object.keys(classes)[0];
+                }
+            }
+        }
+        
+        function saveClassesToStorage() {
+            localStorage.setItem('classroomTool_classes', JSON.stringify(classes));
+        }
+        
+        function updateClassSelect() {
+            classSelect.innerHTML = '';
+            Object.keys(classes).forEach(classId => {
+                const option = document.createElement('option');
+                option.value = classId;
+                option.textContent = classes[classId].name;
+                classSelect.appendChild(option);
+            });
+            classSelect.value = currentClass;
+        }
+        
+        function updateNameInput() {
+            if (classes[currentClass]) {
+                nameInput.value = classes[currentClass].students.join('\n');
+            }
+        }
+        
+        function updatePickedList() {
+            pickedList.innerHTML = '';
+            if (classes[currentClass]) {
+                classes[currentClass].picked.forEach(name => {
+                    const div = document.createElement('div');
+                    div.className = 'py-1 px-2 mb-1 bg-white rounded border border-[#e2e2e7]';
+                    div.textContent = name;
+                    pickedList.appendChild(div);
+                });
+            }
+        }
+        
+        function pickName() {
+            const availableStudents = classes[currentClass].students.filter(
+                student => !classes[currentClass].picked.includes(student)
+            );
+            
+            if (availableStudents.length === 0) {
+                winnerDisplay.textContent = '名單已抽完';
+                return null;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableStudents.length);
+            const winner = availableStudents[randomIndex];
+            
+            classes[currentClass].picked.push(winner);
+            saveClassesToStorage();
+            
+            return winner;
+        }
+        
+        function createConfetti() {
+            const confettiContainer = document.getElementById('confetti-container');
+            confettiContainer.innerHTML = ''; 
+            confettiContainer.appendChild(winnerDisplay);
+            
+            const colors = ['#9d8ec7', '#b3a8cc', '#c4b5fd', '#ddd6fe', '#f5f3ff'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = `${Math.random() * 2 + 1}s`;
+                confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+                confettiContainer.appendChild(confetti);
+            }
+        }
+        
+        // ** MODIFIED SECTION START **
+        function setupCustomTimeControls() {
+            let intervalId = null; // Initialize as null
+            
+            const setupHoldableButton = (button, action) => {
+                const startAction = (e) => {
+                    e.preventDefault();
+                    // 【修改二】在啟動新計時器前，先清除任何可能存在的舊計時器
+                    if (intervalId) clearInterval(intervalId);
+                    action();
+                    intervalId = setInterval(action, 120);
+                };
+                
+                const stopAction = () => {
+                    clearInterval(intervalId);
+                    // 【修改三】清除後將變數設為 null，保持狀態乾淨
+                    intervalId = null; 
+                };
+
+                ['mousedown', 'touchstart'].forEach(type => button.addEventListener(type, startAction));
+                
+                // 【修改一】在監聽列表中加入 'touchcancel' 事件
+                ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(type => button.addEventListener(type, stopAction));
+            };
+
+            const updateMinutes = (newValue) => {
+                customTimeMinutes = Math.max(0, Math.min(90, newValue));
+                customMinutesInput.value = String(customTimeMinutes).padStart(2, '0');
+            };
+
+            const updateSeconds = (newValue) => {
+                customTimeSeconds = Math.max(0, Math.min(59, newValue));
+                customSecondsInput.value = String(customTimeSeconds).padStart(2, '0');
+            };
+
+            setupHoldableButton(increaseMinutesBtn, () => updateMinutes(customTimeMinutes + 1));
+            setupHoldableButton(decreaseMinutesBtn, () => updateMinutes(customTimeMinutes - 1));
+            
+            setupHoldableButton(increaseSecondsBtn, () => {
+                // The logic for seconds incrementing by 10 is kept as it was
+                const currentSecs = parseInt(customSecondsInput.value, 10) || 0;
+                updateSeconds((Math.floor(currentSecs / 10) * 10 + 10) % 60);
+            });
+            setupHoldableButton(decreaseSecondsBtn, () => {
+                 // The logic for seconds decrementing by 10 is kept as it was
+                 const currentSecs = parseInt(customSecondsInput.value, 10) || 0;
+                 updateSeconds((Math.floor(currentSecs / 10) * 10 - 10 + 60) % 60);
+            });
+
+            customMinutesInput.addEventListener('input', () => {
+                updateMinutes(parseInt(customMinutesInput.value, 10) || 0);
+            });
+            customMinutesInput.addEventListener('blur', () => {
+                customMinutesInput.value = String(customTimeMinutes).padStart(2, '0');
+            });
+
+            customSecondsInput.addEventListener('input', () => {
+                updateSeconds(parseInt(customSecondsInput.value, 10) || 0);
+            });
+            customSecondsInput.addEventListener('blur', () => {
+                 customSecondsInput.value = String(customTimeSeconds).padStart(2, '0');
+            });
+        }
+        // ** MODIFIED SECTION END **
+
+        // Event listeners
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        
+        customTimeBtn.addEventListener('click', () => {
+            customTimeMinutes = 0;
+            customTimeSeconds = 0;
+            customMinutesInput.value = '00';
+            customSecondsInput.value = '00';
+            customTimeModal.classList.remove('hidden');
+        });
+        
+        cancelCustomTime.addEventListener('click', () => {
+            customTimeModal.classList.add('hidden');
+        });
+        
+        confirmCustomTime.addEventListener('click', () => {
+            const totalSecondsValue = (parseInt(customMinutesInput.value,10) * 60) + parseInt(customSecondsInput.value,10);
+            
+            if (totalSecondsValue > 0) {
+                setTimer(totalSecondsValue);
+                startTimer();
+                customTimeModal.classList.add('hidden');
+                
+                if (activeTimerBtn) {
+                    activeTimerBtn.classList.remove('timer-active');
+                }
+                activeTimerBtn = null;
+            } else {
+                showToast('請設定大於 0 秒的時間');
+            }
+        });
+        
+        timerTab.addEventListener('click', () => {
+            timerTab.classList.add('tab-active');
+            timerTab.classList.remove('bg-[#e2e2e7]', 'text-[#6b7280]');
+            pickerTab.classList.remove('tab-active');
+            pickerTab.classList.add('bg-[#e2e2e7]', 'text-[#6b7280]');
+            timerSection.classList.remove('hidden');
+            pickerSection.classList.add('hidden');
+        });
+        
+        pickerTab.addEventListener('click', () => {
+            pickerTab.classList.add('tab-active');
+            pickerTab.classList.remove('bg-[#e2e2e7]', 'text-[#6b7280]');
+            timerTab.classList.remove('tab-active');
+            timerTab.classList.add('bg-[#e2e2e7]', 'text-[#6b7280]');
+            pickerSection.classList.remove('hidden');
+            timerSection.classList.add('hidden');
+        });
+        
+        classSelect.addEventListener('change', () => {
+            currentClass = classSelect.value;
+            updateNameInput();
+            updatePickedList();
+            winnerDisplay.textContent = '準備抽籤';
+        });
+        
+        saveNamesBtn.addEventListener('click', () => {
+            const names = nameInput.value.split('\n').map(name => name.trim()).filter(name => name !== '');
+            if (classes[currentClass]) {
+                classes[currentClass].students = names;
+                saveClassesToStorage();
+                showToast('名單已儲存！');
+            }
+        });
+        
+        clearNamesBtn.addEventListener('click', () => {
+            nameInput.value = '';
+        });
+        
+        pickBtn.addEventListener('click', () => {
+            if (!classes[currentClass] || classes[currentClass].students.length === 0) {
+                showToast('請先新增名單！');
+                return;
+            }
+            
+            const winner = pickName();
+            if (winner) {
+                winnerDisplay.textContent = winner;
+                createConfetti();
+                winnerDisplay.classList.add('winner-animation');
+                setTimeout(() => winnerDisplay.classList.remove('winner-animation'), 500);
+                updatePickedList();
+            }
+        });
+        
+        pickMultipleBtn.addEventListener('click', () => {
+            if (!classes[currentClass] || classes[currentClass].students.length === 0) {
+                showToast('請先新增名單！');
+                return;
+            }
+            multiplePickModal.classList.remove('hidden');
+        });
+        
+        cancelMultiplePick.addEventListener('click', () => {
+            multiplePickModal.classList.add('hidden');
+        });
+        
+        confirmMultiplePick.addEventListener('click', () => {
+            const count = parseInt(pickCount.value) || 1;
+            multiplePickModal.classList.add('hidden');
+            let winners = [];
+            for (let i = 0; i < count; i++) {
+                const winner = pickName();
+                if (winner) winners.push(winner);
+                else break;
+            }
+            if (winners.length > 0) {
+                winnerDisplay.textContent = winners.join('、');
+                createConfetti();
+                winnerDisplay.classList.add('winner-animation');
+                setTimeout(() => winnerDisplay.classList.remove('winner-animation'), 500);
+                updatePickedList();
+            }
+        });
+        
+        resetPickedBtn.addEventListener('click', () => {
+            if (classes[currentClass]) {
+                classes[currentClass].picked = [];
+                saveClassesToStorage();
+                updatePickedList();
+                winnerDisplay.textContent = '準備抽籤';
+                showToast('已重置抽籤名單');
+            }
+        });
+        
+        addClassBtn.addEventListener('click', () => addClassModal.classList.remove('hidden'));
+        cancelAddClass.addEventListener('click', () => addClassModal.classList.add('hidden'));
+        confirmAddClass.addEventListener('click', () => {
+            const name = className.value.trim();
+            if (name) {
+                const classId = 'class' + Date.now();
+                classes[classId] = { name: name, students: [], picked: [] };
+                currentClass = classId;
+                saveClassesToStorage();
+                updateClassSelect();
+                updateNameInput();
+                updatePickedList();
+                addClassModal.classList.add('hidden');
+                className.value = '';
+                showToast(`已新增班級：${name}`);
+            }
+        });
+        
+        renameClassBtn.addEventListener('click', () => {
+            if (classes[currentClass]) {
+                newClassName.value = classes[currentClass].name;
+                renameClassModal.classList.remove('hidden');
+            }
+        });
+        cancelRenameClass.addEventListener('click', () => renameClassModal.classList.add('hidden'));
+        confirmRenameClass.addEventListener('click', () => {
+            const name = newClassName.value.trim();
+            if (name && classes[currentClass]) {
+                const oldName = classes[currentClass].name;
+                classes[currentClass].name = name;
+                saveClassesToStorage();
+                updateClassSelect();
+                renameClassModal.classList.add('hidden');
+                showToast(`已將「${oldName}」重新命名為「${name}」`);
+            }
+        });
+        
+        deleteClassBtn.addEventListener('click', () => {
+            if (Object.keys(classes).length <= 1) {
+                showToast('無法刪除唯一的班級');
+                return;
+            }
+            if (classes[currentClass]) {
+                deleteClassName.textContent = classes[currentClass].name;
+                deleteClassModal.classList.remove('hidden');
+            }
+        });
+        cancelDeleteClass.addEventListener('click', () => deleteClassModal.classList.add('hidden'));
+        confirmDeleteClass.addEventListener('click', () => {
+            const deletedClassName = classes[currentClass].name;
+            delete classes[currentClass];
+            currentClass = Object.keys(classes)[0];
+            saveClassesToStorage();
+            updateClassSelect();
+            updateNameInput();
+            updatePickedList();
+            deleteClassModal.classList.add('hidden');
+            showToast(`已刪除班級：${deletedClassName}`);
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.add('hidden');
+            }
+        });
+        
+        init();
+    </script>
+</body>
+</html>
