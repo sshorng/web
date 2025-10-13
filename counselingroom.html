@@ -313,11 +313,21 @@ function openDatePicker() { dpCurrentDate = new Date(); renderDatePicker(); date
 function closeDatePicker() { datePickerModal.classList.add('hidden'); }
 
 // --- MODALS ---
-function openBookingModal({ mode = 'create', groupId = null }) {
-    bookingForm.reset(); selectedDates = []; groupIdInput.value = '';
-    if (mode === 'create') { modalTitle.textContent = '新增預約'; submitBtnText.textContent = '送出預約'; } 
+function openBookingModal({ mode = 'create', groupId = null, preselectedDate = null }) {
+    bookingForm.reset(); 
+    selectedDates = []; 
+    groupIdInput.value = '';
+
+    if (mode === 'create') { 
+        modalTitle.textContent = '新增預約'; 
+        submitBtnText.textContent = '送出預約';
+        if (preselectedDate) {
+            selectedDates.push(preselectedDate);
+        }
+    } 
     else if (mode === 'edit' && groupId) {
-        modalTitle.textContent = '編輯預約'; submitBtnText.textContent = '更新預約';
+        modalTitle.textContent = '編輯預約'; 
+        submitBtnText.textContent = '更新預約';
         const group = groupedBookings[groupId];
         if (group) {
             document.getElementById('teacher-name').value = group.teacherName;
@@ -329,13 +339,14 @@ function openBookingModal({ mode = 'create', groupId = null }) {
             periodsContainer.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = selectedPeriods.has(cb.value); });
         }
     }
-    renderSelectedDates(); bookingModal.classList.remove('hidden');
+    renderSelectedDates(); 
+    bookingModal.classList.remove('hidden');
 }
 function closeBookingModal() { bookingModal.classList.add('hidden'); }
 function openDetailsModal(groupId) {
     currentGroupId = groupId;
     const group = groupedBookings[groupId];
-    detailsModalBody.innerHTML = `<p class="flex items-center"><strong class="w-20"><i class="fas fa-user mr-2 text-gray-400"></i>教師：</strong> <span>${group.teacherName}</span></p><p class="flex items-center"><strong class="w-20"><i class="fas fa-door-open mr-2 text-gray-400"></i>諮商室：</strong> <span>${group.room}</span></p><p class="flex items-start"><strong class="w-20 mt-1"><i class="fas fa-info-circle mr-2 text-gray-400"></i>事由：</strong> <span class="flex-1">${group.reason}</span></p><hr class="my-3"><p class="font-bold text-gray-700 mb-2"><i class="fas fa-clock mr-2 text-gray-400"></i>已預約時段：</p><div id="details-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>`;
+    detailsModalBody.innerHTML = `<p class="flex items-center"><strong class="w-24 flex-shrink-0"><i class="fas fa-user mr-2 text-gray-400"></i>教師：</strong> <span>${group.teacherName}</span></p><p class="flex items-center"><strong class="w-24 flex-shrink-0"><i class="fas fa-door-open mr-2 text-gray-400"></i>諮商室：</strong> <span>${group.room}</span></p><p class="flex items-start"><strong class="w-24 flex-shrink-0 mt-1"><i class="fas fa-info-circle mr-2 text-gray-400"></i>事由：</strong> <span class="flex-1">${group.reason}</span></p><hr class="my-3"><p class="font-bold text-gray-700 mb-2"><i class="fas fa-clock mr-2 text-gray-400"></i>已預約時段：</p><div id="details-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>`;
     const detailsList = document.getElementById('details-list');
     group.entries.sort((a,b) => new Date(a.Date) - new Date(b.Date) || Object.keys(PERIODS).indexOf(a.Period) - Object.keys(PERIODS).indexOf(b.Period)).forEach(entry => {
         detailsList.innerHTML += `<div class="flex justify-between items-center p-2 bg-stone-100 rounded-lg"><span class="text-sm">${formatDate(entry.Date)} - ${entry.Period}</span><button class="text-red-500 hover:text-red-700 text-lg single-delete-btn" data-uuid="${entry.UUID}"><i class="fas fa-trash-alt"></i></button></div>`;
@@ -395,8 +406,19 @@ document.addEventListener('DOMContentLoaded', () => {
     todayBtn.addEventListener('click', () => { currentDate = new Date(); renderCalendar(); });
     
     calendarBody.addEventListener('click', e => {
-        const groupId = e.target.closest('.booking')?.dataset.groupId;
-        if (groupId) { openDetailsModal(groupId); }
+        const bookingElement = e.target.closest('.booking');
+        const dayCell = e.target.closest('.calendar-day');
+
+        if (bookingElement) {
+            const groupId = bookingElement.dataset.groupId;
+            if (groupId) openDetailsModal(groupId);
+            return;
+        }
+        
+        if (dayCell) {
+            const dateStr = dayCell.dataset.date;
+            openBookingModal({ mode: 'create', preselectedDate: dateStr });
+        }
     });
     
     addBookingMainBtn.addEventListener('click', () => openBookingModal({ mode: 'create' }));
