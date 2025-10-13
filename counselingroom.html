@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>建成國中諮商室借用系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #FFF8F0; /* 溫暖的米色背景 */
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+        .calendar-day {
+            min-height: 120px;
+        }
+        .day-name {
+            font-size: 0.8rem;
+        }
+        .booking {
+            font-size: 0.75rem;
+            padding: 3px 6px;
+            margin-top: 4px;
+            border-radius: 6px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            border-left-width: 5px;
+        }
+        /* Custom scrollbar */
+        .modal-body::-webkit-scrollbar, .day-bookings-container::-webkit-scrollbar, #details-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-body::-webkit-scrollbar-track, .day-bookings-container::-webkit-scrollbar-track, #details-list::-webkit-scrollbar-track {
+            background: #fde8d7;
+            border-radius: 10px;
+        }
+        .modal-body::-webkit-scrollbar-thumb, .day-bookings-container::-webkit-scrollbar-thumb, #details-list::-webkit-scrollbar-thumb {
+            background: #f7a072;
+            border-radius: 10px;
+        }
+        .modal-body::-webkit-scrollbar-thumb:hover, .day-bookings-container::-webkit-scrollbar-thumb:hover, #details-list::-webkit-scrollbar-thumb:hover {
+            background: #f2844f;
+        }
+        
+        /* Date Picker Styles */
+        .date-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .date-picker-day {
+            width: 36px;
+            height: 36px;
+        }
+        .date-picker-day.selected {
+            background-color: #FF7F50; /* 珊瑚橘 */
+            color: white;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 flex items-center justify-center">
+                <i class="fas fa-heart-pulse text-orange-400 mr-3"></i>
+                建成國中諮商室借用系統
+            </h1>
+            <p class="text-gray-500 mt-2">一個溫暖的晤談空間</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
+                 <button id="add-booking-main" class="w-full sm:w-auto px-5 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2 text-lg">
+                    <i class="fas fa-plus"></i>
+                    <span>新增預約</span>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <button id="prev-month" class="px-3 py-2 bg-stone-200 text-stone-700 rounded-xl hover:bg-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-400 transition-colors">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="today-btn" class="px-4 py-2 bg-stone-200 text-stone-700 rounded-xl hover:bg-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-400 transition-colors">
+                        今天
+                    </button>
+                    <button id="next-month" class="px-3 py-2 bg-stone-200 text-stone-700 rounded-xl hover:bg-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-400 transition-colors">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+             <h2 class="text-2xl font-bold text-gray-700 text-center mb-4" id="month-year-header"></h2>
+
+            <!-- Calendar -->
+            <div id="calendar-container">
+                <div class="calendar-grid border-t border-l border-gray-200">
+                    <div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">日</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">一</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">二</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">三</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">四</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">五</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">六</div>
+                </div>
+                <div id="calendar-body" class="calendar-grid border-l border-gray-200"></div>
+            </div>
+             <div id="loading-spinner" class="text-center py-8 text-orange-400 hidden">
+                <i class="fas fa-spinner fa-spin fa-3x"></i>
+                <p class="mt-2">資料載入中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal (Create/Edit) -->
+    <div id="booking-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-5 border-b"><h2 id="modal-title" class="text-xl font-bold text-gray-800">預約諮商室</h2><button id="close-modal" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button></div>
+            <div class="modal-body p-6 overflow-y-auto">
+                <form id="booking-form">
+                    <input type="hidden" id="group-id" name="groupId">
+                    <div class="mb-4"><label for="teacher-name" class="block text-gray-700 font-bold mb-2">借用教師</label><input type="text" id="teacher-name" name="teacherName" class="w-full px-3 py-2 border-gray-300 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="請輸入您的姓名" required></div>
+                    <div class="mb-4"><label for="reason" class="block text-gray-700 font-bold mb-2">事由</label><textarea id="reason" name="reason" rows="2" class="w-full px-3 py-2 border-gray-300 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="例如：學生晤談、個案研討" required></textarea></div>
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                           <label class="block text-gray-700 font-bold">預約日期</label>
+                           <button type="button" id="open-date-picker" class="px-4 py-2 bg-orange-500 text-white text-sm rounded-xl hover:bg-orange-600 shadow-sm">選擇日期</button>
+                        </div>
+                        <div id="selected-dates" class="bg-stone-100 p-3 rounded-xl min-h-[48px] border-gray-200 border flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="mb-4"><label class="block text-gray-700 font-bold mb-2">諮商室</label><select id="room" name="room" class="w-full px-3 py-2 border-gray-300 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-orange-400" required><option value="501">501</option><option value="502">502</option><option value="503大個諮">503大個諮</option><option value="504團諮室">504團諮室</option></select></div>
+                    <div class="mb-4"><label class="block text-gray-700 font-bold mb-2">預約節次 (可複選)</label><div id="periods-container" class="grid grid-cols-2 sm:grid-cols-4 gap-3 border-gray-200 border p-4 rounded-xl"></div></div>
+                </form>
+            </div>
+            <div class="p-5 border-t bg-stone-50 flex justify-end space-x-3 rounded-b-2xl">
+                <button id="cancel-booking" type="button" class="px-6 py-2 bg-stone-200 text-stone-700 rounded-xl hover:bg-stone-300">取消</button>
+                <button id="submit-booking" type="submit" form="booking-form" class="px-6 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed flex items-center shadow-md"><span id="submit-btn-text">送出預約</span><i id="submit-spinner" class="fas fa-spinner fa-spin ml-2 hidden"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-5 border-b"><h2 class="text-xl font-bold text-gray-800">預約詳情</h2><button id="close-details-modal" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button></div>
+            <div id="details-modal-body" class="p-6 space-y-3 overflow-y-auto"></div>
+            <div class="p-5 border-t bg-stone-50 flex justify-end space-x-3 rounded-b-2xl">
+                <button id="delete-all-btn" class="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">刪除全部</button>
+                <button id="edit-booking-btn" class="px-6 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600">編輯</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Date Picker Modal -->
+    <div id="date-picker-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-xl p-5 w-full max-w-xs">
+            <div class="flex items-center justify-between mb-4">
+                <button id="dp-prev-month" class="w-9 h-9 rounded-full hover:bg-stone-200 flex items-center justify-center text-stone-600">&lt;</button>
+                <div id="dp-month-year" class="font-bold text-gray-700"></div>
+                <button id="dp-next-month" class="w-9 h-9 rounded-full hover:bg-stone-200 flex items-center justify-center text-stone-600">&gt;</button>
+            </div>
+            <div class="date-picker-grid text-sm text-center mb-2"><div class="text-gray-400">日</div><div class="text-gray-700">一</div><div class="text-gray-700">二</div><div class="text-gray-700">三</div><div class="text-gray-700">四</div><div class="text-gray-700">五</div><div class="text-gray-400">六</div></div>
+            <div id="dp-grid" class="date-picker-grid"></div>
+            <button id="dp-close" class="mt-4 w-full px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600">完成</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+            <div class="p-8 text-center">
+                <i class="fas fa-exclamation-triangle text-5xl text-amber-400 mb-4"></i>
+                <h3 id="confirmation-title" class="text-lg font-bold text-gray-800 mb-2">確定要刪除嗎？</h3>
+                <p id="confirmation-text" class="text-gray-600 mb-6">此操作無法復原。</p>
+                <div class="flex justify-center space-x-4"><button id="confirm-cancel-btn" class="px-6 py-2 bg-stone-200 text-stone-700 rounded-xl hover:bg-stone-300">取消</button><button id="confirm-action-btn" class="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">確定刪除</button></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 px-6 py-3 rounded-xl text-white transition-all duration-300 opacity-0 z-50 shadow-lg"></div>
+
+<script>
+// ===================================================================================
+// SCRIPT CONFIGURATION
+// ===================================================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQpm9embXCW-eHxDS8MaWHv0BfU87iHCQRMAhXQaxwgaTfLR3rLYDrtKvIIE5LKSEYkQ/exec'; 
+// ===================================================================================
+
+// DOM Elements
+const monthYearHeader = document.getElementById('month-year-header');
+const calendarBody = document.getElementById('calendar-body');
+const prevMonthBtn = document.getElementById('prev-month');
+const nextMonthBtn = document.getElementById('next-month');
+const todayBtn = document.getElementById('today-btn');
+const loadingSpinner = document.getElementById('loading-spinner');
+const calendarContainer = document.getElementById('calendar-container');
+const toast = document.getElementById('toast');
+const addBookingMainBtn = document.getElementById('add-booking-main');
+// Modals
+const bookingModal = document.getElementById('booking-modal');
+const detailsModal = document.getElementById('details-modal');
+const confirmationModal = document.getElementById('confirmation-modal');
+const datePickerModal = document.getElementById('date-picker-modal');
+// Booking Modal elements
+const closeModalBtn = document.getElementById('close-modal');
+const cancelBtn = document.getElementById('cancel-booking');
+const bookingForm = document.getElementById('booking-form');
+const submitBtn = document.getElementById('submit-booking');
+const submitBtnText = document.getElementById('submit-btn-text');
+const submitSpinner = document.getElementById('submit-spinner');
+const selectedDatesContainer = document.getElementById('selected-dates');
+const periodsContainer = document.getElementById('periods-container');
+const modalTitle = document.getElementById('modal-title');
+const groupIdInput = document.getElementById('group-id');
+const openDatePickerBtn = document.getElementById('open-date-picker');
+// Details Modal elements
+const closeDetailsModalBtn = document.getElementById('close-details-modal');
+const detailsModalBody = document.getElementById('details-modal-body');
+const editBookingBtn = document.getElementById('edit-booking-btn');
+const deleteAllBtn = document.getElementById('delete-all-btn');
+// Date Picker elements
+const dpMonthYear = document.getElementById('dp-month-year');
+const dpGrid = document.getElementById('dp-grid');
+const dpPrevMonthBtn = document.getElementById('dp-prev-month');
+const dpNextMonthBtn = document.getElementById('dp-next-month');
+const dpCloseBtn = document.getElementById('dp-close');
+// Confirmation Modal elements
+const confirmActionBtn = document.getElementById('confirm-action-btn');
+const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+const confirmationTitle = document.getElementById('confirmation-title');
+const confirmationText = document.getElementById('confirmation-text');
+
+// State
+let currentDate = new Date();
+let dpCurrentDate = new Date();
+let bookings = [];
+let groupedBookings = {};
+let selectedDates = [];
+let currentGroupId = null;
+let confirmActionCallback = null;
+
+const ROOM_COLORS = { 
+    '501': 'bg-sky-100 text-sky-800 border-sky-400', 
+    '502': 'bg-emerald-100 text-emerald-800 border-emerald-400', 
+    '503大個諮': 'bg-amber-100 text-amber-800 border-amber-400', 
+    '504團諮室': 'bg-violet-100 text-violet-800 border-violet-400' 
+};
+const PERIODS = { '早修 (07:40-08:15)': {}, '第一節 (08:30-09:15)': {}, '第二節 (09:25-10:10)': {}, '第三節 (10:20-11:05)': {}, '第四節 (11:15-12:00)': {}, '午休 (12:35-13:15)': {}, '第五節 (13:20-14:05)': {}, '第六節 (14:15-15:00)': {}, '第七節 (15:15-16:00)': {}, '第八節 (16:10-16:55)': {} };
+
+// --- UTILITY FUNCTIONS ---
+function formatDate(date) { const d = new Date(date); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function showToast(message, isError = false) { toast.textContent = message; toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-xl text-white transition-all duration-300 z-50 shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`; setTimeout(() => toast.classList.add('opacity-0'), 4000); }
+
+// --- DATA HANDLING ---
+function groupBookings(bookings) {
+    groupedBookings = {};
+    bookings.forEach(b => {
+        if (!groupedBookings[b.GroupID]) { groupedBookings[b.GroupID] = { teacherName: b.TeacherName, reason: b.Reason, room: b.Room, entries: [] }; }
+        groupedBookings[b.GroupID].entries.push(b);
+    });
+}
+async function fetchBookings() {
+    if (!SCRIPT_URL) { showToast('系統尚未設定，請先填寫 SCRIPT_URL', true); return; }
+    loadingSpinner.classList.remove('hidden');
+    calendarContainer.classList.add('hidden');
+    try {
+        const response = await fetch(SCRIPT_URL);
+        if (!response.ok) throw new Error('無法從 Google Sheets 讀取資料');
+        bookings = await response.json();
+        groupBookings(bookings);
+        renderCalendar();
+    } catch (error) { console.error('Fetch error:', error); showToast(error.message, true); } 
+    finally { loadingSpinner.classList.add('hidden'); calendarContainer.classList.remove('hidden'); }
+}
+
+// --- MAIN CALENDAR ---
+function renderCalendar() {
+    calendarBody.innerHTML = '';
+    const year = currentDate.getFullYear(), month = currentDate.getMonth();
+    monthYearHeader.textContent = `${year} 年 ${month + 1} 月`;
+    const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0), startDayOfWeek = firstDay.getDay();
+    for (let i = 0; i < startDayOfWeek; i++) { calendarBody.innerHTML += `<div class="border-r border-b border-gray-200 bg-stone-50"></div>`; }
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(year, month, day), dateStr = formatDate(date), isToday = formatDate(new Date()) === dateStr;
+        const dayBookings = bookings.filter(b => formatDate(b.Date) === dateStr).sort((a, b) => Object.keys(PERIODS).indexOf(a.Period) - Object.keys(PERIODS).indexOf(b.Period));
+        let dayCell = document.createElement('div');
+        dayCell.className = 'calendar-day p-2 border-r border-b border-gray-200 relative hover:bg-orange-50 transition-colors cursor-pointer';
+        dayCell.dataset.date = dateStr;
+        let dayNumberClass = `w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${isToday ? 'bg-orange-500 text-white' : 'text-gray-600'} mb-1`;
+        let bookingsHtml = '<div class="day-bookings-container overflow-y-auto max-h-20">';
+        dayBookings.forEach(b => { bookingsHtml += `<div class="booking ${ROOM_COLORS[b.Room]}" data-group-id="${b.GroupID}"><strong>${b.Room}</strong>: ${b.Period.split(' ')[0]} - ${b.TeacherName}</div>`; });
+        bookingsHtml += '</div>';
+        dayCell.innerHTML = `<div class="${dayNumberClass}">${day}</div>${bookingsHtml}`;
+        calendarBody.appendChild(dayCell);
+    }
+}
+
+// --- DATE PICKER ---
+function renderDatePicker() {
+    dpGrid.innerHTML = '';
+    const year = dpCurrentDate.getFullYear(), month = dpCurrentDate.getMonth();
+    dpMonthYear.textContent = `${year} 年 ${month + 1} 月`;
+    const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0), startDayOfWeek = firstDay.getDay();
+    for (let i = 0; i < startDayOfWeek; i++) { dpGrid.innerHTML += `<div></div>`; }
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const dateStr = formatDate(new Date(year, month, day));
+        const isSelected = selectedDates.includes(dateStr);
+        dpGrid.innerHTML += `<button type="button" class="date-picker-day flex items-center justify-center hover:bg-stone-200 rounded-full ${isSelected ? 'selected' : ''}" data-date="${dateStr}">${day}</button>`;
+    }
+}
+function openDatePicker() { dpCurrentDate = new Date(); renderDatePicker(); datePickerModal.classList.remove('hidden'); }
+function closeDatePicker() { datePickerModal.classList.add('hidden'); }
+
+// --- MODALS ---
+function openBookingModal({ mode = 'create', groupId = null }) {
+    bookingForm.reset(); selectedDates = []; groupIdInput.value = '';
+    if (mode === 'create') { modalTitle.textContent = '新增預約'; submitBtnText.textContent = '送出預約'; } 
+    else if (mode === 'edit' && groupId) {
+        modalTitle.textContent = '編輯預約'; submitBtnText.textContent = '更新預約';
+        const group = groupedBookings[groupId];
+        if (group) {
+            document.getElementById('teacher-name').value = group.teacherName;
+            document.getElementById('reason').value = group.reason;
+            document.getElementById('room').value = group.room;
+            groupIdInput.value = groupId;
+            selectedDates = [...new Set(group.entries.map(e => formatDate(e.Date)))].sort();
+            const selectedPeriods = new Set(group.entries.map(e => e.Period));
+            periodsContainer.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = selectedPeriods.has(cb.value); });
+        }
+    }
+    renderSelectedDates(); bookingModal.classList.remove('hidden');
+}
+function closeBookingModal() { bookingModal.classList.add('hidden'); }
+function openDetailsModal(groupId) {
+    currentGroupId = groupId;
+    const group = groupedBookings[groupId];
+    detailsModalBody.innerHTML = `<p class="flex items-center"><strong class="w-20"><i class="fas fa-user mr-2 text-gray-400"></i>教師：</strong> <span>${group.teacherName}</span></p><p class="flex items-center"><strong class="w-20"><i class="fas fa-door-open mr-2 text-gray-400"></i>諮商室：</strong> <span>${group.room}</span></p><p class="flex items-start"><strong class="w-20 mt-1"><i class="fas fa-info-circle mr-2 text-gray-400"></i>事由：</strong> <span class="flex-1">${group.reason}</span></p><hr class="my-3"><p class="font-bold text-gray-700 mb-2"><i class="fas fa-clock mr-2 text-gray-400"></i>已預約時段：</p><div id="details-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>`;
+    const detailsList = document.getElementById('details-list');
+    group.entries.sort((a,b) => new Date(a.Date) - new Date(b.Date) || Object.keys(PERIODS).indexOf(a.Period) - Object.keys(PERIODS).indexOf(b.Period)).forEach(entry => {
+        detailsList.innerHTML += `<div class="flex justify-between items-center p-2 bg-stone-100 rounded-lg"><span class="text-sm">${formatDate(entry.Date)} - ${entry.Period}</span><button class="text-red-500 hover:text-red-700 text-lg single-delete-btn" data-uuid="${entry.UUID}"><i class="fas fa-trash-alt"></i></button></div>`;
+    });
+    detailsModal.classList.remove('hidden');
+}
+function closeDetailsModal() { detailsModal.classList.add('hidden'); currentGroupId = null; }
+function openConfirmationModal({ title, text, onConfirm }) {
+    confirmationTitle.textContent = title; confirmationText.textContent = text;
+    confirmActionCallback = onConfirm;
+    confirmationModal.classList.remove('hidden');
+}
+function closeConfirmationModal() { confirmationModal.classList.add('hidden'); confirmActionCallback = null; }
+function renderSelectedDates() {
+    selectedDatesContainer.innerHTML = selectedDates.sort().map(date => `<span class="inline-flex items-center bg-orange-500 text-white px-3 py-1 rounded-full text-sm">${date}</span>`).join('');
+    if (selectedDates.length === 0) { selectedDatesContainer.innerHTML = '<p class="text-gray-400">尚未選取日期</p>'; }
+}
+function populatePeriods() { Object.keys(PERIODS).forEach(p => { const id = `p-${p.replace(/[^a-zA-Z0-9]/g, "")}`; periodsContainer.innerHTML += `<div class="flex items-center"><input type="checkbox" id="${id}" value="${p}" class="h-5 w-5 rounded-md border-gray-300 text-orange-500 focus:ring-orange-400"><label for="${id}" class="ml-2 text-sm text-gray-600">${p}</label></div>`; }); }
+
+// --- API & ACTIONS ---
+async function sendRequest(payload) {
+    submitBtn.disabled = true; submitSpinner.classList.remove('hidden');
+    try {
+        const formData = new FormData();
+        formData.append('payload', JSON.stringify(payload));
+        await fetch(SCRIPT_URL, { method: 'POST', body: formData });
+        showToast(`操作成功！資料將於數秒後更新。`);
+        setTimeout(fetchBookings, 2000); // Faster refresh
+    } catch (error) { console.error('Submit error:', error); showToast('操作失敗，請稍後再試。', true); } 
+    finally { submitBtn.disabled = false; submitSpinner.classList.add('hidden'); }
+}
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(bookingForm), selectedPeriods = Array.from(periodsContainer.querySelectorAll('input:checked')).map(cb => cb.value);
+    if (selectedDates.length === 0) { showToast('請至少選擇一個預約日期', true); return; }
+    if (selectedPeriods.length === 0) { showToast('請至少選擇一個預約節次', true); return; }
+    const data = { teacherName: formData.get('teacherName'), reason: formData.get('reason'), room: formData.get('room'), dates: selectedDates, periods: selectedPeriods, groupId: formData.get('groupId') };
+    // Conflict check can be added back here if needed
+    const action = data.groupId ? 'UPDATE' : 'CREATE';
+    closeBookingModal();
+    await sendRequest({ action, data });
+}
+async function handleDeleteSingle(uuid) {
+    closeDetailsModal();
+    await sendRequest({ action: 'DELETE_SINGLE', data: { uuid } });
+}
+async function handleDeleteAll(groupId) {
+    closeDetailsModal();
+    await sendRequest({ action: 'DELETE', data: { groupId } });
+}
+
+// --- EVENT LISTENERS ---
+document.addEventListener('DOMContentLoaded', () => {
+    populatePeriods(); fetchBookings();
+    prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+    nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+    todayBtn.addEventListener('click', () => { currentDate = new Date(); renderCalendar(); });
+    
+    calendarBody.addEventListener('click', e => {
+        const groupId = e.target.closest('.booking')?.dataset.groupId;
+        if (groupId) { openDetailsModal(groupId); }
+    });
+    
+    addBookingMainBtn.addEventListener('click', () => openBookingModal({ mode: 'create' }));
+    
+    bookingForm.addEventListener('submit', handleFormSubmit);
+    openDatePickerBtn.addEventListener('click', openDatePicker);
+    closeModalBtn.addEventListener('click', closeBookingModal);
+    cancelBtn.addEventListener('click', closeBookingModal);
+
+    dpGrid.addEventListener('click', e => {
+        if (e.target.matches('[data-date]')) {
+            const dateStr = e.target.dataset.date, index = selectedDates.indexOf(dateStr);
+            if (index > -1) { selectedDates.splice(index, 1); } else { selectedDates.push(dateStr); }
+            renderDatePicker(); renderSelectedDates();
+        }
+    });
+    dpPrevMonthBtn.addEventListener('click', () => { dpCurrentDate.setMonth(dpCurrentDate.getMonth() - 1); renderDatePicker(); });
+    dpNextMonthBtn.addEventListener('click', () => { dpCurrentDate.setMonth(dpCurrentDate.getMonth() + 1); renderDatePicker(); });
+    dpCloseBtn.addEventListener('click', closeDatePicker);
+
+    closeDetailsModalBtn.addEventListener('click', closeDetailsModal);
+    detailsModalBody.addEventListener('click', e => {
+        const deleteBtn = e.target.closest('.single-delete-btn');
+        if (deleteBtn) {
+            const uuid = deleteBtn.dataset.uuid;
+            openConfirmationModal({ title: '刪除此一時段？', text: '您只會刪除這個時段的預約，同次申請的其他時段將不受影響。', onConfirm: () => handleDeleteSingle(uuid) });
+        }
+    });
+    editBookingBtn.addEventListener('click', () => { if(currentGroupId) { const id = currentGroupId; closeDetailsModal(); openBookingModal({ mode: 'edit', groupId: id }); } });
+    deleteAllBtn.addEventListener('click', () => {
+        if (currentGroupId) {
+            const id = currentGroupId;
+            openConfirmationModal({ title: '刪除全部預約？', text: '您將刪除本次申請的所有相關時段，此操作無法復原。', onConfirm: () => handleDeleteAll(id) });
+        }
+    });
+
+    confirmCancelBtn.addEventListener('click', closeConfirmationModal);
+    confirmActionBtn.addEventListener('click', () => { if(confirmActionCallback) { confirmActionCallback(); } closeConfirmationModal(); });
+});
+</script>
+
+</body>
+</html>
+
