@@ -17,7 +17,12 @@
             grid-template-columns: repeat(7, 1fr);
         }
         .calendar-day {
-            min-height: 120px;
+            min-height: 100px; /* 優化手機高度 */
+        }
+        @media (min-width: 640px) {
+            .calendar-day {
+                min-height: 120px;
+            }
         }
         .day-name {
             font-size: 0.8rem;
@@ -70,17 +75,17 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 flex items-center justify-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 flex items-center justify-center text-center">
                 <i class="fas fa-heart-pulse text-orange-400 mr-3"></i>
                 建成國中諮商室借用系統
             </h1>
             <p class="text-gray-500 mt-2">一個溫暖的晤談空間</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
-                 <button id="add-booking-main" class="w-full sm:w-auto px-5 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2 text-lg">
+                 <button id="add-booking-main" class="w-full sm:w-auto px-4 py-2 text-base sm:px-5 sm:py-3 sm:text-lg bg-orange-500 text-white rounded-xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2">
                     <i class="fas fa-plus"></i>
                     <span>新增預約</span>
                 </button>
@@ -96,12 +101,12 @@
                     </button>
                 </div>
             </div>
-             <h2 class="text-2xl font-bold text-gray-700 text-center mb-4" id="month-year-header"></h2>
+             <h2 class="text-xl sm:text-2xl font-bold text-gray-700 text-center mb-4" id="month-year-header"></h2>
 
             <!-- Calendar -->
             <div id="calendar-container">
                 <div class="calendar-grid border-t border-l border-gray-200">
-                    <div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">日</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">一</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">二</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">三</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">四</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">五</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">六</div>
+                    <div class="day-name text-center font-bold text-red-400 p-2 border-r border-b bg-stone-50">日</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">一</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">二</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">三</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">四</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">五</div><div class="day-name text-center font-bold text-red-400 p-2 border-r border-b bg-stone-50">六</div>
                 </div>
                 <div id="calendar-body" class="calendar-grid border-l border-gray-200"></div>
             </div>
@@ -114,8 +119,8 @@
 
     <!-- Booking Modal (Create/Edit) -->
     <div id="booking-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-5 border-b"><h2 id="modal-title" class="text-xl font-bold text-gray-800">預約諮商室</h2><button id="close-modal" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button></div>
+        <div class="bg-white rounded-2xl shadow-2xl w-11/12 sm:w-full sm:max-w-lg max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-5 border-b"><h2 id="modal-title" class="text-lg sm:text-xl font-bold text-gray-800">預約諮商室</h2><button id="close-modal" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button></div>
             <div class="modal-body p-6 overflow-y-auto">
                 <form id="booking-form">
                     <input type="hidden" id="group-id" name="groupId">
@@ -141,8 +146,8 @@
 
     <!-- Details Modal -->
     <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-5 border-b"><h2 class="text-xl font-bold text-gray-800">預約詳情</h2><button id="close-details-modal" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button></div>
+        <div class="bg-white rounded-2xl shadow-2xl w-11/12 sm:w-full sm:max-w-md max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-5 border-b"><h2 class="text-lg sm:text-xl font-bold text-gray-800">預約詳情</h2><button id="close-details-modal" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button></div>
             <div id="details-modal-body" class="p-6 space-y-3 overflow-y-auto"></div>
             <div class="p-5 border-t bg-stone-50 flex justify-end space-x-3 rounded-b-2xl">
                 <button id="delete-all-btn" class="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">刪除全部</button>
@@ -290,10 +295,12 @@ function renderCalendar() {
     for (let day = 1; day <= lastDay.getDate(); day++) {
         const date = new Date(year, month, day), dateStr = formatDate(date), isToday = formatDate(new Date()) === dateStr;
         const dayBookings = bookings.filter(b => formatDate(b.Date) === dateStr).sort((a, b) => Object.keys(PERIODS).indexOf(a.Period) - Object.keys(PERIODS).indexOf(b.Period));
+        
         let dayCell = document.createElement('div');
-        dayCell.className = 'calendar-day p-2 border-r border-b border-gray-200 relative hover:bg-orange-50 transition-colors cursor-pointer';
+        dayCell.className = `calendar-day p-1 sm:p-2 border-r border-b border-gray-200 relative transition-colors cursor-pointer hover:bg-orange-50`;
         dayCell.dataset.date = dateStr;
-        let dayNumberClass = `w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${isToday ? 'bg-orange-500 text-white' : 'text-gray-600'} mb-1`;
+
+        let dayNumberClass = `w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-sm font-medium ${isToday ? 'bg-orange-500 text-white' : 'text-gray-600'} mb-1`;
         let bookingsHtml = '<div class="day-bookings-container overflow-y-auto max-h-20">';
         dayBookings.forEach(b => { bookingsHtml += `<div class="booking ${ROOM_COLORS[b.Room]}" data-group-id="${b.GroupID}"><strong>${b.Room}</strong>: ${b.Period.split(' ')[0]} - ${b.TeacherName}</div>`; });
         bookingsHtml += '</div>';
@@ -310,9 +317,12 @@ function renderDatePicker() {
     const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0), startDayOfWeek = firstDay.getDay();
     for (let i = 0; i < startDayOfWeek; i++) { dpGrid.innerHTML += `<div></div>`; }
     for (let day = 1; day <= lastDay.getDate(); day++) {
-        const dateStr = formatDate(new Date(year, month, day));
+        const date = new Date(year, month, day);
+        const dateStr = formatDate(date);
         const isSelected = selectedDates.includes(dateStr);
-        dpGrid.innerHTML += `<button type="button" class="date-picker-day flex items-center justify-center hover:bg-stone-200 rounded-full ${isSelected ? 'selected' : ''}" data-date="${dateStr}">${day}</button>`;
+        dpGrid.innerHTML += `<button type="button" 
+            class="date-picker-day flex items-center justify-center rounded-full text-sm hover:bg-stone-200 ${isSelected ? 'selected' : ''}" 
+            data-date="${dateStr}">${day}</button>`;
     }
 }
 function openDatePicker() { dpCurrentDate = new Date(); renderDatePicker(); datePickerModal.classList.remove('hidden'); }
@@ -370,7 +380,15 @@ function renderSelectedDates() {
     selectedDatesContainer.innerHTML = selectedDates.sort().map(date => `<span class="inline-flex items-center bg-orange-500 text-white px-3 py-1 rounded-full text-sm">${date}</span>`).join('');
     if (selectedDates.length === 0) { selectedDatesContainer.innerHTML = '<p class="text-gray-400">尚未選取日期</p>'; }
 }
-function populatePeriods() { Object.keys(PERIODS).forEach(p => { const id = `p-${p.replace(/[^a-zA-Z0-9]/g, "")}`; periodsContainer.innerHTML += `<div class="flex items-center"><input type="checkbox" id="${id}" value="${p}" class="h-5 w-5 rounded-md border-gray-300 text-orange-500 focus:ring-orange-400"><label for="${id}" class="ml-2 text-sm text-gray-600">${p}</label></div>`; }); }
+function populatePeriods() { 
+    Object.keys(PERIODS).forEach(p => { 
+        const id = `p-${p.replace(/[^a-zA-Z0-9]/g, "")}`; 
+        const shortLabel = p.split(' ')[0];
+        const fullLabel = p;
+        const labelHtml = `<span class="hidden sm:inline">${fullLabel}</span><span class="sm:hidden">${shortLabel}</span>`;
+        periodsContainer.innerHTML += `<div class="flex items-center"><input type="checkbox" id="${id}" value="${p}" class="h-5 w-5 rounded-md border-gray-300 text-orange-500 focus:ring-orange-400 flex-shrink-0"><label for="${id}" class="ml-2 text-sm text-gray-600">${labelHtml}</label></div>`; 
+    }); 
+}
 
 // --- API & ACTIONS ---
 async function sendRequest(payload) {
@@ -417,10 +435,7 @@ async function handleFormSubmit(e) {
                 const isSameSlot = formatDate(existingBooking.Date) === date &&
                                    existingBooking.Room === newBookingData.room &&
                                    existingBooking.Period === period;
-                
-                // If it's an update, ignore bookings from the same group
                 const isDifferentGroup = newBookingData.groupId ? existingBooking.GroupID !== newBookingData.groupId : true;
-                
                 return isSameSlot && isDifferentGroup;
             });
 
@@ -435,7 +450,7 @@ async function handleFormSubmit(e) {
 
     if (conflictFound) {
         showToast(conflictMessage, true);
-        return; // Stop submission
+        return;
     }
     // --- End of Conflict Check Logic ---
 
@@ -483,10 +498,17 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelBtn.addEventListener('click', closeBookingModal);
 
     dpGrid.addEventListener('click', e => {
-        if (e.target.matches('[data-date]')) {
-            const dateStr = e.target.dataset.date, index = selectedDates.indexOf(dateStr);
-            if (index > -1) { selectedDates.splice(index, 1); } else { selectedDates.push(dateStr); }
-            renderDatePicker(); renderSelectedDates();
+        const button = e.target.closest('button.date-picker-day');
+        if (button && !button.disabled) {
+            const dateStr = button.dataset.date;
+            const index = selectedDates.indexOf(dateStr);
+            if (index > -1) {
+                selectedDates.splice(index, 1);
+            } else {
+                selectedDates.push(dateStr);
+            }
+            renderDatePicker(); 
+            renderSelectedDates();
         }
     });
     dpPrevMonthBtn.addEventListener('click', () => { dpCurrentDate.setMonth(dpCurrentDate.getMonth() - 1); renderDatePicker(); });
@@ -516,3 +538,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
+
