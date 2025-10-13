@@ -250,7 +250,13 @@ const PERIODS = { '早修 (07:40-08:15)': {}, '第一節 (08:30-09:15)': {}, '�
 
 // --- UTILITY FUNCTIONS ---
 function formatDate(date) { const d = new Date(date); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-function showToast(message, isError = false) { toast.textContent = message; toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-xl text-white transition-all duration-300 z-50 shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`; setTimeout(() => toast.classList.add('opacity-0'), 4000); }
+function showToast(message, isError = false) {
+    toast.textContent = message;
+    toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-xl text-white transition-all duration-300 z-50 shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+    toast.classList.remove('opacity-0');
+    setTimeout(() => toast.classList.add('opacity-0'), 4000);
+}
+
 
 // --- DATA HANDLING ---
 function groupBookings(bookings) {
@@ -380,14 +386,62 @@ async function sendRequest(payload) {
 }
 async function handleFormSubmit(e) {
     e.preventDefault();
-    const formData = new FormData(bookingForm), selectedPeriods = Array.from(periodsContainer.querySelectorAll('input:checked')).map(cb => cb.value);
-    if (selectedDates.length === 0) { showToast('請至少選擇一個預約日期', true); return; }
-    if (selectedPeriods.length === 0) { showToast('請至少選擇一個預約節次', true); return; }
-    const data = { teacherName: formData.get('teacherName'), reason: formData.get('reason'), room: formData.get('room'), dates: selectedDates, periods: selectedPeriods, groupId: formData.get('groupId') };
-    // Conflict check can be added back here if needed
-    const action = data.groupId ? 'UPDATE' : 'CREATE';
+    const formData = new FormData(bookingForm);
+    const selectedPeriods = Array.from(periodsContainer.querySelectorAll('input:checked')).map(cb => cb.value);
+
+    if (selectedDates.length === 0) {
+        showToast('請至少選擇一個預約日期', true);
+        return;
+    }
+    if (selectedPeriods.length === 0) {
+        showToast('請至少選擇一個預約節次', true);
+        return;
+    }
+
+    const newBookingData = {
+        teacherName: formData.get('teacherName'),
+        reason: formData.get('reason'),
+        room: formData.get('room'),
+        dates: selectedDates,
+        periods: selectedPeriods,
+        groupId: formData.get('groupId')
+    };
+
+    // --- Conflict Check Logic ---
+    let conflictFound = false;
+    let conflictMessage = '';
+
+    for (const date of newBookingData.dates) {
+        for (const period of newBookingData.periods) {
+            const conflictingBooking = bookings.find(existingBooking => {
+                const isSameSlot = formatDate(existingBooking.Date) === date &&
+                                   existingBooking.Room === newBookingData.room &&
+                                   existingBooking.Period === period;
+                
+                // If it's an update, ignore bookings from the same group
+                const isDifferentGroup = newBookingData.groupId ? existingBooking.GroupID !== newBookingData.groupId : true;
+                
+                return isSameSlot && isDifferentGroup;
+            });
+
+            if (conflictingBooking) {
+                conflictFound = true;
+                conflictMessage = `時間衝突：${newBookingData.room} 在 ${date} 的 ${period.split(' ')[0]} 已被預約。`;
+                break;
+            }
+        }
+        if (conflictFound) break;
+    }
+
+    if (conflictFound) {
+        showToast(conflictMessage, true);
+        return; // Stop submission
+    }
+    // --- End of Conflict Check Logic ---
+
+    const action = newBookingData.groupId ? 'UPDATE' : 'CREATE';
     closeBookingModal();
-    await sendRequest({ action, data });
+    await sendRequest({ action, data: newBookingData });
 }
 async function handleDeleteSingle(uuid) {
     closeDetailsModal();
@@ -462,4 +516,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-
