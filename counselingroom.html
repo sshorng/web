@@ -12,31 +12,28 @@
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #FFF8F0; /* 溫暖的米色背景 */
         }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
+        .calendar-table {
+            min-width: 600px; /* 設定最小寬度，讓手機可以橫向滾動 */
+            table-layout: fixed;
+            width: 100%;
         }
         .calendar-day {
-            min-height: 100px; /* 優化手機高度 */
-        }
-        @media (min-width: 640px) {
-            .calendar-day {
-                min-height: 120px;
-            }
+            height: 120px;
+            vertical-align: top;
         }
         .day-name {
             font-size: 0.8rem;
         }
         .booking {
             font-size: 0.75rem;
-            padding: 3px 6px;
-            margin-top: 4px;
+            padding: 2px 5px;
+            margin-top: 3px;
             border-radius: 6px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             cursor: pointer;
-            border-left-width: 5px;
+            border-left-width: 4px;
         }
         /* Custom scrollbar */
         .modal-body::-webkit-scrollbar, .day-bookings-container::-webkit-scrollbar, #details-list::-webkit-scrollbar {
@@ -82,10 +79,10 @@
             <p class="text-gray-500 mt-2">一個溫暖的晤談空間</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-6 overflow-x-auto">
             <!-- Header -->
-            <div class="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
-                 <button id="add-booking-main" class="w-full sm:w-auto px-4 py-2 text-base sm:px-5 sm:py-3 sm:text-lg bg-orange-500 text-white rounded-xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2">
+            <div class="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4" style="min-width: 600px;">
+                 <button id="add-booking-main" class="w-full sm:w-auto px-5 py-3 text-lg bg-orange-500 text-white rounded-xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2">
                     <i class="fas fa-plus"></i>
                     <span>新增預約</span>
                 </button>
@@ -101,14 +98,26 @@
                     </button>
                 </div>
             </div>
-             <h2 class="text-xl sm:text-2xl font-bold text-gray-700 text-center mb-4" id="month-year-header"></h2>
+             <h2 class="text-2xl font-bold text-gray-700 text-center mb-4" style="min-width: 600px;" id="month-year-header"></h2>
 
             <!-- Calendar -->
             <div id="calendar-container">
-                <div class="calendar-grid border-t border-l border-gray-200">
-                    <div class="day-name text-center font-bold text-red-400 p-2 border-r border-b bg-stone-50">日</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">一</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">二</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">三</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">四</div><div class="day-name text-center font-bold text-gray-500 p-2 border-r border-b bg-stone-50">五</div><div class="day-name text-center font-bold text-red-400 p-2 border-r border-b bg-stone-50">六</div>
-                </div>
-                <div id="calendar-body" class="calendar-grid border-l border-gray-200"></div>
+                 <table class="calendar-table border-collapse border border-gray-200">
+                    <thead>
+                        <tr id="calendar-weekdays">
+                            <th class="day-name text-center font-bold text-red-400 p-2 border bg-stone-50">日</th>
+                            <th class="day-name text-center font-bold text-gray-500 p-2 border bg-stone-50">一</th>
+                            <th class="day-name text-center font-bold text-gray-500 p-2 border bg-stone-50">二</th>
+                            <th class="day-name text-center font-bold text-gray-500 p-2 border bg-stone-50">三</th>
+                            <th class="day-name text-center font-bold text-gray-500 p-2 border bg-stone-50">四</th>
+                            <th class="day-name text-center font-bold text-gray-500 p-2 border bg-stone-50">五</th>
+                            <th class="day-name text-center font-bold text-red-400 p-2 border bg-stone-50">六</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendar-body">
+                        <!-- Calendar days will be generated by JavaScript -->
+                    </tbody>
+                </table>
             </div>
              <div id="loading-spinner" class="text-center py-8 text-orange-400 hidden">
                 <i class="fas fa-spinner fa-spin fa-3x"></i>
@@ -290,24 +299,47 @@ function renderCalendar() {
     calendarBody.innerHTML = '';
     const year = currentDate.getFullYear(), month = currentDate.getMonth();
     monthYearHeader.textContent = `${year} 年 ${month + 1} 月`;
-    const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0), startDayOfWeek = firstDay.getDay();
-    for (let i = 0; i < startDayOfWeek; i++) { calendarBody.innerHTML += `<div class="border-r border-b border-gray-200 bg-stone-50"></div>`; }
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-        const date = new Date(year, month, day), dateStr = formatDate(date), isToday = formatDate(new Date()) === dateStr;
-        const dayBookings = bookings.filter(b => formatDate(b.Date) === dateStr).sort((a, b) => Object.keys(PERIODS).indexOf(a.Period) - Object.keys(PERIODS).indexOf(b.Period));
-        
-        let dayCell = document.createElement('div');
-        dayCell.className = `calendar-day p-1 sm:p-2 border-r border-b border-gray-200 relative transition-colors cursor-pointer hover:bg-orange-50`;
-        dayCell.dataset.date = dateStr;
+    const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0);
+    let date = 1;
+    for (let i = 0; i < 6; i++) { // Max 6 weeks in a month
+        let row = document.createElement('tr');
+        for (let j = 0; j < 7; j++) {
+            if (i === 0 && j < firstDay.getDay()) {
+                let cell = document.createElement('td');
+                cell.className = 'calendar-day border bg-stone-50';
+                row.appendChild(cell);
+            } else if (date > lastDay.getDate()) {
+                 let cell = document.createElement('td');
+                cell.className = 'calendar-day border bg-stone-50';
+                row.appendChild(cell);
+            } else {
+                let cell = document.createElement('td');
+                const dateObj = new Date(year, month, date);
+                const dateStr = formatDate(dateObj);
+                const isToday = formatDate(new Date()) === dateStr;
+                const dayBookings = bookings.filter(b => formatDate(b.Date) === dateStr).sort((a, b) => Object.keys(PERIODS).indexOf(a.Period) - Object.keys(PERIODS).indexOf(b.Period));
+                
+                cell.className = `calendar-day p-2 border relative transition-colors cursor-pointer hover:bg-orange-50`;
+                cell.dataset.date = dateStr;
 
-        let dayNumberClass = `w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-sm font-medium ${isToday ? 'bg-orange-500 text-white' : 'text-gray-600'} mb-1`;
-        let bookingsHtml = '<div class="day-bookings-container overflow-y-auto max-h-20">';
-        dayBookings.forEach(b => { bookingsHtml += `<div class="booking ${ROOM_COLORS[b.Room]}" data-group-id="${b.GroupID}"><strong>${b.Room}</strong>: ${b.Period.split(' ')[0]} - ${b.TeacherName}</div>`; });
-        bookingsHtml += '</div>';
-        dayCell.innerHTML = `<div class="${dayNumberClass}">${day}</div>${bookingsHtml}`;
-        calendarBody.appendChild(dayCell);
+                let dayNumberClass = `w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${isToday ? 'bg-orange-500 text-white' : 'text-gray-600'} mb-1`;
+                let bookingsHtml = '<div class="day-bookings-container overflow-y-auto max-h-20">';
+                dayBookings.forEach(b => { 
+                    bookingsHtml += `<div class="booking ${ROOM_COLORS[b.Room]}" data-group-id="${b.GroupID}"><strong>${b.Room}</strong>: ${b.Period.split(' ')[0]} - ${b.TeacherName}</div>`; 
+                });
+                bookingsHtml += '</div>';
+                cell.innerHTML = `<div class="${dayNumberClass}">${date}</div>${bookingsHtml}`;
+                row.appendChild(cell);
+                date++;
+            }
+        }
+        calendarBody.appendChild(row);
+        if (date > lastDay.getDate()) {
+            break;
+        }
     }
 }
+
 
 // --- DATE PICKER ---
 function renderDatePicker() {
@@ -476,15 +508,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     calendarBody.addEventListener('click', e => {
         const bookingElement = e.target.closest('.booking');
-        const dayCell = e.target.closest('.calendar-day');
+        const dayCell = e.target.closest('.calendar-day, td');
 
         if (bookingElement) {
+            e.stopPropagation(); // Prevent event bubbling to the cell
             const groupId = bookingElement.dataset.groupId;
             if (groupId) openDetailsModal(groupId);
             return;
         }
         
-        if (dayCell) {
+        if (dayCell && dayCell.dataset.date) {
             const dateStr = dayCell.dataset.date;
             openBookingModal({ mode: 'create', preselectedDate: dateStr });
         }
@@ -537,5 +570,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 </body>
-</html>
 
