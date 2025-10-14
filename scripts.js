@@ -2845,7 +2845,7 @@ async function handleGenerateQuestionsFromPasted() {
                     const content = JSON.parse(result.candidates[0].content.parts[0].text);
 
                     showLoading('AI 書僮正在生成深度解析...');
-                    const analysis = await callGeminiAPI(article);
+                    const analysis = await callFullGeminiAnalysis(article);
 
                     const newAssignment = { title, article, ...content, analysis: analysis, createdAt: new Date(), isPublic: document.getElementById('pasted-is-public').checked };
                     if (deadline) newAssignment.deadline = Timestamp.fromDate(new Date(deadline + "T23:59:59"));
@@ -3788,9 +3788,28 @@ ${JSON.stringify(analysisData, null, 2)}
                 await updateDoc(doc(db, `assignments`, assignmentId), updatedData);
 
                 // 更新本地 allAssignments 陣列
-                const studentIndex = appState.assignments.findIndex(a => a.id === assignmentId);
-                if (studentIndex !== -1) {
-                    appState.assignments[studentIndex] = { ...appState.assignments[studentIndex], ...updatedData };
+                if (updatedData.deadline && typeof updatedData.deadline.isEqual === 'function') {
+                    // This is a sentinel, don't merge it into the local state literally.
+                    // Instead, remove the property from the local object.
+                    const localUpdatedData = { ...updatedData };
+                    delete localUpdatedData.deadline;
+                    
+                    const studentIndex = appState.assignments.findIndex(a => a.id === assignmentId);
+                    if (studentIndex !== -1) {
+                        appState.assignments[studentIndex] = { ...appState.assignments[studentIndex], ...localUpdatedData };
+                        delete appState.assignments[studentIndex].deadline;
+                    }
+                    
+                    const teacherIndex = appState.teacherArticleQueryState.articles.findIndex(a => a.id === assignmentId);
+                    if (teacherIndex !== -1) {
+                        appState.teacherArticleQueryState.articles[teacherIndex] = { ...appState.teacherArticleQueryState.articles[teacherIndex], ...localUpdatedData };
+                        delete appState.teacherArticleQueryState.articles[teacherIndex].deadline;
+                    }
+                } else {
+                    const studentIndex = appState.assignments.findIndex(a => a.id === assignmentId);
+                    if (studentIndex !== -1) {
+                        appState.assignments[studentIndex] = { ...appState.assignments[studentIndex], ...updatedData };
+                    }
                 }
                 // FIX: Also update the teacher's article list state
                 const teacherIndex = appState.teacherArticleQueryState.articles.findIndex(a => a.id === assignmentId);
