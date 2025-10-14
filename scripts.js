@@ -2739,6 +2739,39 @@ ${difficultyInstruction}
             } else {
                 tagInstruction = `請你根據提供的文章內容，從「形式」、「內容」、「難度」三個類別中，各選擇一個最適合的標籤。**絕不可以創造選項之外的新標籤**。`;
             }
+async function callGeminiAPI(article) {
+    if (!appState.geminiApiKey) {
+        throw new Error("AI API 金鑰未設定。");
+    }
+    const apiKey = appState.geminiApiKey;
+    const prompt = `請針對以下文章進行深度解析，分析其主旨、結構、風格、以及可能的延伸思考：\n\n${article}`;
+    const payload = {
+        contents: [{
+            role: "user",
+            parts: [{
+                text: prompt
+            }]
+        }]
+    };
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        throw new Error(`API 請求失敗`);
+    }
+    const result = await response.json();
+    if (result.candidates?.length > 0 && result.candidates[0].content.parts?.length > 0) {
+        return result.candidates[0].content.parts[0].text;
+    } else {
+        console.error("API response is missing expected structure:", result);
+        throw new Error("API 未返回有效內容或內容結構不符。");
+    }
+}
+
             showLoading(`AI 正在分析文本並生成試題...`);
             const prompt = `你是一位學養深厚的書院夫子。請根據以下提供的篇章，為其設計 5 道符合 PISA 閱讀素養的單選試題，並判斷其標籤。
 請遵循以下專業要求：
