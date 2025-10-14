@@ -2446,11 +2446,12 @@
                 return;
             }
             
-            const article = appState.assignments.find(a => a.id === articleId);
+            // FIX: Search in the correct, more persistent state for teacher articles
+            const article = appState.teacherArticleQueryState.articles.find(a => a.id === articleId);
             if (article) {
                 renderModal('editArticle', { assignment: article });
             } else {
-                console.error(`handleEditArticle: Could not find article with ID ${articleId}`);
+                console.error(`handleEditArticle: Could not find article with ID ${articleId} in teacherArticleQueryState.articles`);
                 renderModal('message', { type: 'error', title: '錯誤', message: '找不到該篇章的資料。' });
             }
         }
@@ -3639,15 +3640,21 @@ ${JSON.stringify(analysisData, null, 2)}
                 await updateDoc(doc(db, `assignments`, assignmentId), updatedData);
 
                 // 更新本地 allAssignments 陣列
-                const index = appState.assignments.findIndex(a => a.id === assignmentId);
-                if (index !== -1) {
-                    // 只更新被修改的欄位，保留原有物件的其他屬性
-                    appState.assignments[index] = { ...appState.assignments[index], ...updatedData };
+                const studentIndex = appState.assignments.findIndex(a => a.id === assignmentId);
+                if (studentIndex !== -1) {
+                    appState.assignments[studentIndex] = { ...appState.assignments[studentIndex], ...updatedData };
                 }
+                // FIX: Also update the teacher's article list state
+                const teacherIndex = appState.teacherArticleQueryState.articles.findIndex(a => a.id === assignmentId);
+                if (teacherIndex !== -1) {
+                    appState.teacherArticleQueryState.articles[teacherIndex] = { ...appState.teacherArticleQueryState.articles[teacherIndex], ...updatedData };
+                }
+
 
                 hideLoading();
                 closeModal();
-                renderArticleTable();
+                // FIX: Re-render the teacher's article table with the updated data
+                renderTeacherArticleTable(appState.teacherArticleQueryState.articles, true);
                 renderModal('message', { type: 'success', title: '修訂成功', message: '篇章內容已成功修訂！' });
             } catch (e) {
                 const errorEl = modal.querySelector('#edit-article-error');
