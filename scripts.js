@@ -352,7 +352,7 @@
                                        class: 'form-check-input w-5 h-5',
                                        type: 'checkbox',
                                        id: 'edit-is-public',
-                                       checked: !!assignment.isPublic,
+                                       // checked: !!assignment.isPublic,
                                        onclick: () => console.log('Checkbox clicked, new state:', document.getElementById('edit-is-public').checked)
                                    }),
                                    el('label', {
@@ -431,6 +431,12 @@
                     baseElement.innerHTML = base;
                     baseElement.querySelector('.modal-backdrop').appendChild(modalContent);
                     resolve(baseElement.innerHTML);
+                    setTimeout(() => {
+                        const checkbox = document.getElementById('edit-is-public');
+                        if (checkbox) {
+                            checkbox.checked = !!assignment.isPublic;
+                        }
+                    }, 0);
                 });
             },
 
@@ -758,9 +764,6 @@
                   element.innerHTML = attributes[key];
               } else if (key.startsWith('on') && typeof attributes[key] === 'function') {
                   element.addEventListener(key.substring(2).toLowerCase(), attributes[key]);
-              }
-              else if (key === 'checked') {
-                element.checked = attributes[key];
               }
               else {
                   element.setAttribute(key, attributes[key]);
