@@ -3812,6 +3812,11 @@ ${JSON.stringify(analysisData, null, 2)}
                     if (studentIndex !== -1) {
                         appState.assignments[studentIndex] = { ...appState.assignments[studentIndex], ...updatedData };
                     }
+                    
+                    const teacherIndex = appState.teacherArticleQueryState.articles.findIndex(a => a.id === assignmentId);
+                    if (teacherIndex !== -1) {
+                        appState.teacherArticleQueryState.articles[teacherIndex] = { ...appState.teacherArticleQueryState.articles[teacherIndex], ...updatedData };
+                    }
                 }
                 // FIX: Also update the teacher's article list state
                 const teacherIndex = appState.teacherArticleQueryState.articles.findIndex(a => a.id === assignmentId);
