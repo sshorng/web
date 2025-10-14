@@ -2439,20 +2439,38 @@
         }
 
 
-        function handleEditArticle(e) {
-            const articleId = e.target.closest('.edit-article-btn')?.dataset.assignmentId;
+        async function handleEditArticle(e) {
+            const articleId = e.target.closest('[data-assignment-id]')?.dataset.assignmentId;
             if (!articleId) {
                 console.error("handleEditArticle: Could not find articleId from event target.");
                 return;
             }
             
-            // FIX: Search in the correct, more persistent state for teacher articles
-            const article = appState.teacherArticleQueryState.articles.find(a => a.id === articleId);
+            // First, try to find it in any of the loaded states for performance
+            let article = appState.teacherArticleQueryState.articles.find(a => a.id === articleId)
+                       || appState.assignments.find(a => a.id === articleId)
+                       || (appState.allTeacherArticles || []).find(a => a.id === articleId);
+
             if (article) {
                 renderModal('editArticle', { assignment: article });
             } else {
-                console.error(`handleEditArticle: Could not find article with ID ${articleId} in teacherArticleQueryState.articles`);
-                renderModal('message', { type: 'error', title: '錯誤', message: '找不到該篇章的資料。' });
+                // If not found, fetch it directly from Firestore as a robust fallback
+                showLoading('正在讀取篇章資料...');
+                try {
+                    const docRef = doc(db, "assignments", articleId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        article = { id: docSnap.id, ...docSnap.data() };
+                        renderModal('editArticle', { assignment: article });
+                    } else {
+                        renderModal('message', { type: 'error', title: '錯誤', message: '找不到該篇章的資料。' });
+                    }
+                } catch (err) {
+                    console.error("Error fetching article directly:", err);
+                    renderModal('message', { type: 'error', title: '錯誤', message: '讀取篇章資料時發生錯誤。' });
+                } finally {
+                    hideLoading();
+                }
             }
         }
 
@@ -2937,8 +2955,9 @@ ${JSON.stringify(analysisData, null, 2)}
                 const filters = state.filters;
 
                 let filteredAssignments = allAssignments.filter(a => {
-                    // For students, only show public assignments
-                    if (appState.currentView === 'student' && a.isPublic !== true) {
+                    // For student-type users, only show public assignments. Teachers can see all.
+                    const isStudentUser = appState.currentUser?.type === 'student';
+                    if (isStudentUser && a.isPublic !== true) {
                         return false;
                     }
 
@@ -3097,7 +3116,14 @@ ${JSON.stringify(analysisData, null, 2)}
                 const userSubmissions = appState.allSubmissions.filter(s => s.studentId === appState.currentUser.studentId);
                 const completedAssignmentIds = new Set(userSubmissions.map(s => s.assignmentId));
 
-                let assignmentsToRender = allAssignments.filter(a => a.deadline && !completedAssignmentIds.has(a.id));
+                const isStudentUser = appState.currentUser?.type === 'student';
+                let assignmentsToRender = allAssignments.filter(a => {
+                    // For student users, hide private articles. Teachers can see all.
+                    if (isStudentUser && a.isPublic !== true) {
+                        return false;
+                    }
+                    return a.deadline && !completedAssignmentIds.has(a.id);
+                });
                 assignmentsToRender.sort((a, b) => a.deadline.toMillis() - b.deadline.toMillis());
 
                 renderAssignmentsList(assignmentsToRender);
