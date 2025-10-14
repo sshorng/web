@@ -1663,8 +1663,12 @@
                     createFilterSelect('filter-tag-difficulty', '所有難度', { '簡單': '#簡單', '基礎': '#基礎', '普通': '#普通', '進階': '#進階', '困難': '#困難' }),
                     createFilterSelect('filter-deadline-status', '所有期限', { 'active': '進行中', 'expired': '已逾期', 'none': '無期限' })
                 ]),
-                el('div', { id: 'bulk-actions-container', class: 'hidden mb-4' }, [
-                    el('button', { id: 'bulk-delete-btn', class: 'btn-danger py-2 px-4 text-sm', textContent: '刪除選取項目' })
+                el('div', { id: 'bulk-actions-container', class: 'hidden mb-4 flex items-center gap-2' }, [
+                    el('span', { class: 'text-sm font-medium text-slate-600', textContent: '對選取項目進行：'}),
+                    el('button', { id: 'bulk-set-public-btn', class: 'btn-teal py-2 px-4 text-sm', textContent: '設為公開' }),
+                    el('button', { id: 'bulk-set-private-btn', class: 'btn-secondary py-2 px-4 text-sm', textContent: '設為私密' }),
+                    el('div', { class: 'h-4 border-l border-slate-300 mx-2' }), // Divider
+                    el('button', { id: 'bulk-delete-btn', class: 'btn-danger py-2 px-4 text-sm', textContent: '刪除' })
                 ]),
                 el('div', { class: 'overflow-x-auto rounded-lg border border-slate-200' }, [
                     el('table', { class: 'min-w-full divide-y divide-slate-200' }, [
@@ -2472,6 +2476,50 @@
                     hideLoading();
                 }
             }
+        }
+
+        // 批次更新文章公開狀態
+        async function bulkUpdatePublicStatus(isPublic) {
+            const selectedCheckboxes = document.querySelectorAll('.article-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                renderModal('message', { type: 'info', title: '提示', message: '請先選取要操作的文章。' });
+                return;
+            }
+
+            const articleIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            const statusText = isPublic ? '公開' : '私密';
+
+            renderModal('confirm', {
+                title: '確認批次更新',
+                message: `確定要將 ${articleIds.length} 篇文章設為${statusText}嗎？`,
+                onConfirm: async () => {
+                    showLoading('批次更新中...');
+
+                    try {
+                        const batch = writeBatch(db);
+
+                        articleIds.forEach(articleId => {
+                            const articleRef = doc(db, "assignments", articleId);
+                            batch.update(articleRef, { isPublic: isPublic });
+                        });
+
+                        await batch.commit();
+                        renderModal('message', { type: 'success', title: '更新成功', message: `成功將 ${articleIds.length} 篇文章設為${statusText}。` });
+                        await fetchTeacherAssignmentsPage(true); // Refresh list
+                    } catch (error) {
+                        console.error(`批次更新文章狀態失敗:`, error);
+                        renderModal('message', { type: 'error', title: '批次更新失敗', message: '批次更新失敗，請稍後再試。' });
+                    } finally {
+                        hideLoading();
+                        // Reset UI
+                        const bulkContainer = document.getElementById('bulk-actions-container');
+                        if (bulkContainer) bulkContainer.classList.add('hidden');
+                        const selectAll = document.getElementById('select-all-articles');
+                        if (selectAll) selectAll.checked = false;
+                        document.querySelectorAll('.article-checkbox').forEach(cb => cb.checked = false);
+                    }
+                }
+            });
         }
 
         async function handleDeleteArticle(e) {
@@ -4742,6 +4790,12 @@ ${rawText}
                 switch (target.id) {
                     case 'bulk-delete-btn':
                         handleBulkDelete();
+                        break;
+                    case 'bulk-set-public-btn':
+                        bulkUpdatePublicStatus(true);
+                        break;
+                    case 'bulk-set-private-btn':
+                        bulkUpdatePublicStatus(false);
                         break;
                     case 'generate-btn':
                         generateAssignment();
