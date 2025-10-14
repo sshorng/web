@@ -352,7 +352,8 @@
                                        class: 'form-check-input w-5 h-5',
                                        type: 'checkbox',
                                        id: 'edit-is-public',
-                                       checked: !!assignment.isPublic
+                                       checked: !!assignment.isPublic,
+                                       onclick: () => console.log('Checkbox clicked, new state:', document.getElementById('edit-is-public').checked)
                                    }),
                                    el('label', {
                                        class: 'form-check-label font-bold',
@@ -757,6 +758,9 @@
                   element.innerHTML = attributes[key];
               } else if (key.startsWith('on') && typeof attributes[key] === 'function') {
                   element.addEventListener(key.substring(2).toLowerCase(), attributes[key]);
+              }
+              else if (key === 'checked') {
+                element.checked = attributes[key];
               }
               else {
                   element.setAttribute(key, attributes[key]);
@@ -2456,6 +2460,8 @@
                        || (appState.allTeacherArticles || []).find(a => a.id === articleId);
 
             if (article) {
+                console.log('Rendering editArticle modal with assignment:', article);
+                console.log('isPublic value:', article.isPublic);
                 renderModal('editArticle', { assignment: article });
             } else {
                 // If not found, fetch it directly from Firestore as a robust fallback
