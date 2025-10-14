@@ -3251,6 +3251,7 @@ ${JSON.stringify(analysisData, null, 2)}
                 showArticleGrid();
             });
             articleBody.addEventListener('mouseup', handleTextSelection);
+            articleBody.addEventListener('touchend', handleTextSelection);
             
             tabContainer.addEventListener('click', (e) => {
                 const targetTab = e.target.closest('.tab-btn');
