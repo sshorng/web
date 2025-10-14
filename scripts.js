@@ -4293,43 +4293,40 @@ ${rawText}
             if (selection && !selection.isCollapsed) {
                 const range = selection.getRangeAt(0);
 
-                // No need to proceed if the selection doesn't intersect with any highlights.
-                const intersectingHighlights = Array.from(document.querySelectorAll('.highlight')).filter(h => range.intersectsNode(h));
-                if (intersectingHighlights.length === 0) {
-                    selection.removeAllRanges();
-                    appState.currentSelectionRange = null;
-                    dom.highlightToolbar.classList.add('hidden');
-                    return;
-                }
+                // Helper function to "unwrap" an element, removing the element but keeping its content.
+                const unwrap = (el) => {
+                    const parent = el.parentNode;
+                    if (!parent) return;
+                    while (el.firstChild) {
+                        parent.insertBefore(el.firstChild, el);
+                    }
+                    parent.removeChild(el);
+                };
                 
-                // Extract the selected document fragment. This correctly handles nodes at the boundaries.
-                const selectedFragment = range.extractContents();
+                // Create a temporary span to wrap the entire selection.
+                const wrapper = document.createElement('span');
+                
+                try {
+                    // This command is powerful but can fail if the selection is invalid
+                    // (e.g., crossing paragraph boundaries).
+                    range.surroundContents(wrapper);
 
-                // Find all highlight spans within the extracted fragment and unwrap them.
-                selectedFragment.querySelectorAll('.highlight').forEach(span => {
-                    const parent = span.parentNode;
-                    // Move all children out of the span
-                    while (span.firstChild) {
-                        parent.insertBefore(span.firstChild, span);
-                    }
-                    // Remove the now-empty span
-                    parent.removeChild(span);
-                });
+                    // Now that the selection is isolated, unwrap any highlights inside it.
+                    wrapper.querySelectorAll('.highlight').forEach(unwrap);
 
-                // Insert the modified fragment (now without highlights) back into the document.
-                range.insertNode(selectedFragment);
+                    // Finally, unwrap the temporary wrapper itself, leaving the modified content.
+                    unwrap(wrapper);
+                    
+                    // Clean up the DOM by merging any adjacent text nodes that might have been created.
+                    document.getElementById('article-body').normalize();
 
-                // Clean up any highlight spans that might have become empty as a result of the extraction.
-                document.querySelectorAll('.highlight').forEach(span => {
-                    if (!span.hasChildNodes() || span.textContent === '') {
-                        span.parentNode.removeChild(span);
-                    }
-                });
+                } catch (e) {
+                    // If surroundContents fails, it's usually due to a selection that can't be
+                    // contained in a single element. We log the error but don't crash.
+                    console.error("Failed to remove highlight from selection, likely due to a complex range:", e);
+                }
 
-                // Merge adjacent text nodes to keep the DOM clean.
-                document.getElementById('article-body').normalize();
-
-            // Case 2: No text selection, but a highlight was clicked.
+            // Case 2: No text selection, but a highlight was clicked (original behavior).
             } else if (appState.currentSelectionRange) {
                 const range = appState.currentSelectionRange;
                 let node = range.commonAncestorContainer;
@@ -4343,7 +4340,7 @@ ${rawText}
                     node = node.parentNode;
                 }
 
-                // If found, unwrap it.
+                // If a highlight span is found, unwrap it.
                 if (node && node.classList.contains('highlight')) {
                     const parent = node.parentNode;
                     while (node.firstChild) {
@@ -4354,7 +4351,7 @@ ${rawText}
                 }
             }
 
-            // General cleanup
+            // General cleanup for all cases.
             if (selection) {
                 selection.removeAllRanges();
             }
