@@ -4351,6 +4351,11 @@ ${rawText}
         
 
         function setupEventListeners() {
+            // Prevent the highlight toolbar from stealing focus, which deselects the text.
+            dom.highlightToolbar.addEventListener('mousedown', e => {
+                e.preventDefault();
+            });
+
             // Use event delegation on the body for dynamically added elements
             document.body.addEventListener('click', e => {
                 const target = e.target;
