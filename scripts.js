@@ -4245,19 +4245,46 @@ ${rawText}
         function handleTextSelection(event) {
             // Add a small delay for touch events to ensure selection is registered
             const delay = event.type === 'touchend' ? 50 : 10;
+            
             setTimeout(() => {
                 const selection = window.getSelection();
-                if (selection && !selection.isCollapsed && selection.toString().trim() !== '') {
-                    appState.currentSelectionRange = selection.getRangeAt(0);
-                    const rect = appState.currentSelectionRange.getBoundingClientRect();
-                    const toolbar = dom.highlightToolbar;
-                    toolbar.classList.remove('hidden');
-                    toolbar.style.left = `${rect.right + window.scrollX + 10}px`;
-                    toolbar.style.top = `${rect.top + window.scrollY}px`;
-                } else {
-                    // Do not hide the toolbar if the click was inside it
+                if (!selection || selection.rangeCount === 0) {
+                    // If no selection, hide the toolbar unless we clicked inside it
                     if (!dom.highlightToolbar.contains(event.target)) {
                         dom.highlightToolbar.classList.add('hidden');
+                    }
+                    return;
+                }
+
+                const range = selection.getRangeAt(0);
+                appState.currentSelectionRange = range; // Always store the latest range
+
+                // If the selection is not collapsed (i.e., text is selected), show the toolbar
+                if (!selection.isCollapsed && selection.toString().trim() !== '') {
+                    const rect = range.getBoundingClientRect();
+                    const toolbar = dom.highlightToolbar;
+                    toolbar.classList.remove('hidden');
+                    // Position the toolbar near the end of the selection
+                    const endRect = selection.getRangeAt(selection.rangeCount - 1).getBoundingClientRect();
+                    toolbar.style.left = `${endRect.right + window.scrollX + 10}px`;
+                    toolbar.style.top = `${endRect.top + window.scrollY}px`;
+                } else {
+                    // If selection is collapsed (a click/tap), check if it's inside a highlight
+                    const container = range.commonAncestorContainer;
+                    const highlight = container.nodeType === 1 ? container.closest('.highlight') : container.parentNode.closest('.highlight');
+
+                    if (highlight) {
+                        // If inside a highlight, show the toolbar next to the highlight
+                        const rect = highlight.getBoundingClientRect();
+                        const toolbar = dom.highlightToolbar;
+                        toolbar.classList.remove('hidden');
+                        toolbar.style.left = `${rect.right + window.scrollX + 10}px`;
+                        toolbar.style.top = `${rect.top + window.scrollY}px`;
+                    } else {
+                        // If not inside a highlight, hide the toolbar
+                        if (!dom.highlightToolbar.contains(event.target)) {
+                            dom.highlightToolbar.classList.add('hidden');
+                        }
                     }
                 }
             }, delay);
@@ -4288,73 +4315,47 @@ ${rawText}
 
         function removeHighlight() {
             const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
 
-            // Case 1: User has selected a range of text.
-            if (selection && !selection.isCollapsed) {
-                const range = selection.getRangeAt(0);
+            const range = selection.getRangeAt(0);
+            const articleBody = document.getElementById('article-body');
+            if (!articleBody) return;
 
-                // Helper function to "unwrap" an element, removing the element but keeping its content.
-                const unwrap = (el) => {
-                    const parent = el.parentNode;
-                    if (!parent) return;
-                    while (el.firstChild) {
-                        parent.insertBefore(el.firstChild, el);
-                    }
-                    parent.removeChild(el);
-                };
-                
-                // Create a temporary span to wrap the entire selection.
-                const wrapper = document.createElement('span');
-                
-                try {
-                    // This command is powerful but can fail if the selection is invalid
-                    // (e.g., crossing paragraph boundaries).
-                    range.surroundContents(wrapper);
-
-                    // Now that the selection is isolated, unwrap any highlights inside it.
-                    wrapper.querySelectorAll('.highlight').forEach(unwrap);
-
-                    // Finally, unwrap the temporary wrapper itself, leaving the modified content.
-                    unwrap(wrapper);
-                    
-                    // Clean up the DOM by merging any adjacent text nodes that might have been created.
-                    document.getElementById('article-body').normalize();
-
-                } catch (e) {
-                    // If surroundContents fails, it's usually due to a selection that can't be
-                    // contained in a single element. We log the error but don't crash.
-                    console.error("Failed to remove highlight from selection, likely due to a complex range:", e);
+            const unwrapHighlight = (el) => {
+                const parent = el.parentNode;
+                if (!parent) return;
+                while (el.firstChild) {
+                    parent.insertBefore(el.firstChild, el);
                 }
+                parent.removeChild(el);
+            };
 
-            // Case 2: No text selection, but a highlight was clicked (original behavior).
-            } else if (appState.currentSelectionRange) {
-                const range = appState.currentSelectionRange;
+            // Case 1: A range of text is selected. Unwrap all highlights that intersect it.
+            if (!range.collapsed) {
+                const allHighlights = Array.from(articleBody.querySelectorAll('.highlight'));
+                
+                allHighlights.forEach(highlight => {
+                    // Check if the highlight node intersects with the user's selection range
+                    if (range.intersectsNode(highlight)) {
+                        // A simple unwrap is sufficient for now. A more complex solution
+                        // would involve splitting nodes if the selection is partial.
+                        unwrapHighlight(highlight);
+                    }
+                });
+
+            // Case 2: Selection is collapsed (it's a tap/click). Find the highlight under the cursor.
+            } else {
                 let node = range.commonAncestorContainer;
-
-                // Traverse up to find the parent .highlight span
-                while (node && (node.nodeType !== 1 || !node.classList.contains('highlight'))) {
-                    if (node.id === 'article-body') {
-                        node = null;
-                        break;
-                    }
-                    node = node.parentNode;
-                }
-
-                // If a highlight span is found, unwrap it.
-                if (node && node.classList.contains('highlight')) {
-                    const parent = node.parentNode;
-                    while (node.firstChild) {
-                        parent.insertBefore(node.firstChild, node);
-                    }
-                    parent.removeChild(node);
-                    parent.normalize();
+                const highlightNode = node.nodeType === 1 ? node.closest('.highlight') : node.parentNode.closest('.highlight');
+                
+                if (highlightNode) {
+                    unwrapHighlight(highlightNode);
                 }
             }
 
-            // General cleanup for all cases.
-            if (selection) {
-                selection.removeAllRanges();
-            }
+            // General cleanup
+            articleBody.normalize(); // Merge adjacent text nodes
+            selection.removeAllRanges();
             appState.currentSelectionRange = null;
             dom.highlightToolbar.classList.add('hidden');
             if (appState.currentAssignment) {
