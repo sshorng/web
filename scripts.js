@@ -2696,7 +2696,7 @@ ${difficultyInstruction}
                 if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
                 const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema } };
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${appState.geminiModel}:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API 請求失敗`);
                 const result = await response.json();
                 if (result.candidates?.length > 0) {
@@ -2727,7 +2727,19 @@ async function callGeminiAPI(article) {
         throw new Error("AI API 金鑰未設定。");
     }
     const apiKey = appState.geminiApiKey;
-    const prompt = `請針對以下文章進行深度解析，分析其主旨、結構、風格、以及可能的延伸思考：\n\n${article}`;
+    const prompt = `請針對以下文章進行深度解析，並嚴格依照以下 JSON 格式回傳：
+{
+  "mindmap": "（請在此處生成 Mermaid 的 markdown 格式心智圖，總結文章的重點）",
+  "explanation": "（請在此處生成文章的深度解析，分析其主旨、結構、風格）",
+  "thinking_questions": [
+    "（請在此處生成第一個延伸思考問題）",
+    "（請在此處生成第二個延伸思考問題）",
+    "（請在此處生成第三個延伸思考問題）"
+  ]
+}
+
+文章內容如下：
+${article}`;
     const payload = {
         contents: [{
             role: "user",
@@ -2760,7 +2772,7 @@ async function callGeminiAPI(article) {
     }
     const result = await response.json();
     if (result.candidates?.length > 0 && result.candidates[0].content.parts?.length > 0) {
-        return result.candidates[0].content.parts[0].text;
+        return JSON.parse(result.candidates[0].content.parts[0].text);
     } else {
         console.error("API response is missing expected structure:", result);
         throw new Error("API 未返回有效內容或內容結構不符。");
@@ -2816,7 +2828,7 @@ async function handleGenerateQuestionsFromPasted() {
                 
                 let response;
                 for (let i = 0; i < 3; i++) {
-                    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${appState.geminiModel}:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     if (response.ok) {
                         break;
                     }
@@ -3768,7 +3780,7 @@ ${JSON.stringify(analysisData, null, 2)}
             if (deadlineValue) {
                 updatedData.deadline = Timestamp.fromDate(new Date(deadlineValue + "T23:59:59"));
             } else {
-                updatedData.deadline = null;
+                updatedData.deadline = deleteField();
             }
             
             try {
