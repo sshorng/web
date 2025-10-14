@@ -2772,7 +2772,9 @@ ${article}`;
     }
     const result = await response.json();
     if (result.candidates?.length > 0 && result.candidates[0].content.parts?.length > 0) {
-        return JSON.parse(result.candidates[0].content.parts[0].text);
+        const text = result.candidates[0].content.parts[0].text;
+        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '');
+        return JSON.parse(cleanedText);
     } else {
         console.error("API response is missing expected structure:", result);
         throw new Error("API 未返回有效內容或內容結構不符。");
