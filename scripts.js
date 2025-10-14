@@ -2721,24 +2721,7 @@ ${difficultyInstruction}
             finally { hideLoading(); }
         }
 
-        async function handleGenerateQuestionsFromPasted() {
-            const title = document.getElementById('pasted-title-input').value.trim();
-            const article = document.getElementById('pasted-article-textarea').value.trim();
-            const deadline = document.getElementById('pasted-deadline-input').value;
-            if (!title || !article) { renderModal('message', { type: 'error', title: '生成失敗', message: '請輸入標題和文章內容！' }); return; }
-            
-            const tagFormat = document.getElementById('pasted-tag-format-input').value;
-            const tagContentType = document.getElementById('pasted-tag-contentType-input').value;
-            const tagDifficulty = document.getElementById('pasted-tag-difficulty-input').value;
-            let tagInstruction;
-            if (tagFormat || tagContentType || tagDifficulty) {
-                tagInstruction = "請參考以下指定的標籤來判斷文章屬性，若有衝突以文章內容為準。";
-                if (tagFormat) tagInstruction += ` 形式參考：「${tagFormat}」。`;
-                if (tagContentType) tagInstruction += ` 內容參考：「${tagContentType}」。`;
-                if (tagDifficulty) tagInstruction += ` 難度參考：「${tagDifficulty}」。`;
-            } else {
-                tagInstruction = `請你根據提供的文章內容，從「形式」、「內容」、「難度」三個類別中，各選擇一個最適合的標籤。**絕不可以創造選項之外的新標籤**。`;
-            }
+
 async function callGeminiAPI(article) {
     if (!appState.geminiApiKey) {
         throw new Error("AI API 金鑰未設定。");
@@ -2771,6 +2754,27 @@ async function callGeminiAPI(article) {
         throw new Error("API 未返回有效內容或內容結構不符。");
     }
 }
+
+
+
+async function handleGenerateQuestionsFromPasted() {
+            const title = document.getElementById('pasted-title-input').value.trim();
+            const article = document.getElementById('pasted-article-textarea').value.trim();
+            const deadline = document.getElementById('pasted-deadline-input').value;
+            if (!title || !article) { renderModal('message', { type: 'error', title: '生成失敗', message: '請輸入標題和文章內容！' }); return; }
+            
+            const tagFormat = document.getElementById('pasted-tag-format-input').value;
+            const tagContentType = document.getElementById('pasted-tag-contentType-input').value;
+            const tagDifficulty = document.getElementById('pasted-tag-difficulty-input').value;
+            let tagInstruction;
+            if (tagFormat || tagContentType || tagDifficulty) {
+                tagInstruction = "請參考以下指定的標籤來判斷文章屬性，若有衝突以文章內容為準。";
+                if (tagFormat) tagInstruction += ` 形式參考：「${tagFormat}」。`;
+                if (tagContentType) tagInstruction += ` 內容參考：「${tagContentType}」。`;
+                if (tagDifficulty) tagInstruction += ` 難度參考：「${tagDifficulty}」。`;
+            } else {
+                tagInstruction = `請你根據提供的文章內容，從「形式」、「內容」、「難度」三個類別中，各選擇一個最適合的標籤。**絕不可以創造選項之外的新標籤**。`;
+            }
 
             showLoading(`AI 正在分析文本並生成試題...`);
             const prompt = `你是一位學養深厚的書院夫子。請根據以下提供的篇章，為其設計 5 道符合 PISA 閱讀素養的單選試題，並判斷其標籤。
@@ -4543,6 +4547,10 @@ ${rawText}
         }
         
         function setupEventListeners() {
+            const genButton = document.getElementById('generate-questions-from-pasted-btn');
+            if (genButton) {
+                genButton.addEventListener('click', handleGenerateQuestionsFromPasted);
+            }
             // New, more reliable event handling for the highlight toolbar
             // We use mousedown and touchstart to act immediately and prevent text deselection.
             dom.highlightToolbar.addEventListener('mousedown', handleHighlightToolbarAction);
