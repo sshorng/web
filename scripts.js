@@ -4362,6 +4362,19 @@ ${rawText}
             // Use event delegation on the body for dynamically added elements
             document.body.addEventListener('click', e => {
                 const target = e.target;
+                const closest = (selector) => target.closest(selector);
+
+                // --- Highlight Delete Button Logic ---
+                const highlightedSpan = closest('.highlight');
+                if (highlightedSpan) {
+                    // If the click is on a highlight, show the delete button
+                    // But if the click is on an existing delete button, let its own handler work
+                    if (!target.classList.contains('delete-highlight-btn')) {
+                        e.stopPropagation(); // Prevent text selection event from firing
+                        showDeleteButtonForHighlight(highlightedSpan);
+                    }
+                    return; // Stop further processing to avoid conflicts
+                }
 
                 // Login View
                 if (target.closest('#teacher-login-link')) {
@@ -5693,3 +5706,59 @@ async function callAchievementAI(prompt) {
                 hideLoading();
             }
         }
+
+
+/**
+ * Shows a small 'x' button next to a highlighted span to allow for its deletion.
+ * @param {HTMLElement} highlightedSpan The .highlight span that was clicked.
+ */
+function showDeleteButtonForHighlight(highlightedSpan) {
+    // Remove any existing delete buttons first
+    const existingBtn = document.querySelector('.delete-highlight-btn');
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+
+    // Create the delete button
+    const deleteBtn = document.createElement('span');
+    deleteBtn.textContent = '×'; // Using a multiplication sign for the 'x'
+    deleteBtn.className = 'delete-highlight-btn';
+
+    // Position the button next to the highlighted span
+    document.body.appendChild(deleteBtn);
+    const spanRect = highlightedSpan.getBoundingClientRect();
+    const btnRect = deleteBtn.getBoundingClientRect();
+    
+    // Position it at the top-right corner of the span, adjusted for scroll
+    deleteBtn.style.position = 'absolute';
+    deleteBtn.style.top = `${spanRect.top + window.scrollY - (btnRect.height / 2)}px`;
+    deleteBtn.style.left = `${spanRect.right + window.scrollX + 5}px`;
+    deleteBtn.style.cursor = 'pointer';
+    deleteBtn.style.fontSize = '20px';
+    deleteBtn.style.fontWeight = 'bold';
+    deleteBtn.style.color = 'red';
+    deleteBtn.style.backgroundColor = 'white';
+    deleteBtn.style.border = '1px solid black';
+    deleteBtn.style.borderRadius = '50%';
+    deleteBtn.style.width = '20px';
+    deleteBtn.style.height = '20px';
+    deleteBtn.style.display = 'flex';
+    deleteBtn.style.alignItems = 'center';
+    deleteBtn.style.justifyContent = 'center';
+    deleteBtn.style.lineHeight = '1';
+    deleteBtn.style.zIndex = '10000'; // Ensure it's on top
+
+
+    // Add click event to remove the highlight and the button itself
+    deleteBtn.addEventListener('click', () => {
+        // Replace the highlight span with its original text content
+        const parent = highlightedSpan.parentNode;
+        while (highlightedSpan.firstChild) {
+            parent.insertBefore(highlightedSpan.firstChild, highlightedSpan);
+        }
+        parent.removeChild(highlightedSpan);
+        parent.normalize(); // Merges adjacent text nodes
+
+        deleteBtn.remove();
+    });
+}
