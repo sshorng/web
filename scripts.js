@@ -4352,8 +4352,11 @@ ${rawText}
 
         function setupEventListeners() {
             // Prevent the highlight toolbar from stealing focus, which deselects the text.
-            dom.highlightToolbar.addEventListener('mousedown', e => {
-                e.preventDefault();
+            dom.highlightToolbar.addEventListener('touchstart', e => {
+                // Only prevent default if the target is NOT the remove button or one of its children
+                if (!e.target.closest('#remove-highlight-btn')) {
+                    e.preventDefault();
+                }
             });
 
             // Use event delegation on the body for dynamically added elements
