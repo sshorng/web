@@ -2736,13 +2736,25 @@ async function callGeminiAPI(article) {
             }]
         }]
     };
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${appState.geminiModel}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    });
+    let response;
+    for (let i = 0; i < 3; i++) {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${appState.geminiModel}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            break;
+        }
+        if (response.status === 503 && i < 2) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        } else {
+            break;
+        }
+    }
+
     if (!response.ok) {
         throw new Error(`API 請求失敗`);
     }
@@ -2801,7 +2813,20 @@ async function handleGenerateQuestionsFromPasted() {
                 if (!appState.geminiApiKey) throw new Error("AI API 金鑰未設定。");
                 const apiKey = appState.geminiApiKey;
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: schema } };
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                
+                let response;
+                for (let i = 0; i < 3; i++) {
+                    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (response.ok) {
+                        break;
+                    }
+                    if (response.status === 503 && i < 2) {
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+                    } else {
+                        break;
+                    }
+                }
+
                 if (!response.ok) throw new Error(`API 請求失敗`);
                 const result = await response.json();
                 if (result.candidates?.length > 0) {
