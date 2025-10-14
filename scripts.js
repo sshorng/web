@@ -347,7 +347,20 @@
                                     el('label', { class: 'font-bold', textContent: '期限' }),
                                     el('input', { type: 'date', id: 'edit-deadline', class: 'w-full form-element-ink mt-1', value: deadline })
                                 ]),
-                                el('textarea', { id: 'edit-article', rows: '10', class: 'w-full form-element-ink mt-1', textContent: assignment.article }),
+                               el('div', { class: 'form-check items-center flex gap-2 my-3' }, [
+                                   el('input', {
+                                       class: 'form-check-input w-5 h-5',
+                                       type: 'checkbox',
+                                       id: 'edit-is-public',
+                                       checked: !!assignment.isPublic
+                                   }),
+                                   el('label', {
+                                       class: 'form-check-label font-bold',
+                                       htmlFor: 'edit-is-public',
+                                       textContent: '將此篇章設為公開（學生可見）'
+                                   })
+                               ]),
+                               el('textarea', { id: 'edit-article', rows: '10', class: 'w-full form-element-ink mt-1', textContent: assignment.article }),
                                 
                                 // AI Analysis Fields
                                 el('div', { class: 'pt-4 border-t mt-4' }, [ el('h3', { class: 'font-bold', textContent: 'AI 深度解析 (可選)' }) ]),
@@ -1600,6 +1613,10 @@
                         el('label', { class: 'text-sm font-medium text-slate-600', textContent: '挑戰期限 (選填)' }),
                         el('input', { type: 'date', id: 'deadline-input', class: 'w-full input-styled mt-1' })
                     ]),
+                    el('div', { class: 'form-check items-center flex gap-2 my-3' }, [
+                        el('input', { class: 'form-check-input w-5 h-5', type: 'checkbox', id: 'ai-is-public', checked: true }),
+                        el('label', { class: 'form-check-label font-bold', htmlFor: 'ai-is-public', textContent: '將此篇章設為公開' })
+                    ]),
                     el('button', { id: 'generate-btn', class: 'w-full btn-primary py-3 text-base font-bold', textContent: '生成' })
                 ])
             ]);
@@ -1617,6 +1634,10 @@
                      el('div', {}, [
                         el('label', { class: 'text-sm font-medium text-slate-600', textContent: '挑戰期限 (選填)' }),
                         el('input', { type: 'date', id: 'pasted-deadline-input', class: 'w-full input-styled mt-1' })
+                    ]),
+                    el('div', { class: 'form-check items-center flex gap-2 my-3' }, [
+                        el('input', { class: 'form-check-input w-5 h-5', type: 'checkbox', id: 'pasted-is-public', checked: true }),
+                        el('label', { class: 'form-check-label font-bold', htmlFor: 'pasted-is-public', textContent: '將此篇章設為公開' })
                     ]),
                     el('div', { class: 'flex gap-4 mt-2' }, [
                         el('button', { id: 'format-text-btn', class: 'w-1/3 btn-secondary py-3 text-base font-bold', textContent: '整理文本' }),
@@ -1790,13 +1811,15 @@
                 deadlineText = ` <span class="text-slate-500 font-normal">(${d.getMonth() + 1}/${d.getDate()})</span>`;
             }
 
+            const isPublicBadge = `<span class="ml-2 text-xs font-bold px-2 py-1 rounded-full ${assignment.isPublic ? 'bg-teal-100 text-teal-700' : 'bg-slate-200 text-slate-600'}">${assignment.isPublic ? '公開' : '私密'}</span>`;
+
             const row = el('tr', { 'data-assignment-id': assignment.id, class: 'animate-fade-in' });
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <input type="checkbox" class="article-checkbox w-[0.875rem] h-[0.875rem] rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="${assignment.id}">
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <a href="#" class="article-title-link font-medium text-slate-900 hover:text-red-700" data-assignment-id="${assignment.id}">${escapeHtml(assignment.title)}${deadlineText}</a>
+                    <a href="#" class="article-title-link font-medium text-slate-900 hover:text-red-700" data-assignment-id="${assignment.id}">${escapeHtml(assignment.title)}</a>${isPublicBadge}${deadlineText}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <span class="px-2 inline-flex leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
@@ -2615,7 +2638,7 @@ ${difficultyInstruction}
                     showLoading('AI 書僮正在生成深度解析...');
                     const analysis = await callFullGeminiAnalysis(content.article);
 
-                    const newAssignment = { ...content, analysis: analysis, createdAt: new Date() };
+                    const newAssignment = { ...content, analysis: analysis, createdAt: new Date(), isPublic: document.getElementById('ai-is-public').checked };
                     if (deadline) newAssignment.deadline = Timestamp.fromDate(new Date(deadline + "T23:59:59"));
                     
                     await addDoc(collection(db, `assignments`), newAssignment);
@@ -2683,7 +2706,7 @@ ${difficultyInstruction}
                     showLoading('AI 書僮正在生成深度解析...');
                     const analysis = await callGeminiAPI(article);
 
-                    const newAssignment = { title, article, ...content, analysis: analysis, createdAt: new Date() };
+                    const newAssignment = { title, article, ...content, analysis: analysis, createdAt: new Date(), isPublic: document.getElementById('pasted-is-public').checked };
                     if (deadline) newAssignment.deadline = Timestamp.fromDate(new Date(deadline + "T23:59:59"));
                     await addDoc(collection(db, `assignments`), newAssignment);
                     await getAssignments(true); // Force refresh cache
@@ -2913,6 +2936,11 @@ ${JSON.stringify(analysisData, null, 2)}
                 const filters = state.filters;
 
                 let filteredAssignments = allAssignments.filter(a => {
+                    // For students, only show public assignments
+                    if (appState.currentView === 'student' && a.isPublic !== true) {
+                        return false;
+                    }
+
                     if (appState.calendarFilterDate) {
                         if (!a.deadline) return false;
                         const aDate = a.deadline.toDate().toISOString().split('T')[0];
@@ -3597,7 +3625,8 @@ ${JSON.stringify(analysisData, null, 2)}
                     mindmap: modal.querySelector('#edit-analysis-mindmap')?.value || "",
                     explanation: modal.querySelector('#edit-analysis-explanation')?.value || "",
                     thinking_questions: modal.querySelector('#edit-analysis-thinking-questions')?.value || ""
-                }
+                },
+                isPublic: modal.querySelector('#edit-is-public').checked
             };
             if (deadlineValue) {
                 updatedData.deadline = Timestamp.fromDate(new Date(deadlineValue + "T23:59:59"));
