@@ -4384,14 +4384,26 @@ ${rawText}
         }
         
 
+        function handleHighlightToolbarAction(event) {
+            // Prevent the browser from doing its default action (like deselecting text or firing a click)
+            event.preventDefault();
+        
+            const target = event.target;
+            const highlightBtn = target.closest('.highlight-btn');
+            const removeBtn = target.closest('#remove-highlight-btn');
+        
+            if (highlightBtn) {
+                applyHighlight(highlightBtn.dataset.color);
+            } else if (removeBtn) {
+                removeHighlight();
+            }
+        }
+        
         function setupEventListeners() {
-            // Prevent the highlight toolbar from stealing focus, which deselects the text.
-            dom.highlightToolbar.addEventListener('touchstart', e => {
-                // Only prevent default if the target is NOT the remove button or one of its children
-                if (!e.target.closest('#remove-highlight-btn')) {
-                    e.preventDefault();
-                }
-            });
+            // New, more reliable event handling for the highlight toolbar
+            // We use mousedown and touchstart to act immediately and prevent text deselection.
+            dom.highlightToolbar.addEventListener('mousedown', handleHighlightToolbarAction);
+            dom.highlightToolbar.addEventListener('touchstart', handleHighlightToolbarAction);
 
             // Use event delegation on the body for dynamically added elements
             document.body.addEventListener('click', e => {
@@ -4485,14 +4497,7 @@ ${rawText}
                     if (assignment) displayAssignment(assignment);
                 }
                 
-                // Highlight Toolbar
-                const highlightBtn = target.closest('.highlight-btn');
-                if(highlightBtn) {
-                    applyHighlight(highlightBtn.dataset.color);
-                }
-                if(target.closest('#remove-highlight-btn')) {
-                    removeHighlight();
-                }
+                // Highlight toolbar actions are now handled by their own dedicated listeners ('mousedown' and 'touchstart' on the toolbar itself).
             });
 
             document.body.addEventListener('change', e => {
