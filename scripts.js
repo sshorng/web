@@ -4243,6 +4243,8 @@ ${rawText}
         }
         
         function handleTextSelection(event) {
+            // Add a small delay for touch events to ensure selection is registered
+            const delay = event.type === 'touchend' ? 50 : 10;
             setTimeout(() => {
                 const selection = window.getSelection();
                 if (selection && !selection.isCollapsed && selection.toString().trim() !== '') {
@@ -4253,48 +4255,76 @@ ${rawText}
                     toolbar.style.left = `${rect.right + window.scrollX + 10}px`;
                     toolbar.style.top = `${rect.top + window.scrollY}px`;
                 } else {
+                    // Do not hide the toolbar if the click was inside it
                     if (!dom.highlightToolbar.contains(event.target)) {
                         dom.highlightToolbar.classList.add('hidden');
                     }
                 }
-            }, 10);
+            }, delay);
         }
 
         function applyHighlight(color) {
             if (!appState.currentSelectionRange) return;
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                if (!range.collapsed) {
-                    const span = document.createElement('span');
-                    span.className = 'highlight';
-                    span.style.backgroundColor = color;
-                    span.appendChild(range.extractContents());
-                    range.insertNode(span);
-                }
+
+            const range = appState.currentSelectionRange;
+            if (!range.collapsed) {
+                const span = document.createElement('span');
+                span.className = 'highlight';
+                span.style.backgroundColor = color;
+                span.appendChild(range.extractContents());
+                range.insertNode(span);
             }
-            selection.removeAllRanges();
+
+            // Clear the selection from the window and our state
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+            }
+            appState.currentSelectionRange = null;
+
             dom.highlightToolbar.classList.add('hidden');
             saveHighlights(appState.currentAssignment.id);
         }
 
         function removeHighlight() {
+            // Use the stored range instead of re-querying the selection
             if (!appState.currentSelectionRange) return;
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                 let node = selection.getRangeAt(0).commonAncestorContainer;
-                while (node && (node.nodeType !== 1 || !node.classList.contains('highlight'))) {
-                    if (node.id === 'article-body') { node = null; break; }
-                    node = node.parentNode;
+
+            const range = appState.currentSelectionRange;
+            // The commonAncestorContainer is the deepest node that contains the entire range.
+            // This is a good starting point to search for the highlight span to remove.
+            let node = range.commonAncestorContainer;
+
+            // Traverse up the DOM tree from the selection to find the parent .highlight span
+            while (node && (node.nodeType !== 1 || !node.classList.contains('highlight'))) {
+                // If we've travelled up to the article body without finding a highlight, stop.
+                if (node.id === 'article-body') {
+                    node = null;
+                    break;
                 }
-                if (node && node.classList.contains('highlight')) {
-                    const parent = node.parentNode;
-                    while (node.firstChild) { parent.insertBefore(node.firstChild, node); }
-                    parent.removeChild(node);
-                    parent.normalize();
-                }
+                node = node.parentNode;
             }
-            selection.removeAllRanges();
+
+            // If we found a .highlight span, unwrap its contents
+            if (node && node.classList.contains('highlight')) {
+                const parent = node.parentNode;
+                // Move all of the highlight's children out into the parent
+                while (node.firstChild) {
+                    parent.insertBefore(node.firstChild, node);
+                }
+                // Remove the now-empty highlight span
+                parent.removeChild(node);
+                // Join adjacent text nodes that may have been created
+                parent.normalize();
+            }
+
+            // Clear the selection from the window and our state
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+            }
+            appState.currentSelectionRange = null;
+            
             dom.highlightToolbar.classList.add('hidden');
             saveHighlights(appState.currentAssignment.id);
         }
