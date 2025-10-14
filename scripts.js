@@ -4288,51 +4288,53 @@ ${rawText}
 
         function removeHighlight() {
             const selection = window.getSelection();
-            
-            // If there's a selection, remove highlights only within that range.
+
+            // Case 1: User has selected a range of text.
             if (selection && !selection.isCollapsed) {
                 const range = selection.getRangeAt(0);
+
+                // No need to proceed if the selection doesn't intersect with any highlights.
+                const intersectingHighlights = Array.from(document.querySelectorAll('.highlight')).filter(h => range.intersectsNode(h));
+                if (intersectingHighlights.length === 0) {
+                    selection.removeAllRanges();
+                    appState.currentSelectionRange = null;
+                    dom.highlightToolbar.classList.add('hidden');
+                    return;
+                }
                 
-                // Find all highlight spans that intersect with the selection range
-                const highlights = Array.from(document.querySelectorAll('.highlight'));
-                const intersectingHighlights = highlights.filter(h => range.intersectsNode(h));
+                // Extract the selected document fragment. This correctly handles nodes at the boundaries.
+                const selectedFragment = range.extractContents();
 
-                intersectingHighlights.forEach(highlight => {
-                    // Create a range that covers the entire highlight
-                    const highlightRange = document.createRange();
-                    highlightRange.selectNodeContents(highlight);
-                    
-                    // The part of the selection that is inside the current highlight
-                    const intersectionRange = range.cloneRange();
-                    intersectionRange.setStart(
-                        Math.max(highlightRange.startContainer.compareDocumentPosition(range.startContainer), 0) === 0 ? range.startContainer : highlightRange.startContainer,
-                        Math.max(highlightRange.startContainer.compareDocumentPosition(range.startContainer), 0) === 0 ? range.startOffset : highlightRange.startOffset
-                    );
-                     intersectionRange.setEnd(
-                        Math.min(highlightRange.endContainer.compareDocumentPosition(range.endContainer), 0) === 0 ? range.endContainer : highlightRange.endContainer,
-                        Math.min(highlightRange.endContainer.compareDocumentPosition(range.endContainer), 0) === 0 ? range.endOffset : highlightRange.endOffset
-                    );
-
-
-                    // Extract the content of the intersection to unwrap it
-                    const contents = intersectionRange.extractContents();
-                    
-                    // After extraction, the original highlight might be split.
-                    // We need to re-wrap any remaining parts
-                    const parent = highlight.parentNode;
-                    parent.insertBefore(contents, highlight);
-                    parent.removeChild(highlight);
-                    parent.normalize();
-
+                // Find all highlight spans within the extracted fragment and unwrap them.
+                selectedFragment.querySelectorAll('.highlight').forEach(span => {
+                    const parent = span.parentNode;
+                    // Move all children out of the span
+                    while (span.firstChild) {
+                        parent.insertBefore(span.firstChild, span);
+                    }
+                    // Remove the now-empty span
+                    parent.removeChild(span);
                 });
 
+                // Insert the modified fragment (now without highlights) back into the document.
+                range.insertNode(selectedFragment);
+
+                // Clean up any highlight spans that might have become empty as a result of the extraction.
+                document.querySelectorAll('.highlight').forEach(span => {
+                    if (!span.hasChildNodes() || span.textContent === '') {
+                        span.parentNode.removeChild(span);
+                    }
+                });
+
+                // Merge adjacent text nodes to keep the DOM clean.
+                document.getElementById('article-body').normalize();
+
+            // Case 2: No text selection, but a highlight was clicked.
             } else if (appState.currentSelectionRange) {
-                // If there's no selection, but we have a stored range (e.g., from a click),
-                // fall back to the old behavior of removing the single highlight containing the range.
                 const range = appState.currentSelectionRange;
                 let node = range.commonAncestorContainer;
 
-                // Traverse up the DOM tree from the selection to find the parent .highlight span
+                // Traverse up to find the parent .highlight span
                 while (node && (node.nodeType !== 1 || !node.classList.contains('highlight'))) {
                     if (node.id === 'article-body') {
                         node = null;
@@ -4341,7 +4343,7 @@ ${rawText}
                     node = node.parentNode;
                 }
 
-                // If we found a .highlight span, unwrap its contents
+                // If found, unwrap it.
                 if (node && node.classList.contains('highlight')) {
                     const parent = node.parentNode;
                     while (node.firstChild) {
@@ -4352,7 +4354,7 @@ ${rawText}
                 }
             }
 
-            // Cleanup
+            // General cleanup
             if (selection) {
                 selection.removeAllRanges();
             }
