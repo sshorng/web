@@ -142,7 +142,7 @@
               請嚴格按照以下 JSON 格式回傳，不要有任何其他的文字或解釋：
               {
                 "mindmap": "一個 Mermaid.js 的 mindmap格式的心智圖。請確保語法絕對正確，擷取文章重點即可，節點不要過多，節點文字六字以內，第一層儘量不超過5個節點，第一層標上數字順序（如:①開頭），避免使用任何特殊字元或引號。",
-                "explanation": "一篇 300 字左右的短文，對象是國中生，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。不要長篇大論，要簡明易讀。",
+                "explanation": "一篇 300 字左右的短文，對象是國中生，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請以純文字格式撰寫，段落之間用換行分隔，重點處使用 Markdown 的 **粗體** 語法強調。不要長篇大論，要簡明易讀。",
                 "thinking_questions": "一個 Markdown 格式的無序清單，提供三個與文章主題相關、能引導學生進行深度探究的思考題。問題應連結學生的生活經驗或引發思辨，且不應提供標準答案。不要長篇大論，要簡明易讀。例如：\\n* 根據文章，作者認為「勇敢」的定義是什麼？你生活中有沒有類似的經驗，讓你對「勇敢」有不同的看法？\\n* 文章中的主角做了一個困難的決定，如果換作是你，你會怎麼選擇？為什麼？"
               }
             `;
@@ -162,7 +162,7 @@
         async function callSingleGeminiAnalysis(articleText, target, action, originalContent = '', refinePrompt = '') {
             const targets = {
                 mindmap: "一個 Mermaid.js 的 mindmap格式的心智圖。請確保語法絕對正確，擷取文章重點即可，節點不要過多，節點文字六字以內，第一層儘量不超過5個節點，第一層標上數字順序（如:①開頭），避免使用任何特殊字元或引號。",
-                explanation: "一篇 300 字左右的短文，對象是國中生，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請使用 HTML 的 <p> 和 <strong> 標籤來組織段落與強調重點。不要長篇大論，要簡明易讀。",
+                explanation: "一篇 300 字左右的短文，對象是國中生，深入解析這篇文章的主旨、結構、寫作技巧與文化寓意。請以純文字格式撰寫，段落之間用換行分隔，重點處使用 Markdown 的 **粗體** 語法強調。不要長篇大論，要簡明易讀。",
                 thinking_questions: "一個 Markdown 格式的無序清單，提供三個與文章主題相關、能引導學生進行深度探究的思考題。問題應連結學生的生活經驗或引發思辨，且不應提供標準答案。不要長篇大論，要簡明易讀"
             };
 
@@ -1119,6 +1119,14 @@
             const minutes = Math.floor(seconds / 60);
             const remainingSeconds = seconds % 60;
             return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+
+        function getLocalDateString(date) {
+            const d = date; // Use the passed-in date object
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function startQuizTimer() {
@@ -3309,7 +3317,11 @@ ${JSON.stringify(analysisData, null, 2)}
             }
             if (analysis.explanation) {
                 container.appendChild(el('h2', { class: 'text-2xl font-bold mt-8 mb-4', textContent: '深度解析' }));
-                container.appendChild(el('div', { innerHTML: markdownToHtml(analysis.explanation) }));
+                // Custom rendering for explanation to avoid <p> tags and handle markdown
+                const escapedText = analysis.explanation.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
+                const boldedText = escapedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                const finalHtml = boldedText.replace(/\n/g, '<br>');
+                container.appendChild(el('div', { innerHTML: finalHtml }));
             }
             if (analysis.thinking_questions) {
                 container.appendChild(el('h2', { class: 'text-2xl font-bold mt-8 mb-4', textContent: '延伸思考' }));
@@ -3554,7 +3566,6 @@ ${JSON.stringify(analysisData, null, 2)}
             const finalScore = Math.round((score / assignment.questions.length) * 100);
             const isOverdue = assignment.deadline && new Date() > assignment.deadline.toDate();
             
-            // Create submission object (removed isTeacher property)
             const submission = {
                 studentId: appState.currentUser.studentId,
                 name: appState.currentUser.name,
@@ -3570,7 +3581,6 @@ ${JSON.stringify(analysisData, null, 2)}
             };
             await setDoc(doc(db, "submissions", `${appState.currentUser.studentId}_${assignment.id}`), submission);
             
-            // Update local state to reflect the new submission
             const newSubmission = { ...submission, id: `${appState.currentUser.studentId}_${assignment.id}` };
             const existingIndex = appState.allSubmissions.findIndex(s => s.id === newSubmission.id);
             if (existingIndex > -1) {
@@ -3579,12 +3589,9 @@ ${JSON.stringify(analysisData, null, 2)}
                 appState.allSubmissions.push(newSubmission);
             }
 
-            // Re-render the view to show updated status
             fetchAssignmentsPage(true);
-
             displayResults(finalScore, assignment, userAnswers);
             
-            // Enable the analysis tab
             const analysisTab = document.querySelector('.content-tab[data-tab="analysis"]');
             if (analysisTab) {
                 analysisTab.disabled = false;
@@ -3595,50 +3602,51 @@ ${JSON.stringify(analysisData, null, 2)}
             try {
                 const studentRef = doc(db, `classes/${appState.currentUser.classId}/students`, appState.currentUser.studentId);
                 const studentSnap = await getDoc(studentRef);
-                let finalStudentData;
-
-                if (studentSnap.exists()) {
-                    const studentData = studentSnap.data();
-                    const updates = {
-                        submissionCount: (studentData.submissionCount || 0) + 1,
-                        highScoreStreak: (finalScore >= 90) ? (studentData.highScoreStreak || 0) + 1 : 0,
-                        tagReadCounts: { ...studentData.tagReadCounts }
-                    };
-
-                    const tags = assignment.tags || {};
-                    if (tags.contentType) {
-                        const key = `contentType_${tags.contentType.trim()}`;
-                        updates.tagReadCounts[key] = (updates.tagReadCounts[key] || 0) + 1;
-                    }
-                    if (tags.difficulty) {
-                        const key = `difficulty_${tags.difficulty.trim()}`;
-                        updates.tagReadCounts[key] = (updates.tagReadCounts[key] || 0) + 1;
-                    }
-                    
-                    await updateDoc(studentRef, updates);
-                    finalStudentData = { ...studentData, ...updates };
-                } else {
-                    const tags = assignment.tags || {};
-                    const tagCounts = {};
-                    if (tags.contentType) tagCounts[`contentType_${tags.contentType.trim()}`] = 1;
-                    if (tags.difficulty) tagCounts[`difficulty_${tags.difficulty.trim()}`] = 1;
-
-                    finalStudentData = {
-                        name: appState.currentUser.name,
-                        studentId: appState.currentUser.studentId,
-                        submissionCount: 1,
-                        highScoreStreak: (finalScore >= 90) ? 1 : 0,
-                        tagReadCounts: tagCounts,
-                        achievements: [],
-                        lastLogin: Timestamp.now()
-                    };
-                    await setDoc(studentRef, finalStudentData);
+                
+                if (!studentSnap.exists()) {
+                     console.error("Student document not found, cannot update stats.");
+                     return;
                 }
 
-                // Crucially, update the local state with the definitive final data
-                Object.assign(appState.currentUser, finalStudentData);
+                const studentData = studentSnap.data();
+                const updates = {
+                    submissionCount: (studentData.submissionCount || 0) + 1,
+                    tagReadCounts: { ...(studentData.tagReadCounts || {}) }
+                };
+
+                const tags = assignment.tags || {};
+                if (tags.contentType) updates.tagReadCounts[`contentType_${tags.contentType.trim()}`] = (updates.tagReadCounts[`contentType_${tags.contentType.trim()}`] || 0) + 1;
+                if (tags.difficulty) updates.tagReadCounts[`difficulty_${tags.difficulty.trim()}`] = (updates.tagReadCounts[`difficulty_${tags.difficulty.trim()}`] || 0) + 1;
+
+                // --- High Score Streak Logic (No Date Dependency) ---
+                if (finalScore >= 80) {
+                    updates.highScoreStreak = (studentData.highScoreStreak || 0) + 1;
+                } else {
+                    updates.highScoreStreak = 0;
+                }
+
+                // --- Completion Streak Logic (Date Dependent) ---
+                const todayStr = getLocalDateString(new Date());
+                const lastCompletionStr = studentData.lastCompletionCheckDate ? getLocalDateString(new Date(studentData.lastCompletionCheckDate.toDate())) : null;
+
+                if (lastCompletionStr !== todayStr) {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = getLocalDateString(yesterday);
+
+                    if (lastCompletionStr === yesterdayStr) {
+                        updates.completionStreak = (studentData.completionStreak || 0) + 1;
+                    } else {
+                        updates.completionStreak = 1; // Reset if not consecutive
+                    }
+                    updates.lastCompletionCheckDate = Timestamp.now();
+                }
+
+                await updateDoc(studentRef, updates);
+                const finalStudentData = { ...studentData, ...updates };
                 
-                // Now, with the updated local state, check for achievements
+                Object.assign(appState.currentUser, finalStudentData);
+
                 await checkAndAwardAchievements(appState.currentUser.studentId, 'submit', appState.currentUser, { submissions: appState.allSubmissions });
 
             } catch (error) {
@@ -5981,3 +5989,4 @@ async function callAchievementAI(prompt) {
                 hideLoading();
             }
         }
+
