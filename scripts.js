@@ -2957,7 +2957,13 @@ ${JSON.stringify(analysisData, null, 2)}
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const deadlines = allAssignments.filter(a => a.deadline && a.deadline.toDate().toISOString().startsWith(dayString));
+                const deadlines = allAssignments.filter(a => {
+                    const isStudentUser = appState.currentUser?.type === 'student';
+                    if (isStudentUser && a.isPublic !== true) {
+                        return false;
+                    }
+                    return a.deadline && a.deadline.toDate().toISOString().startsWith(dayString);
+                });
                 
                 let dayClasses = "h-9 flex items-center justify-center rounded-full text-sm relative cursor-pointer hover:bg-gray-100";
                 if (day === today) {
