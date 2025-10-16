@@ -1055,6 +1055,24 @@
                 if (trimmedBlock.startsWith('# ')) { html += `<h1 class="text-3xl font-bold mb-6 mt-8">${trimmedBlock.substring(2).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</h1>`; return; }
 
                 // List processing
+                if (trimmedBlock.match(/^\d+\.\s/m)) { // Check for ordered list (e.g., "1. ")
+                    html += '<ol class="list-decimal list-inside my-4 space-y-4">'; // Increased space-y for better readability
+                    // Split by newline that is followed by a number and a dot (e.g., "1. ")
+                    trimmedBlock.split(/\n(?=\d+\.\s)/).forEach(item => {
+                        const trimmedItem = item.trim();
+                        if (trimmedItem.match(/^\d+\.\s/)) {
+                            let listItemContent = trimmedItem.substring(trimmedItem.indexOf('.') + 1).trim();
+                            // Process newlines within a list item as <br>
+                            listItemContent = listItemContent
+                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-red-700 hover:underline">$1</a>')
+                                .replace(/\n/g, '<br>');
+                            html += `<li class="pl-2">${listItemContent}</li>`;
+                        }
+                    });
+                    html += '</ol>';
+                    return;
+                }
                 if (trimmedBlock.startsWith('* ') || trimmedBlock.startsWith('- ')) {
                     html += '<ul class="list-disc list-inside my-4 space-y-2">';
                     trimmedBlock.split('\n').forEach(item => {
