@@ -2054,80 +2054,53 @@
                     seatNumber: studentData.seatNumber,
                     classId: classId,
                     className: className,
-                    completionStreak: 0, // Initialize with default
                     ...studentData
                 };
 
                 localStorage.setItem(`currentUser_${appId}`, JSON.stringify(appState.currentUser));
 
-                // --- Dynamic Achievement Check Trigger for Login ---
+                // --- Streak Calculation ---
                 try {
-                    const studentRef = doc(db, `classes/${classId}/students`, studentId);
-                    const getLocalDateString = (date) => {
-                        const d = new Date(date);
-                        const year = d.getFullYear();
-                        const month = String(d.getMonth() + 1).padStart(2, '0');
-                        const day = String(d.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
-
+                    console.log("Starting streak calculation for login...");
                     const todayStr = getLocalDateString(new Date());
                     const updates = {};
 
-                    // --- Login Streak Logic ---
-                    const lastLogin = studentData.lastLoginDate ? getLocalDateString(studentData.lastLoginDate.toDate()) : null;
-                    let newLoginStreak = 1;
-                    if (lastLogin) {
+                    const lastLoginDate = studentData.lastLoginDate;
+                    const lastLoginStr = (lastLoginDate && typeof lastLoginDate.toDate === 'function')
+                        ? getLocalDateString(lastLoginDate.toDate())
+                        : null;
+                    
+                    console.log(`Today: ${todayStr}, Last Login: ${lastLoginStr}`);
+
+                    if (lastLoginStr !== todayStr) {
+                        console.log("Login detected on a new day. Calculating streak...");
                         const yesterday = new Date();
                         yesterday.setDate(yesterday.getDate() - 1);
                         const yesterdayStr = getLocalDateString(yesterday);
-                        if (lastLogin === yesterdayStr) {
-                            newLoginStreak = (studentData.loginStreak || 0) + 1;
-                        } else if (lastLogin === todayStr) {
-                            newLoginStreak = studentData.loginStreak || 1; // Already logged in today, streak doesn't change
-                        }
-                    }
-                    updates.loginStreak = newLoginStreak;
-                    updates.lastLoginDate = Timestamp.now();
 
-                    // --- Completion Streak Logic ---
-                    const lastCompletionCheck = studentData.lastCompletionCheckDate ? getLocalDateString(studentData.lastCompletionCheckDate.toDate()) : null;
-                    let newCompletionStreak = studentData.completionStreak || 0;
-                    if (lastCompletionCheck !== todayStr) {
-                        const allAssignmentsSnapshot = await getDocs(collection(db, "assignments"));
-                        const allAssignments = allAssignmentsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                        const studentSubmissions = await loadStudentSubmissions(studentId);
-                         const studentSubmissionIds = new Set((studentSubmissions || []).map(s => s.assignmentId));
-                        
-                        const yesterday = new Date();
-                        yesterday.setDate(yesterday.getDate() - 1);
-                        yesterday.setHours(23, 59, 59, 999); // End of yesterday
-                        
-                        const dueAssignments = allAssignments.filter(a => a.deadline && a.deadline.toDate() <= yesterday);
-                        const allDueAssignmentsCompleted = dueAssignments.every(a => studentSubmissionIds.has(a.id));
-
-                        if (dueAssignments.length > 0 && allDueAssignmentsCompleted) {
-                            newCompletionStreak++;
-                        } else if (dueAssignments.length > 0 && !allDueAssignmentsCompleted) {
-                            newCompletionStreak = 0; // Reset streak if any due assignment is not completed
+                        if (lastLoginStr === yesterdayStr) {
+                            updates.loginStreak = (studentData.loginStreak || 0) + 1;
+                            console.log(`Consecutive day login. New streak: ${updates.loginStreak}`);
+                        } else {
+                            updates.loginStreak = 1;
+                            console.log(`Non-consecutive day login. Streak reset to 1.`);
                         }
-                        // If no assignments were due, the streak continues (do nothing to newCompletionStreak)
-                        updates.completionStreak = newCompletionStreak;
-                        updates.lastCompletionCheckDate = Timestamp.now();
+                        updates.lastLoginDate = Timestamp.now();
+                        
+                        console.log("Preparing to update Firestore with:", updates);
+                        await updateDoc(studentDocRef, updates);
+                        console.log("Firestore updated successfully.");
+                        Object.assign(appState.currentUser, updates);
+                    } else {
+                        console.log("Already logged in today. No streak update needed.");
                     }
                     
-                    // --- Update Firestore and Local State ---
-                    await updateDoc(studentRef, updates);
-                    Object.assign(appState.currentUser, updates);
-                    
-                    console.log('Login Streak Calculated:', updates.loginStreak, 'Completion Streak Calculated:', updates.completionStreak);
-                    console.log('appState after update:', appState.currentUser);
-
-                    // --- Check Achievements ---
                     checkAndAwardAchievements(studentId, 'login', appState.currentUser);
+
                 } catch (error) {
-                    console.error("Failed to update student login streak or check achievements:", error);
+                    console.error("CRITICAL: Error during login streak calculation:", error);
                 }
+
                 await loadStudentSubmissions(appState.currentUser.studentId);
                 showView('app');
                 requestAnimationFrame(updateHeader);
@@ -3554,7 +3527,7 @@ ${JSON.stringify(analysisData, null, 2)}
         }
 
         async function submitQuiz(assignment) {
-            stopQuizTimer(true); // Stop timer but preserve final time on display
+            stopQuizTimer(true);
             const formData = new FormData(document.getElementById('quiz-form'));
             let score = 0;
             const userAnswers = [];
@@ -3600,6 +3573,7 @@ ${JSON.stringify(analysisData, null, 2)}
             
             // --- Upsert Student Stats and Check Achievements ---
             try {
+                console.log("Starting streak calculation for quiz submission...");
                 const studentRef = doc(db, `classes/${appState.currentUser.classId}/students`, appState.currentUser.studentId);
                 const studentSnap = await getDoc(studentRef);
                 
@@ -3619,30 +3593,44 @@ ${JSON.stringify(analysisData, null, 2)}
                 if (tags.difficulty) updates.tagReadCounts[`difficulty_${tags.difficulty.trim()}`] = (updates.tagReadCounts[`difficulty_${tags.difficulty.trim()}`] || 0) + 1;
 
                 // --- High Score Streak Logic (No Date Dependency) ---
-                if (finalScore >= 80) {
+                if (finalScore >= 90) {
                     updates.highScoreStreak = (studentData.highScoreStreak || 0) + 1;
+                    console.log(`High score achieved. New streak: ${updates.highScoreStreak}`);
                 } else {
                     updates.highScoreStreak = 0;
+                    console.log(`Score < 90. High score streak reset to 0.`);
                 }
 
                 // --- Completion Streak Logic (Date Dependent) ---
                 const todayStr = getLocalDateString(new Date());
-                const lastCompletionStr = studentData.lastCompletionCheckDate ? getLocalDateString(new Date(studentData.lastCompletionCheckDate.toDate())) : null;
+                const lastCompletionDate = studentData.lastCompletionCheckDate;
+                const lastCompletionStr = (lastCompletionDate && typeof lastCompletionDate.toDate === 'function')
+                    ? getLocalDateString(lastCompletionDate.toDate())
+                    : null;
+                
+                console.log(`Today: ${todayStr}, Last Completion: ${lastCompletionStr}`);
 
                 if (lastCompletionStr !== todayStr) {
+                    console.log("Quiz submission on a new day. Calculating completion streak...");
                     const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
                     const yesterdayStr = getLocalDateString(yesterday);
 
                     if (lastCompletionStr === yesterdayStr) {
                         updates.completionStreak = (studentData.completionStreak || 0) + 1;
+                        console.log(`Consecutive day completion. New streak: ${updates.completionStreak}`);
                     } else {
-                        updates.completionStreak = 1; // Reset if not consecutive
+                        updates.completionStreak = 1;
+                        console.log(`Non-consecutive day completion. Streak reset to 1.`);
                     }
                     updates.lastCompletionCheckDate = Timestamp.now();
+                } else {
+                    console.log("Already completed a quiz today. No completion streak update.");
                 }
 
+                console.log("Preparing to update Firestore with:", updates);
                 await updateDoc(studentRef, updates);
+                console.log("Firestore updated successfully.");
                 const finalStudentData = { ...studentData, ...updates };
                 
                 Object.assign(appState.currentUser, finalStudentData);
@@ -3650,7 +3638,7 @@ ${JSON.stringify(analysisData, null, 2)}
                 await checkAndAwardAchievements(appState.currentUser.studentId, 'submit', appState.currentUser, { submissions: appState.allSubmissions });
 
             } catch (error) {
-                console.error("Failed to update student stats or check achievements:", error);
+                console.error("CRITICAL: Failed to update student stats or check achievements:", error);
             }
         }
 
