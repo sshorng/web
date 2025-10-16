@@ -2122,43 +2122,32 @@
                 const teacherUserRef = doc(db, "classes/teacher_class/students", "teacher_user");
                 const teacherUserSnap = await getDoc(teacherUserRef);
 
-                if (teacherUserSnap.exists()) {
-                    const teacherData = teacherUserSnap.data();
-                    const { passwordHash } = teacherData;
-                    const enteredPasswordHash = await hashString(passwordInput);
+                let passwordHashOnRecord;
+                const teacherData = teacherUserSnap.exists() ? teacherUserSnap.data() : {};
 
-                    if (enteredPasswordHash === passwordHash) {
-                        appState.currentUser = { type: 'teacher', name: '筱仙', studentId: 'teacher_user', classId: 'teacher_class', className: '教師講堂', ...teacherData };
-                        localStorage.setItem(`currentUser_${appId}`, JSON.stringify(appState.currentUser));
-                        
-                        await processUserLogin(teacherData, 'teacher_user', 'teacher_class');
-
-                        await loadStudentSubmissions(appState.currentUser.studentId);
-                        appState.currentView = 'teacher';
-                        showView('app');
-                        requestAnimationFrame(updateHeader);
-                        document.getElementById('teacher-view-btn').classList.remove('hidden');
-                        document.getElementById('view-tabs').classList.remove('hidden');
-                        closeModal();
-                    } else {
-                        if(errorEl) errorEl.textContent = '憑信錯誤。';
-                    }
+                if (teacherUserSnap.exists() && teacherData.passwordHash) {
+                    passwordHashOnRecord = teacherData.passwordHash;
                 } else {
-                    // Fallback to hardcoded password if teacher user document doesn't exist
-                    const enteredPasswordHash = await hashString(passwordInput);
-                    if (enteredPasswordHash === TEACHER_PASSWORD_HASH) {
-                        appState.currentUser = { type: 'teacher', name: '筱仙', studentId: 'teacher_user', classId: 'teacher_class', className: '教師講堂' };
-                        localStorage.setItem(`currentUser_${appId}`, JSON.stringify(appState.currentUser));
-                        await loadStudentSubmissions(appState.currentUser.studentId);
-                        appState.currentView = 'teacher';
-                        showView('app');
-                        requestAnimationFrame(updateHeader);
-                        document.getElementById('teacher-view-btn').classList.remove('hidden');
-                        document.getElementById('view-tabs').classList.remove('hidden');
-                        closeModal();
-                    } else {
-                        if(errorEl) errorEl.textContent = '憑信錯誤。';
-                    }
+                    passwordHashOnRecord = TEACHER_PASSWORD_HASH; // Fallback to hardcoded hash
+                }
+
+                const enteredPasswordHash = await hashString(passwordInput);
+
+                if (enteredPasswordHash === passwordHashOnRecord) {
+                    appState.currentUser = { type: 'teacher', name: '筱仙', studentId: 'teacher_user', classId: 'teacher_class', className: '教師講堂', ...teacherData };
+                    localStorage.setItem(`currentUser_${appId}`, JSON.stringify(appState.currentUser));
+                    
+                    await processUserLogin(teacherData, 'teacher_user', 'teacher_class');
+
+                    await loadStudentSubmissions(appState.currentUser.studentId);
+                    appState.currentView = 'teacher';
+                    showView('app');
+                    requestAnimationFrame(updateHeader);
+                    document.getElementById('teacher-view-btn').classList.remove('hidden');
+                    document.getElementById('view-tabs').classList.remove('hidden');
+                    closeModal();
+                } else {
+                    if(errorEl) errorEl.textContent = '憑信錯誤。';
                 }
             } catch (error) {
                 console.error("Teacher login error:", error);
@@ -4356,80 +4345,87 @@ ${rawText}
             const newPassword = document.getElementById('new-password').value;
             const confirmNewPassword = document.getElementById('confirm-new-password').value;
 
-            if (!currentPassword || !newPassword || !confirmNewPassword) { errorEl.textContent = '所有欄位皆為必填。'; return; }
-            if (newPassword !== confirmNewPassword) { errorEl.textContent = '新密語與確認密語不相符。'; return; }
-            if (newPassword.length < 4) { errorEl.textContent = '新密語長度至少需要四個字元。'; return; }
+            if (!currentPassword || !newPassword || !confirmNewPassword) {
+                errorEl.textContent = '所有欄位皆為必填。';
+                return;
+            }
+            if (newPassword !== confirmNewPassword) {
+                errorEl.textContent = '新密語與確認密語不相符。';
+                return;
+            }
+            if (newPassword.length < 4) {
+                errorEl.textContent = '新密語長度至少需要四個字元。';
+                return;
+            }
 
             showLoading('正在驗證與更新密語...');
+
             try {
-                const teacherUserRef = doc(db, "classes/teacher_class/students", "teacher_user");
-                const teacherUserSnap = await getDoc(teacherUserRef);
+                const currentUser = appState.currentUser;
+                if (!currentUser) {
+                    throw new Error("User not logged in.");
+                }
 
-                let currentPasswordHash;
-                if (teacherUserSnap.exists()) {
-                    currentPasswordHash = teacherUserSnap.data().passwordHash;
+                // --- Teacher Password Change Logic ---
+                if (currentUser.type === 'teacher') {
+                    const teacherUserRef = doc(db, "classes/teacher_class/students", "teacher_user");
+                    const teacherUserSnap = await getDoc(teacherUserRef);
+
+                    let currentPasswordHash;
+                    if (teacherUserSnap.exists() && teacherUserSnap.data().passwordHash) {
+                        currentPasswordHash = teacherUserSnap.data().passwordHash;
+                    } else {
+                        currentPasswordHash = TEACHER_PASSWORD_HASH; // Fallback to hardcoded hash
+                    }
+
+                    const enteredCurrentHash = await hashString(currentPassword);
+                    if (enteredCurrentHash !== currentPasswordHash) {
+                        errorEl.textContent = '舊密語錯誤。';
+                        return;
+                    }
+
+                    const newPasswordHash = await hashString(newPassword);
+                    // Use setDoc with merge to create or update the teacher document safely
+                    await setDoc(teacherUserRef, { passwordHash: newPasswordHash }, { merge: true });
+                    
+                    closeModal();
+                    renderModal('message', { title: '成功', message: '憑信已成功修訂。' });
+
+                // --- Student Password Change Logic ---
+                } else if (currentUser.type === 'student') {
+                    const studentDocRef = doc(db, `classes/${currentUser.classId}/students`, currentUser.studentId);
+                    const studentDocSnap = await getDoc(studentDocRef);
+
+                    if (!studentDocSnap.exists()) {
+                        errorEl.textContent = '找不到您的學生資料。';
+                        return;
+                    }
+
+                    const studentDocData = studentDocSnap.data();
+                    const selectedClass = appState.allClasses.find(c => c.id === currentUser.classId);
+                    const defaultPassword = generateDefaultPassword(selectedClass.className, studentDocData.seatNumber);
+                    
+                    const currentPasswordHashOnRecord = studentDocData.passwordHash || await hashString(defaultPassword);
+                    const enteredCurrentPasswordHash = await hashString(currentPassword);
+
+                    if (enteredCurrentPasswordHash !== currentPasswordHashOnRecord) {
+                        errorEl.textContent = '舊密語有誤。';
+                        return;
+                    }
+
+                    const newPasswordHash = await hashString(newPassword);
+                    await updateDoc(studentDocRef, { passwordHash: newPasswordHash });
+                    
+                    closeModal();
+                    renderModal('message', { type: 'success', title: '更新成功', message: '憑信已成功修訂！' });
                 } else {
-                    // If teacher_user doc doesn't exist, fallback to the hardcoded default password hash
-                    currentPasswordHash = TEACHER_PASSWORD_HASH;
+                    throw new Error("Unknown user type.");
                 }
-
-                const enteredCurrentHash = await hashString(currentPassword);
-
-                if (enteredCurrentHash !== currentPasswordHash) {
-                    errorEl.textContent = '舊密語錯誤。';
-                    hideLoading();
-                    return;
-                }
-
-                const newPasswordHash = await hashString(newPassword);
-                // Use setDoc to create the document if it doesn't exist, or update it if it does.
-                await setDoc(teacherUserRef, { passwordHash: newPasswordHash });
-                
-                hideLoading();
-                closeModal();
-                renderModal('message', { title: '成功', message: '憑信已成功修訂。' });
-
             } catch (error) {
                 console.error("Password change failed:", error);
                 errorEl.textContent = '更新密語時發生錯誤。';
             } finally {
                 hideLoading();
-            }
-            // This part of the function handles student password changes.
-            // It needs to be refactored to read from the students sub-collection, not a roster.
-            const studentData = appState.currentUser;
-            const studentDocRef = doc(db, `classes/${studentData.classId}/students`, studentData.studentId);
-            const studentDocSnap = await getDoc(studentDocRef);
-
-            if (!studentDocSnap.exists()) {
-                hideLoading();
-                errorEl.textContent = '找不到您的學生資料。';
-                return;
-            }
-
-            const studentDocData = studentDocSnap.data();
-            const selectedClass = appState.allClasses.find(c => c.id === studentData.classId);
-            const defaultPassword = generateDefaultPassword(selectedClass.className, studentDocData.seatNumber);
-            const currentPasswordHashOnRecord = studentDocData.passwordHash || await hashString(defaultPassword);
-            const enteredCurrentPasswordHash = await hashString(currentPassword);
-
-            if (enteredCurrentPasswordHash !== currentPasswordHashOnRecord) {
-                hideLoading();
-                errorEl.textContent = '舊密語有誤。';
-                return;
-            }
-
-            try {
-                const newPasswordHash = await hashString(newPassword);
-                await updateDoc(studentDocRef, { passwordHash: newPasswordHash });
-                
-                hideLoading();
-                closeModal(); // Close the password change modal
-                renderModal('message', { type: 'success', title: '更新成功', message: '憑信已成功修訂！' });
-            } catch (e) {
-                hideLoading();
-                console.error("更新密碼失敗:", e);
-                renderModal('message', { type: 'error', title: '更新失敗', message: '操作失敗，請稍後再試。' });
             }
         }
 
