@@ -929,7 +929,7 @@
                     case 'confirm-change-password-btn': handleChangePassword(); break;
                     case 'confirm-delete-student-btn': confirmDeleteStudent(); break;
                     case 'confirm-edit-student-btn': handleSaveStudentEdit(); break;
-                    case 'analyze-with-ai-btn': handleStudentAiAnalysis(target.dataset.assignmentId); break;
+                    case 'analyze-with-ai-btn': handleAiAnalysis(target.dataset.assignmentId); break;
                     case 'save-ach-form-btn': handleSaveAchievement(target.dataset.id); break;
                     case 'ai-generate-achievement-btn': handleAiGenerateAchievement(); break;
                     case 'confirm-prompt-btn':
