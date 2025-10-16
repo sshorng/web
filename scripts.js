@@ -4117,7 +4117,7 @@ ${JSON.stringify(analysisData, null, 2)}
             const now = new Date();
             const dueAssignments = allAssignments.filter(a => a.deadline && a.deadline.toDate() < now);
             const completedDueAssignmentIds = new Set(studentSubmissions.filter(s => dueAssignments.some(a => a.id === s.assignmentId)).map(s => s.assignmentId));
-            const completionRate = dueAssignments.length > 0 ? (completedDueAssignmentIds.size / dueAssignments.length) * 100 : 0;
+            const completionRate = dueAssignments.length > 0 ? (completedDueAssignmentIds.size / dueAssignments.length) * 100 : 100; // If no assignments are due, completion is 100%
 
             const pisaStats = { level1: { total: 0, correct: 0 }, level2: { total: 0, correct: 0 }, level3: { total: 0, correct: 0 } };
             studentSubmissions.forEach(sub => {
