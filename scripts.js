@@ -3639,8 +3639,27 @@ ${JSON.stringify(analysisData, null, 2)}
         async function renderArticleAnalysisModal(assignmentId) {
             if (!assignmentId) return;
 
-            const article = appState.assignments.find(a => a.id === assignmentId);
-            if (!article) return;
+            let article = appState.assignments.find(a => a.id === assignmentId);
+
+            if (!article) {
+                console.log(`Article ${assignmentId} not in appState, fetching from DB...`);
+                try {
+                    const articleRef = doc(db, "assignments", assignmentId);
+                    const articleSnap = await getDoc(articleRef);
+                    if (articleSnap.exists()) {
+                        article = { id: articleSnap.id, ...articleSnap.data() };
+                        console.log("Successfully fetched article from DB.");
+                    } else {
+                        console.error(`Article with ID ${assignmentId} not found in database.`);
+                        renderModal('message', { type: 'error', title: '錯誤', message: '在資料庫中找不到指定的文章。' });
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Error fetching article from DB:", error);
+                    renderModal('message', { type: 'error', title: '錯誤', message: '讀取文章資料時發生錯誤。' });
+                    return;
+                }
+            }
 
             const selectedClassId = document.getElementById('class-selector')?.value;
             if (!selectedClassId) {
@@ -4895,6 +4914,8 @@ ${rawText}
                 if (titleLink) {
                     e.preventDefault();
                     const articleId = titleLink.dataset.assignmentId;
+                    // This logic was confirmed to be for the teacher view.
+                    // The student view logic is handled by the 'start-quiz-btn'.
                     renderArticleAnalysisModal(articleId);
                     return;
                 }
