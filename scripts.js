@@ -2879,7 +2879,7 @@ async function handleGenerateQuestionsFromPasted() {
                 renderModal('message', { type: 'error', title: '錯誤', message: '缺少文章 ID，無法進行分析。' });
                 return;
             }
-            const article = appState.assignments.find(a => a.id === articleId);
+            const article = appState.currentAssignment; // Always use the currently displayed article
             const selectedClassId = document.getElementById('class-selector').value;
             if (!selectedClassId) { renderModal('message', { type: 'info', title: '提示', message: '請先選擇一個學堂以進行分析。' }); return; }
             const selectedClass = appState.allClasses.find(c => c.id === selectedClassId);
@@ -3648,7 +3648,6 @@ ${JSON.stringify(analysisData, null, 2)}
                     const articleSnap = await getDoc(articleRef);
                     if (articleSnap.exists()) {
                         article = { id: articleSnap.id, ...articleSnap.data() };
-                        console.log("Successfully fetched article from DB.");
                     } else {
                         console.error(`Article with ID ${assignmentId} not found in database.`);
                         renderModal('message', { type: 'error', title: '錯誤', message: '在資料庫中找不到指定的文章。' });
@@ -3660,6 +3659,10 @@ ${JSON.stringify(analysisData, null, 2)}
                     return;
                 }
             }
+
+            // CRITICAL FIX: Always set the found/fetched article as the current one.
+            appState.currentAssignment = article;
+            console.log(`Set current assignment to: ${article.id}`);
 
             const selectedClassId = document.getElementById('class-selector')?.value;
             if (!selectedClassId) {
