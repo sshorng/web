@@ -20,6 +20,10 @@
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: var(--gray-light);
+            /* 【修復】為了解決行動裝置瀏覽器(尤其是 Safari)在切換視窗時可能發生的點擊延遲或失效問題，
+               我們明確地為 body 加上 -webkit-tap-highlight-color: transparent。
+               雖然 Tailwind 通常會處理，但明確加上可以增加一層保障。*/
+            -webkit-tap-highlight-color: transparent;
         }
         
         .tab-active {
@@ -81,6 +85,9 @@
         
         .btn {
             transition: all 0.3s ease;
+            /* 【修復】確保按鈕能明確地被使用者操作，尤其在觸控裝置上 */
+            cursor: pointer;
+            user-select: none; /* 防止長按時選取文字 */
         }
         
         .btn:hover {
@@ -228,7 +235,7 @@
                                 </button>
                             </div>
                             <div id="picked-list" class="bg-[#f5f5f8] rounded-lg p-4 min-h-[100px] max-h-[200px] overflow-y-auto border border-[#e2e2e7]">
-                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -694,27 +701,42 @@
         }
         
         // ** MODIFIED SECTION START **
+        // 這是被修改過的函數，用來解決 iPad 上的觸控問題
         function setupCustomTimeControls() {
-            let intervalId = null; // Initialize as null
             
             const setupHoldableButton = (button, action) => {
+                // 【修改一】將 intervalId 移至此處，
+                // 讓每個按鈕（'increase-minutes', 'decrease-minutes'等）
+                // 都有自己獨立的 intervalId 變數，這樣它們就不會互相干擾。
+                let intervalId = null; 
+
                 const startAction = (e) => {
-                    e.preventDefault();
-                    // 【修改二】在啟動新計時器前，先清除任何可能存在的舊計時器
-                    if (intervalId) clearInterval(intervalId);
-                    action();
-                    intervalId = setInterval(action, 120);
+                    e.preventDefault(); // 防止觸控時的預設行為（如頁面滾動或縮放）
+                    
+                    // 【修改二】在啟動新計時器前，先清除任何可能存在的舊計時器。
+                    // 這是一個安全防護，防止 "zombie" 計時器。
+                    if (intervalId) {
+                        clearInterval(intervalId);
+                    }
+                    
+                    action(); // 立即執行一次
+                    intervalId = setInterval(action, 120); // 然後設定計時器
                 };
                 
                 const stopAction = () => {
-                    clearInterval(intervalId);
-                    // 【修改三】清除後將變數設為 null，保持狀態乾淨
-                    intervalId = null; 
+                    // 【修改三】只在 intervalId 存在時才清除
+                    if (intervalId) {
+                        clearInterval(intervalId);
+                        intervalId = null; // 清除後設為 null，保持狀態乾淨
+                    }
                 };
 
+                // 監聽 mousedown 和 touchstart 事件來啟動
                 ['mousedown', 'touchstart'].forEach(type => button.addEventListener(type, startAction));
                 
-                // 【修改一】在監聽列表中加入 'touchcancel' 事件
+                // 【修改四】在監聽列表中加入 'touchcancel'，
+                // 這是處理 iPad Slide Over 或其他系統手勢中斷觸控的關鍵。
+                // 'mouseleave' 確保滑鼠移開按鈕時也會停止。
                 ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(type => button.addEventListener(type, stopAction));
             };
 
@@ -728,24 +750,27 @@
                 customSecondsInput.value = String(customTimeSeconds).padStart(2, '0');
             };
 
+            // 為四個按鈕設置長按功能
             setupHoldableButton(increaseMinutesBtn, () => updateMinutes(customTimeMinutes + 1));
             setupHoldableButton(decreaseMinutesBtn, () => updateMinutes(customTimeMinutes - 1));
             
             setupHoldableButton(increaseSecondsBtn, () => {
-                // The logic for seconds incrementing by 10 is kept as it was
+                // (保持您原有的 +10 秒邏輯)
                 const currentSecs = parseInt(customSecondsInput.value, 10) || 0;
                 updateSeconds((Math.floor(currentSecs / 10) * 10 + 10) % 60);
             });
             setupHoldableButton(decreaseSecondsBtn, () => {
-                 // The logic for seconds decrementing by 10 is kept as it was
-                 const currentSecs = parseInt(customSecondsInput.value, 10) || 0;
-                 updateSeconds((Math.floor(currentSecs / 10) * 10 - 10 + 60) % 60);
+                // (保持您原有的 -10 秒邏輯)
+                const currentSecs = parseInt(customSecondsInput.value, 10) || 0;
+                updateSeconds((Math.floor(currentSecs / 10) * 10 - 10 + 60) % 60);
             });
 
+            // 處理手動輸入
             customMinutesInput.addEventListener('input', () => {
                 updateMinutes(parseInt(customMinutesInput.value, 10) || 0);
             });
             customMinutesInput.addEventListener('blur', () => {
+                // 在輸入框失去焦點時，格式化數字
                 customMinutesInput.value = String(customTimeMinutes).padStart(2, '0');
             });
 
@@ -753,7 +778,8 @@
                 updateSeconds(parseInt(customSecondsInput.value, 10) || 0);
             });
             customSecondsInput.addEventListener('blur', () => {
-                 customSecondsInput.value = String(customTimeSeconds).padStart(2, '0');
+                // 在輸入框失去焦點時，格式化數字
+                customSecondsInput.value = String(customTimeSeconds).padStart(2, '0');
             });
         }
         // ** MODIFIED SECTION END **
