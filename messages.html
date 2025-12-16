@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級訊息傳遞系統</title>
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 引入 Babel 用來解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts: Noto Serif TC (思源宋體) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <!-- 設定 Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'xuan-paper': '#fdfbf7',   // 宣紙白
+                        'rice-paper': '#f3f0e9',   // 米色底
+                        'ink-main': '#2c2c2c',     // 主墨色
+                        'ink-light': '#5f5f5f',    // 淡墨色
+                        'cinnabar': '#a93226',     // 丹砂紅 (印泥)
+                        'cinnabar-dark': '#862218',
+                        'celadon': '#7d9b92',      // 青瓷綠
+                        'celadon-light': '#edf3f1',
+                        'stone': '#e6e2d8',        // 石色 (邊框用)
+                    },
+                    fontFamily: {
+                        'serif': ['"Noto Serif TC"', 'serif', 'PMingLiU'],
+                        'sans': ['"Noto Serif TC"', 'sans-serif'], // 強制全域宋體
+                    },
+                    boxShadow: {
+                        'paper': '0 4px 20px -2px rgba(44, 44, 44, 0.08)', // 柔和的紙張浮起感
+                        'seal': '0 4px 10px rgba(169, 50, 38, 0.2)',        // 印章陰影
+                    },
+                    borderRadius: {
+                        'chinese': '0.5rem', // 中式微圓角
+                    },
+                    backgroundImage: {
+                        'texture': "url(\"data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E\")",
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            font-family: 'Noto Serif TC', 'PMingLiU', serif; 
+            background-color: #f3f0e9;
+        }
+        /* 優化捲軸樣式 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        
+        /* 讓輸入框 placeholder 更淡雅 */
+        ::placeholder { color: #a8a29a; opacity: 1; }
+    </style>
+</head>
+<body class="bg-rice-paper text-ink-main min-h-screen bg-texture selection:bg-cinnabar selection:text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- 設定區 ---
+        // ⚠️ 請將您的 Google Apps Script 網址貼在下方引號內
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc7QHVTXJ6gi7A2CIwl5hijlE7B__WmBIB5_bEpSvkWCP0j2WBTDGkOnnq1QP3ZjkEeQ/exec"; 
+
+        const { useState, useEffect } = React;
+
+        // --- Icon Component (使用 Lucide icons 的路徑) ---
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            const icons = {
+                Edit3: <><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
+                User: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>,
+                BookOpen: <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>,
+                Lock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
+                Unlock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></>,
+                Shuffle: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="8" cy="16" r="1.5"/><circle cx="16" cy="8" r="1.5"/><circle cx="12" cy="12" r="1.5"/></>,
+                RefreshCw: <><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></>,
+                Plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+                X: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+                Save: <><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>,
+                Trash2: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>,
+                QrCode: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M3 14h7v7H3z"/></>,
+                Copy: <><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>,
+                CheckCircle: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+                AlertTriangle: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+                PlayCircle: <><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></>,
+                ChevronDown: <><polyline points="6 9 12 15 18 9" /></>,
+                ChevronUp: <><polyline points="18 15 12 9 6 15" /></>
+            };
+
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        // --- Loading Component ---
+        const Loading = () => (
+            <div className="flex flex-col items-center justify-center py-20 opacity-60">
+                <div className="animate-spin text-cinnabar mb-4"><Icon name="RefreshCw" className="w-8 h-8" /></div>
+                <p className="text-ink-light tracking-widest text-sm">墨韻傳輸中...</p>
+            </div>
+        );
+
+        // --- Teacher View (教師端) ---
+        const TeacherView = ({ onSimulateScan, onLogout }) => {
+            const [messages, setMessages] = useState([]);
+            const [isAdding, setIsAdding] = useState(false);
+            const [activeQR, setActiveQR] = useState(null);
+            const [expandedIds, setExpandedIds] = useState(new Set());
+            const [isLoading, setIsLoading] = useState(false);
+            
+            // 編輯相關狀態
+            const [editingId, setEditingId] = useState(null);
+            
+            const [newCode, setNewCode] = useState('');
+            const [targetName, setTargetName] = useState('');
+            const [newContent, setNewContent] = useState('');
+            const [isSaving, setIsSaving] = useState(false);
+
+            const generateRandomCode = () => {
+                const randomCode = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                setNewCode(randomCode);
+            };
+
+            const toggleExpand = (id) => {
+                const newSet = new Set(expandedIds);
+                if (newSet.has(id)) {
+                    newSet.delete(id);
+                } else {
+                    newSet.add(id);
+                }
+                setExpandedIds(newSet);
+            };
+
+            const fetchMessages = async () => {
+                setIsLoading(true);
+                try {
+                    if (!SCRIPT_URL) throw new Error("請先設定 Google Script URL");
+                    const response = await fetch(`${SCRIPT_URL}?action=read`);
+                    const data = await response.json();
+                    const sorted = Array.isArray(data) ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
+                    setMessages(sorted);
+                } catch (error) {
+                    console.error("Fetch error:", error);
+                }
+                setIsLoading(false);
+            };
+
+            useEffect(() => {
+                fetchMessages();
+            }, []);
+
+            const handleEdit = (msg) => {
+                setNewCode(msg.id);
+                setTargetName(msg.targetName || '');
+                setNewContent(msg.content);
+                setEditingId(msg.id);
+                setIsAdding(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const resetForm = () => {
+                setNewCode('');
+                setTargetName('');
+                setNewContent('');
+                setEditingId(null);
+                setIsAdding(false);
+                setIsSaving(false);
+            };
+
+            const handleAddMessage = async (e) => {
+                e.preventDefault();
+                if (!SCRIPT_URL) { alert("請先填入 Script URL"); return; }
+                if (!newCode || !newContent) { alert("請填寫通行碼與內容"); return; }
+                
+                if (!editingId) {
+                    const existing = messages.find(m => String(m.id) === String(newCode));
+                    if (existing) {
+                        if(!confirm(`通行碼「${newCode}」已經存在，確定要覆蓋嗎？`)) return;
+                    }
+                }
+
+                setIsSaving(true);
+                try {
+                    const actionType = editingId ? 'update' : 'create';
+                    
+                    const payload = {
+                        action: actionType, 
+                        id: newCode,
+                        targetName: targetName,
+                        content: newContent,
+                        createdAt: new Date().toISOString(),
+                        author: 'Teacher'
+                    };
+
+                    await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(payload)
+                    });
+
+                    setTimeout(() => {
+                        fetchMessages();
+                        resetForm();
+                        alert(editingId ? "更新指令已送出" : "發布指令已送出");
+                    }, 2000); 
+
+                } catch (error) {
+                    console.error("Error adding/updating:", error);
+                    alert("操作失敗，請稍後再試");
+                    setIsSaving(false);
+                }
+            };
+
+            const handleDelete = async (code) => {
+                if(!confirm('確定要刪除這則訊息嗎？')) return;
+                try {
+                    await fetch(SCRIPT_URL, { 
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({
+                            action: 'delete',
+                            id: code
+                        })
+                    });
+                    
+                    setMessages(prev => prev.filter(m => String(m.id) !== String(code)));
+                    setTimeout(fetchMessages, 2000);
+                } catch (error) {
+                    console.error("Error deleting:", error);
+                }
+            };
+
+            // 新增：一鍵刪除所有訊息 (修改為單次確認)
+            const handleDeleteAll = async () => {
+                // 修改：單次確認，合併警告訊息
+                if (!confirm("⚠️ 警告：您確定要刪除「所有」訊息嗎？\n\n此動作將清空試算表中所有資料 (標題除外)，且無法復原！")) return;
+
+                setIsLoading(true);
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({ action: 'deleteAll' })
+                    });
+                    
+                    // 樂觀更新，先清空前端
+                    setMessages([]);
+                    alert("已送出清空指令");
+                    
+                    setTimeout(fetchMessages, 2000);
+                } catch (error) {
+                    console.error("Delete all failed:", error);
+                    alert("刪除失敗");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const getQRUrl = (code) => {
+                const baseUrl = window.location.href.split('?')[0];
+                const fullUrl = `${baseUrl}?code=${code}`;
+                return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(fullUrl)}`;
+            };
+
+            const handleCopyContent = (content) => {
+                const textArea = document.createElement("textarea");
+                textArea.value = content;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert("已複製內容！");
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
+                document.body.removeChild(textArea);
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto space-y-8 pb-12">
+                    {/* Header Controls */}
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-xuan-paper p-4 rounded-chinese border border-stone shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1 h-6 bg-cinnabar rounded-full"></span>
+                            <h2 className="text-xl font-bold text-ink-main tracking-widest">訊息列表</h2>
+                            <span className="text-sm text-ink-light ml-2">({messages.length} 則)</span>
+                        </div>
+                        <div className="flex gap-3 flex-wrap justify-end">
+                            {/* 重新整理 */}
+                             <button onClick={fetchMessages} className="p-2 text-ink-light hover:text-ink-main transition-colors" title="刷新">
+                                <Icon name="RefreshCw" className={isLoading ? "animate-spin" : ""} />
+                            </button>
+                            
+                            {/* 清空所有按鈕 (新功能) */}
+                            {messages.length > 0 && (
+                                <button onClick={handleDeleteAll} className="px-3 py-2 text-cinnabar/80 hover:text-white hover:bg-cinnabar rounded transition-colors text-sm font-bold flex items-center gap-1 border border-stone/50 hover:border-cinnabar mr-2" title="危險操作：清空所有">
+                                    <Icon name="Trash2" className="w-4 h-4" /> 清空全部
+                                </button>
+                            )}
+
+                            {/* 新增/取消按鈕 */}
+                            <button onClick={() => { 
+                                if(isAdding && editingId) resetForm(); 
+                                else setIsAdding(!isAdding); 
+                            }} className={`flex items-center gap-2 px-6 py-2 rounded-chinese transition-all duration-300 font-medium tracking-wide ${isAdding ? 'bg-stone text-ink-main' : 'bg-ink-main text-xuan-paper shadow-md hover:bg-ink-light'}`}>
+                                {isAdding ? <><Icon name="X" className="w-4 h-4" /> 取消</> : <><Icon name="Plus" className="w-4 h-4" /> 撰寫新訊</>}
+                            </button>
+                            
+                            {/* 登出 */}
+                            <button onClick={onLogout} className="px-4 py-2 text-ink-light hover:text-cinnabar text-sm underline decoration-stone underline-offset-4">登出</button>
+                        </div>
+                    </div>
+
+                    {!SCRIPT_URL && (
+                        <div className="bg-red-50 border border-red-200 p-4 rounded-chinese flex items-center gap-3 text-red-800">
+                            <Icon name="AlertTriangle" />
+                            <span>請先設定 Google Script URL</span>
+                        </div>
+                    )}
+
+                    {/* Editor Form */}
+                    <div className={`transition-all duration-500 ease-out overflow-hidden ${isAdding ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <form onSubmit={handleAddMessage} className="bg-xuan-paper p-8 rounded-chinese border border-stone shadow-paper relative">
+                            {/* 裝飾線 */}
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-stone via-ink-light/20 to-stone opacity-30"></div>
+                            
+                            {/* 編輯模式提示 */}
+                            {editingId && (
+                                <div className="absolute top-4 right-4 bg-cinnabar/10 text-cinnabar text-xs px-2 py-1 rounded border border-cinnabar/20 flex items-center gap-1">
+                                    <Icon name="Edit3" className="w-3 h-3" /> 編輯模式
+                                </div>
+                            )}
+                            
+                            <div className="grid md:grid-cols-2 gap-8 mb-8">
+                                {/* 通行碼 */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-ink-light tracking-widest block">通行密碼</label>
+                                    <div className="flex gap-2">
+                                        <div className="relative flex-1">
+                                            <input 
+                                                type="text" 
+                                                value={newCode} 
+                                                onChange={(e) => setNewCode(e.target.value)} 
+                                                className={`w-full border border-stone text-ink-main px-4 py-3 rounded-chinese focus:outline-none transition-colors text-lg font-mono tracking-widest placeholder:font-serif ${editingId ? 'bg-stone/30 cursor-not-allowed text-ink-light' : 'bg-rice-paper/50 focus:border-cinnabar/50 focus:bg-white'}`}
+                                                placeholder="設定四碼" 
+                                                required 
+                                                disabled={!!editingId} // 編輯時鎖定ID
+                                            />
+                                            <div className="absolute right-3 top-3.5 text-ink-light/30"><Icon name="Lock" className="w-5 h-5" /></div>
+                                        </div>
+                                        {!editingId && (
+                                            <button 
+                                                type="button" 
+                                                onClick={generateRandomCode}
+                                                className="px-4 py-2 bg-stone/30 hover:bg-stone/60 text-ink-main rounded-chinese transition-colors"
+                                                title="隨機生成"
+                                            >
+                                                <Icon name="Shuffle" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* 對象 */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-ink-light tracking-widest block">傳訊對象 <span className="text-xs font-normal opacity-50">(選填)</span></label>
+                                    <div className="relative">
+                                        <input 
+                                            type="text" 
+                                            value={targetName} 
+                                            onChange={(e) => setTargetName(e.target.value)} 
+                                            className="w-full bg-rice-paper/50 border border-stone text-ink-main px-4 py-3 rounded-chinese focus:outline-none focus:border-cinnabar/50 focus:bg-white transition-colors" 
+                                            placeholder="如：王小明" 
+                                        />
+                                        <div className="absolute right-3 top-3.5 text-ink-light/30"><Icon name="User" className="w-5 h-5" /></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 內容 */}
+                            <div className="space-y-2 mb-8">
+                                <label className="text-sm font-bold text-ink-light tracking-widest block">訊息內容</label>
+                                <textarea 
+                                    value={newContent} 
+                                    onChange={(e) => setNewContent(e.target.value)} 
+                                    className="w-full h-40 bg-rice-paper/50 border border-stone text-ink-main px-6 py-4 rounded-chinese focus:outline-none focus:border-cinnabar/50 focus:bg-white transition-colors leading-loose resize-none placeholder:text-stone" 
+                                    placeholder="請在此輸入內容..." 
+                                    required 
+                                />
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button type="submit" disabled={isSaving} className="bg-cinnabar hover:bg-cinnabar-dark text-xuan-paper px-8 py-3 rounded-chinese shadow-seal transition-all transform active:scale-95 flex items-center gap-2 tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {isSaving ? <Icon name="RefreshCw" className="animate-spin w-4 h-4" /> : <Icon name="Save" className="w-4 h-4" />}
+                                    {isSaving ? '處理中...' : (editingId ? '更新內容' : '確認發布')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {/* Messages List */}
+                    <div className="grid gap-4">
+                        {isLoading && messages.length === 0 ? <Loading /> : messages.map((msg) => {
+                            const isExpanded = expandedIds.has(msg.id);
+                            return (
+                                <div key={msg.id} className="bg-xuan-paper p-5 rounded-chinese border border-stone shadow-paper hover:shadow-lg transition-all group">
+                                    <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-3 border-b border-stone/30 pb-3">
+                                        <div className="flex items-center gap-3">
+                                            <span className="bg-ink-main text-xuan-paper px-3 py-1 rounded text-sm font-mono tracking-wider">
+                                                {msg.id}
+                                            </span>
+                                            {msg.targetName && (
+                                                <span className="flex items-center gap-1 text-sm text-cinnabar font-bold bg-red-50 px-2 py-1 rounded">
+                                                    <Icon name="User" className="w-3 h-3" /> {msg.targetName}
+                                                </span>
+                                            )}
+                                            <span className="text-xs text-stone font-sans ml-2">
+                                                {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ''}
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => handleCopyContent(msg.content)} className="p-2 text-ink-light hover:text-ink-main transition-colors" title="複製內容">
+                                                <Icon name="Copy" className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => setActiveQR(activeQR === msg.id ? null : msg.id)} className={`p-2 rounded hover:bg-stone/30 transition-colors ${activeQR === msg.id ? 'text-cinnabar' : 'text-ink-light'}`} title="QR Code">
+                                                <Icon name="QrCode" className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => handleEdit(msg)} className="p-2 text-ink-light hover:text-cinnabar hover:bg-stone/30 rounded transition-colors" title="編輯">
+                                                <Icon name="Edit3" className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => handleDelete(msg.id)} className="p-2 text-ink-light hover:text-cinnabar hover:bg-red-50 rounded transition-colors" title="刪除">
+                                                <Icon name="Trash2" className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* 訊息內容區域 - 點擊展開 */}
+                                    <div 
+                                        className="text-ink-main leading-loose whitespace-pre-wrap pl-2 border-l-2 border-stone/50 cursor-pointer relative hover:bg-stone/5 transition-colors rounded p-1"
+                                        onClick={() => toggleExpand(msg.id)}
+                                        title={isExpanded ? "點擊收合" : "點擊展開全文"}
+                                    >
+                                        <div className={isExpanded ? "" : "line-clamp-1 overflow-hidden"}>
+                                            {msg.content}
+                                        </div>
+                                        {/* 展開/收合提示圖示 */}
+                                        <div className="flex justify-center mt-1 opacity-20 hover:opacity-50">
+                                            {isExpanded ? <Icon name="ChevronUp" className="w-3 h-3" /> : <Icon name="ChevronDown" className="w-3 h-3" />}
+                                        </div>
+                                    </div>
+
+                                    {activeQR === msg.id && (
+                                        <div className="mt-4 pt-4 border-t border-dashed border-stone flex flex-col items-center animate-fade-in">
+                                            <div className="bg-white p-3 shadow-sm border border-stone rounded mb-4">
+                                                <img src={getQRUrl(msg.id)} alt="QR" className="w-32 h-32 opacity-90 mix-blend-multiply" />
+                                            </div>
+                                            <button onClick={() => onSimulateScan(msg.id)} className="text-xs text-celadon hover:text-ink-main flex items-center gap-1 transition-colors">
+                                                <Icon name="PlayCircle" className="w-3 h-3" /> 模擬掃描體驗
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Student View (學生端) ---
+        const StudentView = ({ initialCode, onRetry }) => {
+            const [inputCode, setInputCode] = useState(initialCode || '');
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [copied, setCopied] = useState(false);
+
+            useEffect(() => {
+                if (initialCode) {
+                    setInputCode(initialCode);
+                    fetchMessage(initialCode);
+                }
+            }, [initialCode]);
+
+            const fetchMessage = async (code) => {
+                if (!code) return;
+                if (!SCRIPT_URL) { setError("系統未設定連線網址"); return; }
+                setLoading(true);
+                setError('');
+                try {
+                    const response = await fetch(`${SCRIPT_URL}?action=read`);
+                    const allData = await response.json();
+                    const target = allData.find(d => String(d.id) === String(code.trim()));
+                    if (target) {
+                        setData(target);
+                    } else {
+                        setError('查無此碼，請確認後重試。');
+                        setData(null);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    setError('連線異常');
+                }
+                setLoading(false);
+            };
+
+            const handleManualUnlock = (e) => {
+                e.preventDefault();
+                fetchMessage(inputCode);
+            };
+
+            const handleCopy = () => {
+                if (!data) return;
+                const textArea = document.createElement("textarea");
+                textArea.value = data.content;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                } catch (err) { console.error(err); }
+                document.body.removeChild(textArea);
+            };
+
+            if (loading) return <Loading />;
+
+            if (data) {
+                return (
+                    <div className="max-w-2xl mx-auto mt-8 animate-fade-in px-4">
+                        <div className="bg-xuan-paper rounded-chinese shadow-paper border border-stone overflow-hidden relative">
+                            {/* 頂部裝飾 */}
+                            <div className="h-1 bg-cinnabar w-full opacity-80"></div>
+                            
+                            <div className="p-8 md:p-12 relative">
+                                {/* 背景浮水印 */}
+                                <div className="absolute top-10 right-10 text-stone/10 pointer-events-none transform rotate-12">
+                                    <Icon name="BookOpen" className="w-48 h-48" />
+                                </div>
+
+                                <div className="flex justify-between items-start mb-8 relative z-10">
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="text-4xl font-mono font-bold text-ink-main tracking-widest">{inputCode}</span>
+                                            <span className="text-xs bg-stone/30 text-ink-light px-2 py-0.5 rounded tracking-wide">專屬訊息</span>
+                                        </div>
+                                        {data.targetName && (
+                                            <div className="inline-flex items-center gap-2 text-cinnabar font-bold mt-2">
+                                                <span className="text-xs text-ink-light font-normal">致</span>
+                                                <span className="border-b border-cinnabar/30 pb-0.5">{data.targetName}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button onClick={() => { setData(null); setInputCode(''); onRetry(); }} className="text-stone hover:text-ink-main transition-colors">
+                                        <Icon name="X" className="w-6 h-6" />
+                                    </button>
+                                </div>
+
+                                <div className="relative z-10 py-4">
+                                    <div className="text-xl text-ink-main leading-[2.5rem] whitespace-pre-wrap font-serif">
+                                        {data.content}
+                                    </div>
+                                </div>
+
+                                <div className="mt-12 pt-6 border-t border-stone/30 flex flex-col sm:flex-row justify-between items-center gap-6 relative z-10">
+                                    <span className="text-xs text-stone tracking-widest font-sans">
+                                        {data.createdAt ? new Date(data.createdAt).toLocaleString() : ''}
+                                    </span>
+                                    <button 
+                                        onClick={handleCopy} 
+                                        className={`flex items-center gap-2 px-6 py-2 rounded-chinese transition-all duration-300 ${copied ? 'bg-celadon text-white' : 'bg-ink-main text-white hover:bg-ink-light shadow-md'}`}
+                                    >
+                                        {copied ? <><Icon name="CheckCircle" className="w-4 h-4" /> 已複製</> : <><Icon name="Copy" className="w-4 h-4" /> 複製內容</>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+                    <div className="bg-xuan-paper/80 backdrop-blur-sm p-10 md:p-14 rounded-chinese shadow-paper border border-stone w-full max-w-md text-center relative animate-fade-in">
+                        {/* 裝飾框線 */}
+                        <div className="absolute inset-2 border border-stone/30 rounded-sm pointer-events-none"></div>
+
+                        <div className="mb-8 text-cinnabar/80 flex justify-center">
+                            <div className="p-4 border-2 border-stone/30 rounded-full">
+                                <Icon name="Lock" className="w-8 h-8" />
+                            </div>
+                        </div>
+                        
+                        <h2 className="text-2xl font-bold text-ink-main mb-2 tracking-[0.2em] font-serif">私訊查閱</h2>
+                        <p className="text-ink-light/60 text-sm mb-10 font-sans tracking-wider">{error ? <span className="text-cinnabar">{error}</span> : "請輸入您的通行代碼"}</p>
+                        
+                        <form onSubmit={handleManualUnlock} className="space-y-6 relative z-10">
+                            <input 
+                                type="text" 
+                                value={inputCode} 
+                                onChange={(e) => setInputCode(e.target.value)} 
+                                className="w-full bg-rice-paper text-center text-3xl font-mono tracking-[0.5em] py-4 border-b-2 border-stone focus:border-cinnabar outline-none transition-colors text-ink-main placeholder-stone/50" 
+                                placeholder="...." 
+                                autoFocus 
+                            />
+                            <button type="submit" className="w-full bg-ink-main hover:bg-ink-light text-xuan-paper font-bold py-4 rounded-chinese shadow-seal transition-all tracking-[0.3em] flex items-center justify-center gap-2 mt-4">
+                                開啟 <Icon name="Unlock" className="w-4 h-4" />
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App ---
+        const App = () => {
+            const [mode, setMode] = useState('landing');
+            const [urlCode, setUrlCode] = useState(null);
+
+            useEffect(() => {
+                const params = new URLSearchParams(window.location.search);
+                const code = params.get('code');
+                if (code) {
+                    setUrlCode(code);
+                    setMode('student');
+                }
+            }, []);
+
+            const handleSimulateScan = (code) => {
+                try {
+                    const newUrl = `${window.location.pathname}?code=${code}`;
+                    window.history.pushState({ path: newUrl }, '', newUrl);
+                } catch (e) {}
+                setUrlCode(code);
+                setMode('student');
+            };
+
+            const handleTeacherLogin = () => {
+                const pwd = prompt("請輸入教師管理密碼");
+                if (pwd === 'ss') {
+                    setMode('teacher');
+                } else if (pwd !== null) {
+                    alert("密碼錯誤");
+                }
+            };
+
+            const clearUrl = () => {
+                try {
+                    window.history.replaceState({}, '', window.location.pathname);
+                } catch(e) {}
+                setUrlCode(null);
+            };
+
+            // --- Landing Page (首頁) ---
+            if (mode === 'landing') {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                        {/* 背景圓 */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-stone/10 rounded-full blur-3xl -z-10"></div>
+
+                        <div className="max-w-4xl w-full text-center space-y-16 animate-fade-in z-10">
+                            {/* Logo Area */}
+                            <div className="space-y-6">
+                                <div className="inline-block border-y border-ink-main/20 py-2 px-8">
+                                    <span className="text-ink-light font-bold tracking-[0.5em] text-xs uppercase">CLASS MESSAGING</span>
+                                </div>
+                                <h1 className="text-6xl md:text-7xl font-bold text-ink-main tracking-tight font-serif">
+                                    班級訊息系統
+                                </h1>
+                                <p className="text-ink-light text-lg font-serif italic tracking-widest opacity-80">
+                                    極簡．典雅．高效率
+                                </p>
+                            </div>
+
+                            {/* Cards */}
+                            <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+                                <button 
+                                    onClick={() => setMode('student')} 
+                                    className="group bg-xuan-paper p-10 rounded-chinese shadow-paper hover:shadow-xl hover:-translate-y-1 transition-all duration-500 border border-stone flex flex-col items-center gap-6"
+                                >
+                                    <div className="w-16 h-16 bg-rice-paper rounded-full flex items-center justify-center text-ink-main group-hover:bg-ink-main group-hover:text-xuan-paper transition-colors duration-500">
+                                        <Icon name="User" className="w-8 h-8" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-ink-main font-serif mb-2">我是學生</h3>
+                                        <p className="text-ink-light text-sm tracking-wide">輸入代碼查閱訊息</p>
+                                    </div>
+                                </button>
+
+                                <button 
+                                    onClick={handleTeacherLogin} 
+                                    className="group bg-xuan-paper p-10 rounded-chinese shadow-paper hover:shadow-xl hover:-translate-y-1 transition-all duration-500 border border-stone flex flex-col items-center gap-6"
+                                >
+                                    <div className="w-16 h-16 bg-rice-paper rounded-full flex items-center justify-center text-cinnabar group-hover:bg-cinnabar group-hover:text-xuan-paper transition-colors duration-500">
+                                        <Icon name="Edit3" className="w-8 h-8" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-ink-main font-serif mb-2">我是老師</h3>
+                                        <p className="text-ink-light text-sm tracking-wide">發布通知與管理</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="absolute bottom-8 text-stone text-[10px] tracking-[0.3em] uppercase">
+                            © 2024 Class Messaging System
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen font-sans text-ink-main relative">
+                    {/* Top Bar */}
+                    <header className="sticky top-0 z-50 bg-rice-paper/90 backdrop-blur-sm border-b border-stone/50 transition-all">
+                        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+                            <button onClick={() => { setMode('landing'); clearUrl(); }} className="flex items-center gap-3 group">
+                                <span className="bg-ink-main text-xuan-paper p-1.5 rounded-sm group-hover:bg-cinnabar transition-colors"><Icon name="BookOpen" className="w-4 h-4" /></span>
+                                <span className="font-bold text-ink-main font-serif tracking-wide text-lg">班級訊息</span>
+                            </button>
+                            <span className={`text-xs font-bold px-3 py-1 rounded tracking-widest border ${mode === 'teacher' ? 'bg-cinnabar text-white border-cinnabar' : 'bg-rice-paper text-ink-light border-stone'}`}>
+                                {mode === 'teacher' ? '教師模式' : '學生模式'}
+                            </span>
+                        </div>
+                    </header>
+
+                    <main className="max-w-5xl mx-auto px-4 py-8 md:py-12">
+                        {mode === 'teacher' ? <TeacherView onSimulateScan={handleSimulateScan} onLogout={() => setMode('landing')} /> : <StudentView initialCode={urlCode} onRetry={clearUrl} />}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
