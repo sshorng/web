@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>多功能QR code產生器v2.0</title>
+<title>QR code 產生器 v2.4 (優化文字版)</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -130,20 +130,19 @@ body.dark-mode select.input-field {
 }
 
 /* 顏色選擇器樣式修正 */
-/* 移除奇怪的位移，讓它填滿並顯示清楚的邊框 */
 input[type="color"].input-field {
-    padding: 2px; /* 給一點內距形成邊框感 */
-    border: 1px solid var(--input-border); /* 強制顯示邊框 */
+    padding: 2px;
+    border: 1px solid var(--input-border);
     background: var(--input-bg);
     height: 45px; 
     cursor: pointer;
     width: 100%;
-    position: static; /* 移除 relative 定位 */
-    left: auto; /* 移除位移 */
+    position: static;
+    left: auto;
 }
 input[type="color"].input-field::-webkit-color-swatch-wrapper { padding: 0; }
 input[type="color"].input-field::-webkit-color-swatch { 
-    border: 1px solid rgba(0,0,0,0.1); /* 色塊本身的微邊框 */
+    border: 1px solid rgba(0,0,0,0.1); 
     border-radius: calc(var(--radius) - 2px); 
 }
 input[type="color"].input-field::-moz-color-swatch { 
@@ -170,7 +169,15 @@ input[type="color"].input-field::-moz-color-swatch {
 
 /* === 結果 === */
 .results { display: none; margin-top: 2rem; border-top: 1px solid var(--input-border); padding-top: 2rem; }
-#final-qrcode { display: block; margin: 1rem auto; max-width: 100%; border-radius: var(--radius); }
+
+/* 修正：移除圓角，確保預覽與下載一致是直角 */
+#final-qrcode { 
+    display: block; 
+    margin: 1rem auto; 
+    max-width: 100%; 
+    border-radius: 0; /* 修改這裡：移除圓角 */
+    border: 1px solid #eee; 
+}
 
 /* === 訊息 === */
 .message {
@@ -210,12 +217,11 @@ input[type="color"].input-field::-moz-color-swatch {
 <div class="container">
 
 <header>
-    <h1>多功能QR code產生器v2.0</h1>
+    <h1>QR code 產生器 v2.4</h1>
     <p style="color: var(--secondary); font-size: 0.9rem; margin-top: 0.5rem; font-weight: 500;">製作者: 韋哥科技教室</p>
     <button id="themeToggle" class="theme-toggle">🌙</button>
 </header>
 
-<!-- === 類型選擇 === -->
 <fieldset>
 <legend>選擇內容類型</legend>
 <select id="qrType" class="input-field">
@@ -228,13 +234,11 @@ input[type="color"].input-field::-moz-color-swatch {
 </select>
 </fieldset>
 
-<!-- === 動態內容輸入 === -->
 <fieldset>
 <legend>輸入內容</legend>
 <div id="contentInputs"></div>
 </fieldset>
 
-<!-- === 短網址 (Radio Button) === -->
 <fieldset id="shortField">
 <legend>短網址選項</legend>
 <div class="radio-group">
@@ -249,17 +253,6 @@ input[type="color"].input-field::-moz-color-swatch {
 </div>
 </fieldset>
 
-<!-- === 教育展示 === -->
-<fieldset>
-<legend>教學展示 (可選)</legend>
-<input id="projName" class="input-field" placeholder="作品名稱">
-<div class="grid-2">
-    <input id="studentName" class="input-field" placeholder="學生姓名">
-    <input id="trackId" class="input-field" placeholder="識別碼 student01">
-</div>
-</fieldset>
-
-<!-- === 外觀 === -->
 <fieldset>
 <legend>自訂外觀</legend>
 <div class="grid-2">
@@ -279,13 +272,8 @@ input[type="color"].input-field::-moz-color-swatch {
 </div>
 
 <div style="margin-top: 1rem;">
-    <label for="logoUpload" style="font-weight:700; color:var(--text);">插入中心 LOGO 圖片 (可選)</label>
-    <input type="file" id="logoUpload" class="input-field" accept="image/*">
-</div>
-
-<div style="margin-top: 1rem;">
-    <label for="memoText">底部備註文字</label>
-    <input id="memoText" class="input-field" placeholder="顯示在下載圖片的下方">
+    <label for="centerText" style="font-weight:700; color:var(--primary);">QR Code 中心文字</label>
+    <input id="centerText" class="input-field" placeholder="例如: 班級、代號 (建議2-4字)">
 </div>
 </fieldset>
 
@@ -293,7 +281,6 @@ input[type="color"].input-field::-moz-color-swatch {
 
 <div id="message" class="message"></div>
 
-<!-- === 結果 === -->
 <div id="results" class="results">
     <canvas id="final-qrcode"></canvas>
     <div class="grid-2">
@@ -302,10 +289,8 @@ input[type="color"].input-field::-moz-color-swatch {
     </div>
 </div>
 
-<!-- 隱藏生成器 -->
 <div id="qrHidden" style="display:none;"></div>
 
-<!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay">
     <div class="spinner"></div>
     <p>正在生成 QR Code...</p>
@@ -321,15 +306,10 @@ const dom = {
     qrType: $("#qrType"),
     contentArea: $("#contentInputs"),
     shortField: $("#shortField"),
-    // shortener 選取器已移除，改為動態查詢
-    projName: $("#projName"),
-    student: $("#studentName"),
-    trackId: $("#trackId"),
+    centerText: $("#centerText"),
     clrDark: $("#qrColorDark"),
     clrLight: $("#qrColorLight"),
     size: $("#qrSize"),
-    memo: $("#memoText"),
-    logo: $("#logoUpload"),
     genBtn: $("#generateBtn"),
     msg: $("#message"),
     results: $("#results"),
@@ -379,7 +359,6 @@ const InputTemplates = {
 function updateInputs(){
     const type = dom.qrType.value;
     dom.contentArea.innerHTML = InputTemplates[type];
-    // 只有選「網址」時才顯示短網址選項
     dom.shortField.style.display = type==="url" ? "block" : "none";
 }
 
@@ -387,18 +366,7 @@ function updateInputs(){
    3. 各類型 QR 內容生成
 ===================================================== */
 const QRContent = {
-    url: () => {
-        let url = $("#inputUrl").value.trim();
-        const tid = dom.trackId.value.trim();
-        if(tid && url){
-            try{
-                const u = new URL(url);
-                u.searchParams.set("id", tid);
-                url = u.toString();
-            }catch(e){}
-        }
-        return url;
-    },
+    url: () => $("#inputUrl").value.trim(),
     text: () => $("#inputText").value.trim(),
     wifi: () => {
         const ssid=$("#wifiSsid").value.trim();
@@ -427,7 +395,6 @@ END:VCARD`;
    4. 短網址 (is.gd)
 ===================================================== */
 async function shorten(url){
-    // 取得選中的 radio 值
     const checkedRadio = document.querySelector('input[name="shortener"]:checked');
     const type = checkedRadio ? checkedRadio.value : "none";
 
@@ -452,19 +419,15 @@ const QR = {
         let content = QRContent[type]();
         if(!content){ showMsg("請填寫完整內容"); return; }
 
-        // 1. 顯示載入中
         dom.loading.style.display = "flex";
         dom.results.style.display = "none";
 
         try {
-            // 2. 短網址
             const finalText = type==="url" ? await shorten(content) : content;
             QR.lastUrl = finalText;
 
-            // 3. 生成 QR
             await QR.generateRaw(finalText);
-
-            // 4. 繪製到 Canvas (含 Logo/文字)
+            
             const rawCanvas = dom.hiddenGen.querySelector("canvas");
             await QR.drawToCanvas(rawCanvas);
 
@@ -481,14 +444,11 @@ const QR = {
     generateRaw(text){
         return new Promise((resolve, reject) => {
             dom.hiddenGen.innerHTML="";
-            
-            // 設定超時機制 (防止卡死)
             const timeout = setTimeout(() => {
                 observer.disconnect();
                 reject(new Error("生成超時 (可能是內容過長)"));
             }, 2000);
 
-            // 1. 先啟動監聽 (修正順序)
             const observer = new MutationObserver(() => {
                 const canvas = dom.hiddenGen.querySelector("canvas");
                 if (canvas) {
@@ -499,7 +459,6 @@ const QR = {
             });
             observer.observe(dom.hiddenGen, { childList: true });
 
-            // 2. 再開始生成
             try {
                 new QRCode(dom.hiddenGen,{
                     text: text,
@@ -507,7 +466,7 @@ const QR = {
                     height: +dom.size.value,
                     colorDark: dom.clrDark.value,
                     colorLight: dom.clrLight.value,
-                    correctLevel: QRCode.CorrectLevel.H
+                    correctLevel: QRCode.CorrectLevel.H 
                 });
             } catch(e) { 
                 clearTimeout(timeout);
@@ -520,93 +479,57 @@ const QR = {
     drawToCanvas(rawCanvas){
         return new Promise((resolve) => {
             const size = +dom.size.value;
-            const memo = dom.memo.value.trim();
-            const proj = dom.projName.value.trim();
-            const stu = dom.student.value.trim();
+            const cText = dom.centerText.value.trim();
             
-            // 判斷是否需要顯示網址文字 (僅限 URL 類型)
-            const showUrl = dom.qrType.value === "url" && QR.lastUrl;
-            const urlText = showUrl ? QR.lastUrl : "";
+            const padding = 10; 
             
-            // 計算高度: QR + 備註 + URL + 教學標題
-            let headerHeight = (proj || stu) ? 60 : 0;
-            let footerHeight = 0;
-            if(memo) footerHeight += 30;
-            if(urlText) footerHeight += 25; // 預留網址文字空間
-            if(footerHeight > 0) footerHeight += 20; // 底部 Padding
-
-            dom.canvas.width = size;
-            dom.canvas.height = headerHeight + size + footerHeight;
+            dom.canvas.width = size + (padding * 2);
+            dom.canvas.height = size + (padding * 2);
 
             const ctx = dom.canvas.getContext("2d");
 
-            // 1. 背景
-            ctx.fillStyle = dom.clrLight.value;
+            // 1. 填滿全白背景
+            ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, dom.canvas.width, dom.canvas.height);
 
-            // 2. 繪製教學標題 (如果有)
-            let offsetY = 0;
-            if (headerHeight > 0) {
+            // 2. 繪製 QR
+            ctx.drawImage(rawCanvas, padding, padding, size, size);
+
+            // 3. 繪製中心文字 (如果有的話)
+            if(cText){
+                const fontSize = Math.floor(size * 0.12);
+                ctx.font = `bold ${fontSize}px "Noto Sans TC", sans-serif`;
                 ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                const textWidth = ctx.measureText(cText).width;
+                
+                // === 修改重點：縮小 Padding ===
+                const boxPadX = 8;  // 左右 Padding
+                const boxPadY = 2;  // 上下 Padding (縮小，減少遮擋)
+
+                const boxW = textWidth + (boxPadX * 2);
+                const boxH = fontSize + (boxPadY * 2);
+                
+                const cx = dom.canvas.width / 2;
+                const cy = dom.canvas.height / 2;
+                
+                // 畫白底框 (移除黑框 strokeRect)
+                ctx.fillStyle = "#ffffff";
+                // 註解掉邊框設定
+                // ctx.strokeStyle = dom.clrDark.value;
+                // ctx.lineWidth = 2;
+                
+                ctx.fillRect(cx - boxW/2, cy - boxH/2, boxW, boxH);
+                // 註解掉繪製邊框
+                // ctx.strokeRect(cx - boxW/2, cy - boxH/2, boxW, boxH);
+
+                // 寫字 (微調 Y 軸，讓文字視覺更居中)
                 ctx.fillStyle = dom.clrDark.value;
-                if (proj) {
-                    ctx.font = "bold 24px Noto Sans TC";
-                    ctx.fillText(proj, size/2, 30);
-                }
-                if (stu) {
-                    ctx.font = "16px Noto Sans TC";
-                    ctx.fillStyle = "#666";
-                    ctx.fillText(stu, size/2, 55);
-                }
-                offsetY = headerHeight;
+                ctx.fillText(cText, cx, cy + 1); 
             }
 
-            // 3. 繪製 QR
-            ctx.drawImage(rawCanvas, 0, offsetY, size, size);
-
-            // 4. 繪製底部文字 (備註 + 網址)
-            let textY = offsetY + size + 10;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "top";
-            
-            if(memo) {
-                ctx.fillStyle = "#333";
-                ctx.font = "bold 20px Noto Sans TC";
-                ctx.fillText(memo, size/2, textY);
-                textY += 30; // 備註文字高度
-            }
-            
-            if(urlText) {
-                ctx.fillStyle = "#666";
-                ctx.font = "14px Noto Sans TC";
-                ctx.fillText(urlText, size/2, textY);
-            }
-
-            // 5. 繪製 Logo (如果有)
-            const file = dom.logo.files[0];
-            const finish = () => resolve(); // 完成後呼叫 resolve
-
-            if(file){
-                if(file.size > 2*1024*1024) {
-                    showMsg("Logo 太大，已略過 (限2MB)");
-                    finish();
-                    return;
-                }
-                const img = new Image();
-                img.onload = () => {
-                    const s = size/4;
-                    const x = (size-s)/2;
-                    const y = offsetY + (size-s)/2; // 需加上 offsetY 確保在 QR 中間
-                    ctx.fillStyle = "white"; // Logo 白邊
-                    ctx.fillRect(x-5, y-5, s+10, s+10);
-                    ctx.drawImage(img, x, y, s, s);
-                    finish();
-                };
-                img.onerror = finish;
-                img.src = URL.createObjectURL(file);
-            } else {
-                finish();
-            }
+            resolve();
         });
     }
 };
