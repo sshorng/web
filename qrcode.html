@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多功能QR code產生器v2.0</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<style>
+/* === 顏色變數 === */
+:root {
+    --bg: #f5f8fc;
+    --card: #ffffff;
+    --text: #333;
+    --input-bg: #f0f3f7;
+    --input-border: #dce4f0;
+    --primary: #007bff;
+    --primary-hover: #0056b3;
+    --secondary: #6c757d;
+    --secondary-hover: #5a6268;
+    --success: #28a745;
+    --error: #dc3545;
+    --radius: 10px;
+    --shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+/* 深色模式 */
+body.dark-mode {
+    --bg: #121212;
+    --card: #1e1e1e;
+    --text: #e0e0e0;
+    --input-bg: #2a2a2a;
+    --input-border: #444;
+    --primary: #3a96ff;
+    --primary-hover: #5aa5ff;
+    --secondary: #888;
+    --secondary-hover: #aaa;
+}
+
+/* === 全域 === */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* === 容器 === */
+.container {
+    width: 100%; max-width: 560px;
+    background: var(--card);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: background 0.3s;
+}
+
+/* === Header === */
+header { position: relative; text-align: center; margin-bottom: 20px; }
+h1 { font-size: 2rem; font-weight: 700; color: var(--text); }
+
+.theme-toggle {
+    position: absolute; top: 0; right: 0;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: none; border: 1px solid var(--input-border);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; transition: background 0.2s, border-color 0.2s;
+    color: var(--text);
+}
+.theme-toggle:hover { background: var(--input-bg); }
+
+/* === UI === */
+fieldset {
+    border: 1px solid var(--input-border);
+    padding: 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+}
+legend {
+    font-size: 1.2rem; font-weight: 700;
+    color: var(--primary);
+    padding: 0 0.5rem;
+}
+.input-field {
+    width: 100%; padding: 0.8rem;
+    border-radius: var(--radius);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text);
+    font-size: 1rem;
+    margin-top: 8px;
+    transition: all 0.3s;
+}
+.input-field:focus { outline: none; border-color: var(--primary); }
+
+select.input-field {
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}
+body.dark-mode select.input-field {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+/* Radio Button 樣式 */
+.radio-group {
+    display: flex; gap: 20px; margin-top: 10px;
+}
+.radio-label {
+    display: flex; align-items: center; cursor: pointer;
+    font-size: 1rem; color: var(--text);
+}
+.radio-input {
+    width: 20px; height: 20px; margin-right: 8px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* 顏色選擇器樣式修正 */
+/* 移除奇怪的位移，讓它填滿並顯示清楚的邊框 */
+input[type="color"].input-field {
+    padding: 2px; /* 給一點內距形成邊框感 */
+    border: 1px solid var(--input-border); /* 強制顯示邊框 */
+    background: var(--input-bg);
+    height: 45px; 
+    cursor: pointer;
+    width: 100%;
+    position: static; /* 移除 relative 定位 */
+    left: auto; /* 移除位移 */
+}
+input[type="color"].input-field::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"].input-field::-webkit-color-swatch { 
+    border: 1px solid rgba(0,0,0,0.1); /* 色塊本身的微邊框 */
+    border-radius: calc(var(--radius) - 2px); 
+}
+input[type="color"].input-field::-moz-color-swatch { 
+    border: 1px solid rgba(0,0,0,0.1); 
+    border-radius: calc(var(--radius) - 2px); 
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* === 按鈕 === */
+.btn {
+    width: 100%; padding: 0.9rem;
+    border: none; border-radius: var(--radius);
+    font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; margin-top: 10px;
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+    transition: background 0.2s, transform 0.1s;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-secondary { background: var(--secondary); color: white; }
+.btn-secondary:hover { background: var(--secondary-hover); }
+
+/* === 結果 === */
+.results { display: none; margin-top: 2rem; border-top: 1px solid var(--input-border); padding-top: 2rem; }
+#final-qrcode { display: block; margin: 1rem auto; max-width: 100%; border-radius: var(--radius); }
+
+/* === 訊息 === */
+.message {
+    display: none; padding: 0.8rem; text-align: center;
+    border-radius: var(--radius); margin-top: 20px;
+    font-size: 0.9rem;
+}
+.message-success { background: var(--success); color: white; }
+.message-error { background: var(--error); color: white; }
+
+/* === Loading Overlay === */
+.loading-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; backdrop-filter: blur(4px);
+}
+.loading-overlay .spinner {
+    width: 60px; height: 60px;
+    border: 6px solid rgba(255,255,255,0.2); border-top-color: #fff;
+    border-radius: 50%; animation: spin 1s infinite linear;
+}
+.loading-overlay p {
+    color: white; margin-top: 1.5rem; font-size: 1.5rem; font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media print {
+    body { padding: 0; background: #fff; }
+    .container { max-width: 100%; box-shadow: none; padding: 0; }
+    header, main, .results .grid-2, .message { display: none; }
+    .results { display: block !important; border-top: none; padding-top: 0; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+    <h1>多功能QR code產生器v2.0</h1>
+    <p style="color: var(--secondary); font-size: 0.9rem; margin-top: 0.5rem; font-weight: 500;">製作者: 韋哥科技教室</p>
+    <button id="themeToggle" class="theme-toggle">🌙</button>
+</header>
+
+<!-- === 類型選擇 === -->
+<fieldset>
+<legend>選擇內容類型</legend>
+<select id="qrType" class="input-field">
+    <option value="url">網址</option>
+    <option value="text">純文字</option>
+    <option value="wifi">Wi-Fi</option>
+    <option value="email">Email</option>
+    <option value="vcard">vCard 名片</option>
+    <option value="tel">電話</option>
+</select>
+</fieldset>
+
+<!-- === 動態內容輸入 === -->
+<fieldset>
+<legend>輸入內容</legend>
+<div id="contentInputs"></div>
+</fieldset>
+
+<!-- === 短網址 (Radio Button) === -->
+<fieldset id="shortField">
+<legend>短網址選項</legend>
+<div class="radio-group">
+    <label class="radio-label">
+        <input type="radio" name="shortener" value="none" checked class="radio-input">
+        不使用短網址
+    </label>
+    <label class="radio-label">
+        <input type="radio" name="shortener" value="isgd" class="radio-input">
+        使用短網址 (is.gd)
+    </label>
+</div>
+</fieldset>
+
+<!-- === 教育展示 === -->
+<fieldset>
+<legend>教學展示 (可選)</legend>
+<input id="projName" class="input-field" placeholder="作品名稱">
+<div class="grid-2">
+    <input id="studentName" class="input-field" placeholder="學生姓名">
+    <input id="trackId" class="input-field" placeholder="識別碼 student01">
+</div>
+</fieldset>
+
+<!-- === 外觀 === -->
+<fieldset>
+<legend>自訂外觀</legend>
+<div class="grid-2">
+    <div>
+        <label for="qrColorDark">前景顏色</label>
+        <input type="color" id="qrColorDark" class="input-field" value="#000000">
+    </div>
+    <div>
+        <label for="qrColorLight">背景顏色</label>
+        <input type="color" id="qrColorLight" class="input-field" value="#ffffff">
+    </div>
+</div>
+
+<div style="margin-top: 1rem;">
+    <label for="qrSize">大小 (px)</label>
+    <input type="number" id="qrSize" class="input-field" value="256" min="80" max="1024">
+</div>
+
+<div style="margin-top: 1rem;">
+    <label for="logoUpload" style="font-weight:700; color:var(--text);">插入中心 LOGO 圖片 (可選)</label>
+    <input type="file" id="logoUpload" class="input-field" accept="image/*">
+</div>
+
+<div style="margin-top: 1rem;">
+    <label for="memoText">底部備註文字</label>
+    <input id="memoText" class="input-field" placeholder="顯示在下載圖片的下方">
+</div>
+</fieldset>
+
+<button id="generateBtn" class="btn btn-primary">🚀 生成 QR Code</button>
+
+<div id="message" class="message"></div>
+
+<!-- === 結果 === -->
+<div id="results" class="results">
+    <canvas id="final-qrcode"></canvas>
+    <div class="grid-2">
+        <button id="copyBtn" class="btn btn-secondary">複製短網址</button>
+        <button id="downloadBtn" class="btn btn-secondary">下載圖片</button>
+    </div>
+</div>
+
+<!-- 隱藏生成器 -->
+<div id="qrHidden" style="display:none;"></div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <p>正在生成 QR Code...</p>
+</div>
+
+</div>
+
+<script>
+/* =====================================================
+   1. DOM 選取器
+===================================================== */
+const dom = {
+    qrType: $("#qrType"),
+    contentArea: $("#contentInputs"),
+    shortField: $("#shortField"),
+    // shortener 選取器已移除，改為動態查詢
+    projName: $("#projName"),
+    student: $("#studentName"),
+    trackId: $("#trackId"),
+    clrDark: $("#qrColorDark"),
+    clrLight: $("#qrColorLight"),
+    size: $("#qrSize"),
+    memo: $("#memoText"),
+    logo: $("#logoUpload"),
+    genBtn: $("#generateBtn"),
+    msg: $("#message"),
+    results: $("#results"),
+    canvas: $("#final-qrcode"),
+    copyBtn: $("#copyBtn"),
+    downloadBtn: $("#downloadBtn"),
+    themeBtn: $("#themeToggle"),
+    hiddenGen: $("#qrHidden"),
+    loading: $("#loadingOverlay")
+};
+function $(id){ return document.getElementById(id.replace("#","")); }
+
+/* =====================================================
+   2. 輸入模板
+===================================================== */
+const InputTemplates = {
+    url:`<input id="inputUrl" class="input-field" placeholder="https://example.com">`,
+    text:`<textarea id="inputText" class="input-field" rows="3" placeholder="輸入文字"></textarea>`,
+    wifi:`
+        <div class="grid-2">
+            <input id="wifiSsid" class="input-field" placeholder="SSID">
+            <select id="wifiEnc" class="input-field">
+                <option value="WPA">WPA/WPA2</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">無密碼</option>
+            </select>
+        </div>
+        <input id="wifiPass" class="input-field" placeholder="密碼">
+    `,
+    email:`
+        <input id="emailTo" class="input-field" placeholder="收件者">
+        <input id="emailSub" class="input-field" placeholder="主旨 (可選)">
+        <textarea id="emailBody" class="input-field" rows="2" placeholder="內容"></textarea>
+    `,
+    vcard:`
+        <div class="grid-2">
+            <input id="vFirst" class="input-field" placeholder="姓氏">
+            <input id="vLast" class="input-field" placeholder="名字">
+        </div>
+        <input id="vTel" class="input-field" placeholder="電話">
+        <input id="vEmail" class="input-field" placeholder="Email">
+        <input id="vOrg" class="input-field" placeholder="組織">
+    `,
+    tel:`<input id="telNum" class="input-field" placeholder="電話號碼">`
+};
+
+function updateInputs(){
+    const type = dom.qrType.value;
+    dom.contentArea.innerHTML = InputTemplates[type];
+    // 只有選「網址」時才顯示短網址選項
+    dom.shortField.style.display = type==="url" ? "block" : "none";
+}
+
+/* =====================================================
+   3. 各類型 QR 內容生成
+===================================================== */
+const QRContent = {
+    url: () => {
+        let url = $("#inputUrl").value.trim();
+        const tid = dom.trackId.value.trim();
+        if(tid && url){
+            try{
+                const u = new URL(url);
+                u.searchParams.set("id", tid);
+                url = u.toString();
+            }catch(e){}
+        }
+        return url;
+    },
+    text: () => $("#inputText").value.trim(),
+    wifi: () => {
+        const ssid=$("#wifiSsid").value.trim();
+        if(!ssid) return "";
+        return `WIFI:T:${$("#wifiEnc").value};S:${ssid};P:${$("#wifiPass").value};;`;
+    },
+    email: () => {
+        const to=$("#emailTo").value.trim();
+        return `mailto:${to}?subject=${encodeURIComponent($("#emailSub").value)}&body=${encodeURIComponent($("#emailBody").value)}`;
+    },
+    vcard: () => {
+        const fn=$("#vLast").value, ln=$("#vFirst").value;
+        return `BEGIN:VCARD
+VERSION:3.0
+N:${fn};${ln}
+FN:${ln} ${fn}
+ORG:${$("#vOrg").value}
+TEL:${$("#vTel").value}
+EMAIL:${$("#vEmail").value}
+END:VCARD`;
+    },
+    tel: () => `tel:${$("#telNum").value.trim()}`
+};
+
+/* =====================================================
+   4. 短網址 (is.gd)
+===================================================== */
+async function shorten(url){
+    // 取得選中的 radio 值
+    const checkedRadio = document.querySelector('input[name="shortener"]:checked');
+    const type = checkedRadio ? checkedRadio.value : "none";
+
+    if(type === "none") return url;
+
+    try{
+        const r = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`);
+        const d = await r.json();
+        return d.shorturl || url;
+    }catch(e){
+        showMsg("短網址生成失敗，改用原始網址");
+        return url;
+    }
+}
+
+/* =====================================================
+   5. 生成 QR (使用 Promise & Observer)
+===================================================== */
+const QR = {
+    async render(){
+        const type = dom.qrType.value;
+        let content = QRContent[type]();
+        if(!content){ showMsg("請填寫完整內容"); return; }
+
+        // 1. 顯示載入中
+        dom.loading.style.display = "flex";
+        dom.results.style.display = "none";
+
+        try {
+            // 2. 短網址
+            const finalText = type==="url" ? await shorten(content) : content;
+            QR.lastUrl = finalText;
+
+            // 3. 生成 QR
+            await QR.generateRaw(finalText);
+
+            // 4. 繪製到 Canvas (含 Logo/文字)
+            const rawCanvas = dom.hiddenGen.querySelector("canvas");
+            await QR.drawToCanvas(rawCanvas);
+
+            dom.results.style.display = "block";
+            showMsg("✅ 生成成功", "success");
+
+        } catch(e) {
+            showMsg("生成失敗: " + e.message);
+        } finally {
+            dom.loading.style.display = "none";
+        }
+    },
+
+    generateRaw(text){
+        return new Promise((resolve, reject) => {
+            dom.hiddenGen.innerHTML="";
+            
+            // 設定超時機制 (防止卡死)
+            const timeout = setTimeout(() => {
+                observer.disconnect();
+                reject(new Error("生成超時 (可能是內容過長)"));
+            }, 2000);
+
+            // 1. 先啟動監聽 (修正順序)
+            const observer = new MutationObserver(() => {
+                const canvas = dom.hiddenGen.querySelector("canvas");
+                if (canvas) {
+                    clearTimeout(timeout);
+                    observer.disconnect();
+                    resolve(canvas);
+                }
+            });
+            observer.observe(dom.hiddenGen, { childList: true });
+
+            // 2. 再開始生成
+            try {
+                new QRCode(dom.hiddenGen,{
+                    text: text,
+                    width: +dom.size.value,
+                    height: +dom.size.value,
+                    colorDark: dom.clrDark.value,
+                    colorLight: dom.clrLight.value,
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } catch(e) { 
+                clearTimeout(timeout);
+                observer.disconnect();
+                reject(e); 
+            }
+        });
+    },
+
+    drawToCanvas(rawCanvas){
+        return new Promise((resolve) => {
+            const size = +dom.size.value;
+            const memo = dom.memo.value.trim();
+            const proj = dom.projName.value.trim();
+            const stu = dom.student.value.trim();
+            
+            // 判斷是否需要顯示網址文字 (僅限 URL 類型)
+            const showUrl = dom.qrType.value === "url" && QR.lastUrl;
+            const urlText = showUrl ? QR.lastUrl : "";
+            
+            // 計算高度: QR + 備註 + URL + 教學標題
+            let headerHeight = (proj || stu) ? 60 : 0;
+            let footerHeight = 0;
+            if(memo) footerHeight += 30;
+            if(urlText) footerHeight += 25; // 預留網址文字空間
+            if(footerHeight > 0) footerHeight += 20; // 底部 Padding
+
+            dom.canvas.width = size;
+            dom.canvas.height = headerHeight + size + footerHeight;
+
+            const ctx = dom.canvas.getContext("2d");
+
+            // 1. 背景
+            ctx.fillStyle = dom.clrLight.value;
+            ctx.fillRect(0, 0, dom.canvas.width, dom.canvas.height);
+
+            // 2. 繪製教學標題 (如果有)
+            let offsetY = 0;
+            if (headerHeight > 0) {
+                ctx.textAlign = "center";
+                ctx.fillStyle = dom.clrDark.value;
+                if (proj) {
+                    ctx.font = "bold 24px Noto Sans TC";
+                    ctx.fillText(proj, size/2, 30);
+                }
+                if (stu) {
+                    ctx.font = "16px Noto Sans TC";
+                    ctx.fillStyle = "#666";
+                    ctx.fillText(stu, size/2, 55);
+                }
+                offsetY = headerHeight;
+            }
+
+            // 3. 繪製 QR
+            ctx.drawImage(rawCanvas, 0, offsetY, size, size);
+
+            // 4. 繪製底部文字 (備註 + 網址)
+            let textY = offsetY + size + 10;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            
+            if(memo) {
+                ctx.fillStyle = "#333";
+                ctx.font = "bold 20px Noto Sans TC";
+                ctx.fillText(memo, size/2, textY);
+                textY += 30; // 備註文字高度
+            }
+            
+            if(urlText) {
+                ctx.fillStyle = "#666";
+                ctx.font = "14px Noto Sans TC";
+                ctx.fillText(urlText, size/2, textY);
+            }
+
+            // 5. 繪製 Logo (如果有)
+            const file = dom.logo.files[0];
+            const finish = () => resolve(); // 完成後呼叫 resolve
+
+            if(file){
+                if(file.size > 2*1024*1024) {
+                    showMsg("Logo 太大，已略過 (限2MB)");
+                    finish();
+                    return;
+                }
+                const img = new Image();
+                img.onload = () => {
+                    const s = size/4;
+                    const x = (size-s)/2;
+                    const y = offsetY + (size-s)/2; // 需加上 offsetY 確保在 QR 中間
+                    ctx.fillStyle = "white"; // Logo 白邊
+                    ctx.fillRect(x-5, y-5, s+10, s+10);
+                    ctx.drawImage(img, x, y, s, s);
+                    finish();
+                };
+                img.onerror = finish;
+                img.src = URL.createObjectURL(file);
+            } else {
+                finish();
+            }
+        });
+    }
+};
+
+/* =====================================================
+   6. 下載
+===================================================== */
+function download(){
+    dom.canvas.toBlob(b=>{
+        if(!b) return showMsg("無法建立圖片");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        a.download = "qrcode.png";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+}
+
+/* =====================================================
+   7. 工具
+===================================================== */
+function showMsg(text, type="error"){
+    dom.msg.textContent = text;
+    dom.msg.className = `message message-${type}`;
+    dom.msg.style.display = "block";
+    setTimeout(()=> dom.msg.style.display="none", 3000);
+}
+
+/* =====================================================
+   8. 行為綁定
+===================================================== */
+dom.qrType.onchange = updateInputs;
+dom.genBtn.onclick = ()=> QR.render();
+dom.downloadBtn.onclick = download;
+dom.copyBtn.onclick = ()=> {
+    if(!QR.lastUrl) return showMsg("沒有短網址可複製");
+    navigator.clipboard.writeText(QR.lastUrl);
+    dom.copyBtn.textContent="已複製！";
+    setTimeout(()=> dom.copyBtn.textContent="複製短網址",1000);
+};
+
+dom.themeBtn.onclick = ()=>{
+    document.body.classList.toggle("dark-mode");
+    const isDark = document.body.classList.contains("dark-mode");
+    localStorage.setItem("darkMode", isDark);
+    dom.themeBtn.textContent = isDark ? "☀️" : "🌙";
+};
+
+// 初始化
+const isDark = localStorage.getItem("darkMode")==="true";
+if(isDark) {
+    document.body.classList.add("dark-mode");
+    dom.themeBtn.textContent = "☀️";
+}
+updateInputs();
+
+</script>
+</body>
+</html>
