@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>詞語賓果魔法屋</title>
+    <title>詞語賓果魔法屋 - 八年級形音加強版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,9 +35,9 @@
             background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(120, 120, 255, 0.2) 50%, rgba(50, 50, 150, 0.5) 100%);
             border-radius: 50%;
             border: 3px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.2), 
-                        0 0 35px 15px rgba(100, 100, 255, 0.3), 
-                        inset 0 0 20px 5px rgba(200, 200, 255, 0.3);
+            box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.2),
+                         0 0 35px 15px rgba(100, 100, 255, 0.3),
+                         inset 0 0 20px 5px rgba(200, 200, 255, 0.3);
             position: relative;
             display: flex;
             justify-content: center;
@@ -48,9 +48,9 @@
         
         .crystal-ball:hover:not(.disabled) {
             transform: scale(1.05);
-            box-shadow: 0 0 20px 8px rgba(255, 255, 255, 0.3), 
-                        0 0 45px 20px rgba(150, 150, 255, 0.4), 
-                        inset 0 0 25px 8px rgba(220, 220, 255, 0.4);
+            box-shadow: 0 0 20px 8px rgba(255, 255, 255, 0.3),
+                         0 0 45px 20px rgba(150, 150, 255, 0.4),
+                         inset 0 0 25px 8px rgba(220, 220, 255, 0.4);
         }
 
         .crystal-ball-reflection {
@@ -76,6 +76,7 @@
             z-index: 10;
             padding: 0 10px;
             text-align: center;
+            line-height: 1.4;
         }
 
         .word-display.show {
@@ -155,7 +156,7 @@
             <h1 class="text-4xl md:text-5xl font-bold mb-2 text-yellow-300" style="text-shadow: 0 0 10px #fde047;">
                 詞語賓果魔法屋
             </h1>
-            <p class="text-lg text-gray-300 mb-6">請選擇課次，然後點擊水晶球抽取詞語</p>
+            <p class="text-lg text-gray-300 mb-6">八年級形音義補充特訓 - 請選擇課次</p>
 
             <div class="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-md mx-auto">
                 <select id="lesson-select" class="custom-select p-3 rounded-lg text-lg w-full sm:w-auto flex-grow">
@@ -193,312 +194,492 @@
     </div>
 
     <script>
-        // --- 資料庫 (八年級版) ---
+        // --- 資料庫 (八年級形音講義new.pdf 版) ---
+        // 權重規則：
+        // 5: 四字成語、極難字 (如：黷、瀲)
+        // 4: 易混淆字、較難詞 (如：尷尬、躊躇)
+        // 3: 中等詞彙 (如：辨識、即使)
+        // 2: 常見詞彙 (如：建議)
+        // 1: 基礎詞彙 (如：雖然)
+
         const lessonsData = {
             "L1": {
-                name: "第一課 小詩選",
+                name: "第1課 一棵開花的樹",
                 words: [
-                    { word: "樂陶陶", core_char: "陶", zhuyin: "ㄊㄠˊ", weight: 1 }, { word: "淘金", core_char: "淘", zhuyin: "ㄊㄠˊ", weight: 1 },
-                    { word: "嚎啕", core_char: "啕", zhuyin: "ㄊㄠˊ", weight: 2 }, { word: "激起浪花", core_char: "激", zhuyin: "ㄐㄧ", weight: 1 },
-                    { word: "激勵", core_char: "激", zhuyin: "ㄐㄧ", weight: 1 }, { word: "繳費", core_char: "繳", zhuyin: "ㄐㄧㄠˇ", weight: 1 },
-                    { word: "應邀", core_char: "邀", zhuyin: "ㄧㄠ", weight: 1 }, { word: "屹立不搖", core_char: "搖", zhuyin: "ㄧㄠˊ", weight: 1 },
-                    { word: "民謠", core_char: "謠", zhuyin: "ㄧㄠˊ", weight: 1 }, { word: "造謠", core_char: "謠", zhuyin: "ㄧㄠˊ", weight: 1 },
-                    { word: "遙不可及", core_char: "遙", zhuyin: "ㄧㄠˊ", weight: 2 }, { word: "拔草", core_char: "拔", zhuyin: "ㄅㄚˊ", weight: 1 },
-                    { word: "堅忍不拔", core_char: "拔", zhuyin: "ㄅㄚˊ", weight: 2 }, { word: "提拔", core_char: "拔", zhuyin: "ㄅㄚˊ", weight: 2 },
-                    { word: "跋山涉水", core_char: "跋", zhuyin: "ㄅㄚˊ", weight: 2 }, { word: "河堤", core_char: "堤", zhuyin: "ㄊㄧˊ", weight: 1 },
-                    { word: "舊事重提", core_char: "提", zhuyin: "ㄊㄧˊ", weight: 1 }, { word: "提神醒腦", core_char: "提", zhuyin: "ㄊㄧˊ", weight: 1 },
-                    { word: "醍醐灌頂", core_char: "醍", zhuyin: "ㄊㄧˊ", weight: 3 }, { word: "標題", core_char: "題", zhuyin: "ㄊㄧˊ", weight: 1 },
-                    { word: "金榜題名", core_char: "題", zhuyin: "ㄊㄧˊ", weight: 2 }, { word: "曲線", core_char: "曲", zhuyin: "ㄑㄩ", weight: 1 },
-                    { word: "曲膝", core_char: "曲", zhuyin: "ㄑㄩ", weight: 1 }, { word: "歌曲", core_char: "曲", zhuyin: "ㄑㄩˇ", weight: 1 },
-                    { word: "高歌一曲", core_char: "曲", zhuyin: "ㄑㄩˇ", weight: 1 }, { word: "懸壺濟世", core_char: "懸", zhuyin: "ㄒㄩㄢˊ", weight: 3 },
-                    { word: "懸念", core_char: "懸", zhuyin: "ㄒㄩㄢˊ", weight: 2 }, { word: "懸賞", core_char: "懸", zhuyin: "ㄒㄩㄢˊ", weight: 2 },
-                    { word: "懸殊", core_char: "懸", zhuyin: "ㄒㄩㄢˊ", weight: 2 }, { word: "懸案", core_char: "懸", zhuyin: "ㄒㄩㄢˊ", weight: 2 }
+                    { word: "不慎", core_char: "慎", zhuyin: "ㄕㄣˋ", weight: 3 },
+                    { word: "鎮定", core_char: "鎮", zhuyin: "ㄓㄣˋ", weight: 3 },
+                    { word: "整天", core_char: "鎮", zhuyin: "ㄓㄣˋ", weight: 2 }, // 鎮日
+                    { word: "縝密", core_char: "縝", zhuyin: "ㄓㄣˇ", weight: 4 },
+                    { word: "嗔怒", core_char: "嗔", zhuyin: "ㄔㄣ", weight: 4 },
+                    { word: "凋謝", core_char: "凋", zhuyin: "ㄉㄧㄠ", weight: 3 },
+                    { word: "凋敝", core_char: "凋", zhuyin: "ㄉㄧㄠ", weight: 4 },
+                    { word: "絲綢", core_char: "綢", zhuyin: "ㄔㄡˊ", weight: 2 },
+                    { word: "地狹人稠", core_char: "稠", zhuyin: "ㄔㄡˊ", weight: 4 },
+                    { word: "濃稠", core_char: "稠", zhuyin: "ㄔㄡˊ", weight: 3 },
+                    { word: "惆悵", core_char: "惆", zhuyin: "ㄔㄡˊ", weight: 4 },
+                    { word: "倜儻", core_char: "倜", zhuyin: "ㄊㄧˋ", weight: 4 },
+                    { word: "紅塵", core_char: "塵", zhuyin: "ㄔㄣˊ", weight: 2 },
+                    { word: "步人後塵", core_char: "塵", zhuyin: "ㄔㄣˊ", weight: 4 },
+                    { word: "灰塵", core_char: "塵", zhuyin: "ㄔㄣˊ", weight: 1 },
+                    { word: "塵封", core_char: "塵", zhuyin: "ㄔㄣˊ", weight: 3 },
+                    { word: "情之所鍾", weight: 5 },
+                    { word: "白頭偕老", weight: 5 },
+                    { word: "山盟海誓", weight: 5 },
+                    { word: "雙宿雙飛", weight: 5 },
+                    { word: "海枯石爛", weight: 5 },
+                    { word: "懸懸而望", weight: 5 },
+                    { word: "眼穿腸斷", weight: 5 },
+                    { word: "望穿秋水", weight: 5 },
+                    { word: "朝思暮想", weight: 5 },
+                    { word: "翹首引領", weight: 5 },
+                    { word: "夢寐以求", weight: 5 },
+                    { word: "拭目以待", weight: 5 },
+                    { word: "大失所望", weight: 5 },
+                    { word: "心灰意冷", weight: 5 },
+                    { word: "垂頭喪氣", weight: 5 },
+                    { word: "悵然若失", weight: 5 },
+                    { word: "萬念俱灰", weight: 5 },
+                    { word: "槁木死灰", weight: 5 }
                 ]
             },
             "L2": {
-                name: "第二課 古體詩選",
+                name: "第2課 樂府詩選—木蘭詩",
                 words: [
-                    { word: "綠葉發華滋", core_char: "滋", zhuyin: "ㄗ", weight: 2 }, { word: "滋生", core_char: "滋", zhuyin: "ㄗ", weight: 1 },
-                    { word: "滋事", core_char: "滋", zhuyin: "ㄗ", weight: 2 }, { word: "滋味", core_char: "滋", zhuyin: "ㄗ", weight: 1 },
-                    { word: "念茲在茲", core_char: "茲", zhuyin: "ㄗ", weight: 3 }, { word: "敬老慈幼", core_char: "慈", zhuyin: "ㄘˊ", weight: 1 },
-                    { word: "令慈", core_char: "慈", zhuyin: "ㄘˊ", weight: 2 }, { word: "馨香", core_char: "馨", zhuyin: "ㄒㄧㄣ", weight: 2 },
-                    { word: "人聲鼎沸", core_char: "聲", zhuyin: "ㄕㄥ", weight: 2 }, { word: "名聲", core_char: "聲", zhuyin: "ㄕㄥ", weight: 1 },
-                    { word: "罄竹難書", core_char: "罄", zhuyin: "ㄑㄧㄥˋ", weight: 3 }, { word: "沾襟", core_char: "沾", zhuyin: "ㄓㄢ", weight: 2 },
-                    { word: "滴酒不沾", core_char: "沾", zhuyin: "ㄓㄢ", weight: 1 }, { word: "沾染惡習", core_char: "沾", zhuyin: "ㄓㄢ", weight: 1 },
-                    { word: "沾光", core_char: "沾", zhuyin: "ㄓㄢ", weight: 1 }, { word: "砧板", core_char: "砧", zhuyin: "ㄓㄣ", weight: 1 },
-                    { word: "黏貼", core_char: "黏", zhuyin: "ㄋㄧㄢˊ", weight: 1 }, { word: "黏土", core_char: "黏", zhuyin: "ㄋㄧㄢˊ", weight: 1 },
-                    { word: "拈花微笑", core_char: "拈", zhuyin: "ㄋㄧㄢˊ", weight: 3 }, { word: "拈燈心", core_char: "拈", zhuyin: "ㄋㄧㄢˇ", weight: 3 },
-                    { word: "玷汙", core_char: "玷", zhuyin: "ㄉㄧㄢˋ", weight: 2 }, { word: "正襟危坐", core_char: "襟", zhuyin: "ㄐㄧㄣ", weight: 2 },
-                    { word: "胸襟", core_char: "襟", zhuyin: "ㄐㄧㄣ", weight: 2 }, { word: "噤若寒蟬", core_char: "噤", zhuyin: "ㄐㄧㄣˋ", weight: 3 },
-                    { word: "嗟嘆", core_char: "嗟", zhuyin: "ㄐㄧㄝ", weight: 2 }, { word: "切磋", core_char: "磋", zhuyin: "ㄘㄨㄛ", weight: 1 },
-                    { word: "蹉跎", core_char: "蹉", zhuyin: "ㄘㄨㄛ", weight: 2 }, { word: "搓揉雙手", core_char: "搓", zhuyin: "ㄘㄨㄛ", weight: 1 },
-                    { word: "遺贈", core_char: "遺", zhuyin: "ㄨㄟˋ", weight: 2 }, { word: "遺失", core_char: "遺", zhuyin: "ㄧˊ", weight: 1 },
-                    { word: "遺忘", core_char: "遺", zhuyin: "ㄧˊ", weight: 1 }, { word: "不遺餘力", core_char: "遺", zhuyin: "ㄧˊ", weight: 2 },
-                    { word: "路不拾遺", core_char: "遺", zhuyin: "ㄧˊ", weight: 2 }, { word: "遺言", core_char: "遺", zhuyin: "ㄧˊ", weight: 1 },
-                    { word: "啞啞吐哀音", core_char: "啞", zhuyin: "ㄧㄚ", weight: 2 }, { word: "聾啞", core_char: "啞", zhuyin: "ㄧㄚˇ", weight: 1 },
-                    { word: "沙啞", core_char: "啞", zhuyin: "ㄧㄚˇ", weight: 1 }, { word: "弔喪", core_char: "喪", zhuyin: "ㄙㄤ", weight: 1 },
-                    { word: "玩物喪志", core_char: "喪", zhuyin: "ㄙㄤˋ", weight: 2 }, { word: "馨香盈懷袖", core_char: "盈", zhuyin: "ㄧㄥˊ", weight: 2 },
-                    { word: "盈餘", core_char: "盈", zhuyin: "ㄧㄥˊ", weight: 1 }, { word: "豐盈", core_char: "盈", zhuyin: "ㄧㄥˊ", weight: 1 },
-                    { word: "送致", core_char: "致", zhuyin: "ㄓˋ", weight: 2 }, { word: "致敬", core_char: "致", zhuyin: "ㄓˋ", weight: 1 },
-                    { word: "致力", core_char: "致", zhuyin: "ㄓˋ", weight: 1 }, { word: "興致", core_char: "致", zhuyin: "ㄓˋ", weight: 1 }
+                    { word: "織布", core_char: "織", zhuyin: "ㄓ", weight: 1 },
+                    { word: "愛恨交織", core_char: "織", zhuyin: "ㄓ", weight: 3 },
+                    { word: "身居要職", core_char: "職", zhuyin: "ㄓˊ", weight: 3 },
+                    { word: "職掌", core_char: "職", zhuyin: "ㄓˊ", weight: 2 },
+                    { word: "獨樹一幟", core_char: "幟", zhuyin: "ㄓˋ", weight: 4 },
+                    { word: "熾烈", core_char: "熾", zhuyin: "ㄔˋ", weight: 4 },
+                    { word: "別出機杼", core_char: "杼", zhuyin: "ㄓㄨˋ", weight: 5 },
+                    { word: "各抒己見", core_char: "抒", zhuyin: "ㄕㄨ", weight: 4 },
+                    { word: "朔氣", core_char: "朔", zhuyin: "ㄕㄨㄛˋ", weight: 3 },
+                    { word: "朔日", core_char: "朔", zhuyin: "ㄕㄨㄛˋ", weight: 3 },
+                    { word: "雕塑", core_char: "塑", zhuyin: "ㄙㄨˋ", weight: 2 },
+                    { word: "塑造形象", core_char: "塑", zhuyin: "ㄙㄨˋ", weight: 2 },
+                    { word: "追本溯源", core_char: "溯", zhuyin: "ㄙㄨˋ", weight: 4 },
+                    { word: "溯溪", core_char: "溯", zhuyin: "ㄙㄨˋ", weight: 3 },
+                    { word: "鬢毛", core_char: "鬢", zhuyin: "ㄅㄧㄣˋ", weight: 4 },
+                    { word: "不讓鬚眉", core_char: "鬚", zhuyin: "ㄒㄩ", weight: 4 },
+                    { word: "髮髻", core_char: "髻", zhuyin: "ㄐㄧˋ", weight: 4 },
+                    { word: "兩兔傍地走", core_char: "傍", zhuyin: "ㄅㄤˋ", weight: 4 },
+                    { word: "英鎊", core_char: "鎊", zhuyin: "ㄅㄤˋ", weight: 2 },
+                    { word: "榜單", core_char: "榜", zhuyin: "ㄅㄤˇ", weight: 2 },
+                    { word: "兩旁", core_char: "旁", zhuyin: "ㄆㄤˊ", weight: 1 },
+                    { word: "旁門左道", core_char: "旁", zhuyin: "ㄆㄤˊ", weight: 4 },
+                    { word: "所向披靡", weight: 5 },
+                    { word: "勢如破竹", weight: 5 },
+                    { word: "旌旗蔽空", weight: 5 },
+                    { word: "潰不成軍", weight: 5 },
+                    { word: "節節敗退", weight: 5 },
+                    { word: "兵馬倥偬", weight: 5 },
+                    { word: "兵荒馬亂", weight: 5 },
+                    { word: "兵連禍結", weight: 5 },
+                    { word: "厲兵秣馬", weight: 5 },
+                    { word: "嚴陣以待", weight: 5 },
+                    { word: "解甲歸田", weight: 5 },
+                    { word: "投筆從戎", weight: 5 }
                 ]
             },
             "L3": {
-                name: "第三課 土芭樂的生存之道",
+                name: "第3課 情緒是生命的指引",
                 words: [
-                    { word: "摘花", core_char: "摘", zhuyin: "ㄓㄞ", weight: 1 }, { word: "摘錄", core_char: "摘", zhuyin: "ㄓㄞ", weight: 1 },
-                    { word: "貶謫", core_char: "謫", zhuyin: "ㄓㄜˊ", weight: 2 }, { word: "熾烈", core_char: "熾", zhuyin: "ㄔˋ", weight: 2 },
-                    { word: "知識", core_char: "識", zhuyin: "ㄕ", weight: 1 }, { word: "素不相識", core_char: "識", zhuyin: "ㄕˋ", weight: 1 },
-                    { word: "愛恨交織", core_char: "織", zhuyin: "ㄓ", weight: 1 }, { word: "辭職", core_char: "職", zhuyin: "ㄓˊ", weight: 1 },
-                    { word: "旗幟", core_char: "幟", zhuyin: "ㄓˋ", weight: 2 }, { word: "肉漿", core_char: "漿", zhuyin: "ㄐㄧㄤ", weight: 1 },
-                    { word: "誇獎", core_char: "獎", zhuyin: "ㄐㄧㄤˇ", weight: 1 }, { word: "船槳", core_char: "槳", zhuyin: "ㄐㄧㄤˇ", weight: 1 },
-                    { word: "果醬", core_char: "醬", zhuyin: "ㄐㄧㄤˋ", weight: 1 }, { word: "彆扭", core_char: "彆", zhuyin: "ㄅㄧㄝˋ", weight: 2 },
-                    { word: "憋氣", core_char: "憋", zhuyin: "ㄅㄧㄝ", weight: 1 }, { word: "有利無弊", core_char: "弊", zhuyin: "ㄅㄧˋ", weight: 1 },
-                    { word: "作弊", core_char: "弊", zhuyin: "ㄅㄧˋ", weight: 1 }, { word: "盡釋前嫌", core_char: "嫌", zhuyin: "ㄒㄧㄢˊ", weight: 2 },
-                    { word: "嫌棄", core_char: "嫌", zhuyin: "ㄒㄧㄢˊ", weight: 1 }, { word: "謙虛", core_char: "謙", zhuyin: "ㄑㄧㄢ", weight: 1 },
-                    { word: "抱歉", core_char: "歉", zhuyin: "ㄑㄧㄢˋ", weight: 1 }, { word: "賺人熱淚", core_char: "賺", zhuyin: "ㄓㄨㄢˋ", weight: 2 },
-                    { word: "麵攤", core_char: "攤", zhuyin: "ㄊㄢ", weight: 1 }, { word: "攤平", core_char: "攤", zhuyin: "ㄊㄢ", weight: 1 },
-                    { word: "海灘", core_char: "灘", zhuyin: "ㄊㄢ", weight: 1 }, { word: "難關", core_char: "難", zhuyin: "ㄋㄢˊ", weight: 1 },
-                    { word: "豐腴", core_char: "腴", zhuyin: "ㄩˊ", weight: 2 }, { word: "腴地", core_char: "腴", zhuyin: "ㄩˊ", weight: 2 },
-                    { word: "阿諛", core_char: "諛", zhuyin: "ㄩˊ", weight: 3 }, { word: "須臾", core_char: "臾", zhuyin: "ㄩˊ", weight: 3 },
-                    { word: "結實纍纍", core_char: "結", zhuyin: "ㄐㄧㄝˊ", weight: 2 }, { word: "肌肉結實", core_char: "結", zhuyin: "ㄐㄧㄝ", weight: 1 },
-                    { word: "煞是好聞", core_char: "煞", zhuyin: "ㄕㄚˋ", weight: 2 }, { word: "惡煞", core_char: "煞", zhuyin: "ㄕㄚ", weight: 2 },
-                    { word: "煞車", core_char: "煞", zhuyin: "ㄕㄚ", weight: 1 }, { word: "頓悟", core_char: "頓", zhuyin: "ㄉㄨㄣˋ", weight: 2 },
-                    { word: "捶胸頓足", core_char: "頓", zhuyin: "ㄉㄨㄣˋ", weight: 2 }, { word: "停頓", core_char: "頓", zhuyin: "ㄉㄨㄣˋ", weight: 1 },
-                    { word: "安頓", core_char: "頓", zhuyin: "ㄉㄨㄣˋ", weight: 1 }, { word: "困頓", core_char: "頓", zhuyin: "ㄉㄨㄣˋ", weight: 2 },
-                    { word: "痛打一頓", core_char: "頓", zhuyin: "ㄉㄨㄣˋ", weight: 1 }
+                    { word: "淹沒", core_char: "淹", zhuyin: "ㄧㄢ", weight: 3 },
+                    { word: "醃梅子", core_char: "醃", zhuyin: "ㄧㄢ", weight: 3 },
+                    { word: "掩鼻", core_char: "掩", zhuyin: "ㄧㄢˇ", weight: 3 },
+                    { word: "掩門", core_char: "掩", zhuyin: "ㄧㄢˇ", weight: 2 },
+                    { word: "茅庵", core_char: "庵", zhuyin: "ㄢ", weight: 4 },
+                    { word: "尼姑庵", core_char: "庵", zhuyin: "ㄢ", weight: 4 },
+                    { word: "既定", core_char: "既", zhuyin: "ㄐㄧˋ", weight: 3 },
+                    { word: "既美且高", core_char: "既", zhuyin: "ㄐㄧˋ", weight: 3 },
+                    { word: "若即若離", core_char: "即", zhuyin: "ㄐㄧˊ", weight: 5 },
+                    { word: "即位", core_char: "即", zhuyin: "ㄐㄧˊ", weight: 3 },
+                    { word: "非此即彼", core_char: "即", zhuyin: "ㄐㄧˊ", weight: 4 },
+                    { word: "一觸即發", core_char: "即", zhuyin: "ㄐㄧˊ", weight: 5 },
+                    { word: "內疚", core_char: "疚", zhuyin: "ㄐㄧㄡˋ", weight: 4 },
+                    { word: "咎由自取", core_char: "咎", zhuyin: "ㄐㄧㄡù", weight: 5 },
+                    { word: "引咎辭職", core_char: "咎", zhuyin: "ㄐㄧㄡù", weight: 5 },
+                    { word: "既往不咎", core_char: "咎", zhuyin: "ㄐㄧㄡù", weight: 5 },
+                    { word: "針灸", core_char: "灸", zhuyin: "ㄐㄧㄡˇ", weight: 4 },
+                    { word: "一艘船", core_char: "艘", zhuyin: "ㄙㄠ", weight: 2 },
+                    { word: "大嫂", core_char: "嫂", zhuyin: "ㄙㄠˇ", weight: 2 },
+                    { word: "搜尋", core_char: "搜", zhuyin: "ㄙㄡ", weight: 2 },
+                    { word: "搜身", core_char: "搜", zhuyin: "ㄙㄡ", weight: 2 },
+                    { word: "餿水", core_char: "餿", zhuyin: "ㄙㄡ", weight: 3 },
+                    { word: "餿主意", core_char: "餿", zhuyin: "ㄙㄡ", weight: 3 },
+                    { word: "冷風颼颼", core_char: "颼", zhuyin: "ㄙㄡ", weight: 4 },
+                    { word: "寒颼颼", core_char: "颼", zhuyin: "ㄙㄡ", weight: 4 },
+                    { word: "瘦弱", core_char: "瘦", zhuyin: "ㄕㄡˋ", weight: 2 },
+                    { word: "氣候", core_char: "候", zhuyin: "ㄏㄡˋ", weight: 2 },
+                    { word: "逾時不候", core_char: "候", zhuyin: "ㄏㄡˋ", weight: 4 },
+                    { word: "伺候", core_char: "候", zhuyin: "ㄏㄡˋ", weight: 3 },
+                    { word: "不禁", core_char: "禁", zhuyin: "ㄐㄧㄣ", weight: 3 },
+                    { word: "嚴禁煙火", core_char: "禁", zhuyin: "ㄐㄧㄣˋ", weight: 3 },
+                    { word: "囚禁", core_char: "禁", zhuyin: "ㄐㄧㄣˋ", weight: 3 },
+                    { word: "禁忌", core_char: "禁", zhuyin: "ㄐㄧㄣˋ", weight: 3 },
+                    { word: "門禁", core_char: "禁", zhuyin: "ㄐㄧㄣˋ", weight: 2 },
+                    { word: "緊繃", core_char: "繃", zhuyin: "ㄅㄥ", weight: 3 },
+                    { word: "繃著臉", core_char: "繃", zhuyin: "ㄅㄥˇ", weight: 3 },
+                    { word: "拉鍊繃了", core_char: "繃", zhuyin: "ㄅㄥˋ", weight: 3 }
                 ]
             },
             "自1": {
-                name: "自學一 世說新語選",
+                name: "自學1 運動家的風度",
                 words: [
-                    { word: "以筋刺之", core_char: "筋", zhuyin: "ㄓㄨˋ", weight: 2 }, { word: "愛莫能助", core_char: "助", zhuyin: "ㄓㄨˋ", weight: 1 },
-                    { word: "雞肋", core_char: "肋", zhuyin: "ㄌㄜˋ", weight: 2 }, { word: "牛蹄筋", core_char: "筋", zhuyin: "ㄐㄧㄣ", weight: 1 },
-                    { word: "橡皮筋", core_char: "筋", zhuyin: "ㄐㄧㄣ", weight: 1 }, { word: "木屐", core_char: "屐", zhuyin: "ㄐㄧ", weight: 2 },
-                    { word: "草屐", core_char: "屐", zhuyin: "ㄐㄧ", weight: 2 }, { word: "劍及履及", core_char: "履", zhuyin: "ㄌㄩˇ", weight: 3 },
-                    { word: "如履薄冰", core_char: "履", zhuyin: "ㄌㄩˇ", weight: 2 }, { word: "履行", core_char: "履", zhuyin: "ㄌㄩˇ", weight: 1 },
-                    { word: "抽屜", core_char: "屜", zhuyin: "ㄊㄧˋ", weight: 1 }, { word: "跟踏", core_char: "跟", zhuyin: "ㄍㄣ", weight: 1 },
-                    { word: "輾轉難眠", core_char: "輾", zhuyin: "ㄓㄢˇ", weight: 2 }, { word: "輾轉得知", core_char: "輾", zhuyin: "ㄓㄢˇ", weight: 2 },
-                    { word: "輾斃", core_char: "輾", zhuyin: "ㄋㄧㄢˇ", weight: 3 }, { word: "瞋甚", core_char: "瞋", zhuyin: "ㄔㄣ", weight: 3 },
-                    { word: "嗔怪", core_char: "嗔", zhuyin: "ㄔㄣ", weight: 3 }, { word: "謹慎", core_char: "慎", zhuyin: "ㄕㄣˋ", weight: 1 },
-                    { word: "縝密", core_char: "縝", zhuyin: "ㄓㄣˇ", weight: 3 }, { word: "鎮定", core_char: "鎮", zhuyin: "ㄓㄣˋ", weight: 1 },
-                    { word: "乘船", core_char: "乘", zhuyin: "ㄔㄥˊ", weight: 1 }, { word: "乘人之危", core_char: "乘", zhuyin: "ㄔㄥˊ", weight: 2 },
-                    { word: "萬乘之國", core_char: "乘", zhuyin: "ㄕㄥˋ", weight: 3 }, { word: "避難", core_char: "難", zhuyin: "ㄋㄢˋ", weight: 1 },
-                    { word: "發難", core_char: "難", zhuyin: "ㄋㄢˋ", weight: 2 }, { word: "難民", core_char: "難", zhuyin: "ㄋㄢˋ", weight: 1 },
-                    { word: "責難", core_char: "難", zhuyin: "ㄋㄢˋ", weight: 2 }, { word: "為難", core_char: "難", zhuyin: "ㄋㄢˊ", weight: 1 },
-                    { word: "難關", core_char: "難", zhuyin: "ㄋㄢˊ", weight: 1 }, { word: "難學", core_char: "難", zhuyin: "ㄋㄢˊ", weight: 1 },
-                    { word: "難言之隱", core_char: "難", zhuyin: "ㄋㄢˊ", weight: 2 }
+                    { word: "陶鑄", core_char: "鑄", zhuyin: "ㄓㄨˋ", weight: 3 },
+                    { word: "鑄成大錯", core_char: "鑄", zhuyin: "ㄓㄨˋ", weight: 4 },
+                    { word: "躊躇", core_char: "躊", zhuyin: "ㄔㄡˊ", weight: 4 },
+                    { word: "茲若人之儔乎", core_char: "儔", zhuyin: "ㄔㄡˊ", weight: 5 },
+                    { word: "作揖", core_char: "揖", zhuyin: "ㄧ", weight: 4 },
+                    { word: "編輯", core_char: "輯", zhuyin: "ㄐㄧˊ", weight: 2 },
+                    { word: "通緝", core_char: "緝", zhuyin: "ㄑㄧˋ", weight: 3 },
+                    { word: "萬目睽睽", core_char: "睽", zhuyin: "ㄎㄨㄟˊ", weight: 5 },
+                    { word: "睽違", core_char: "睽", zhuyin: "ㄎㄨㄟˊ", weight: 4 },
+                    { word: "揆情度理", core_char: "揆", zhuyin: "ㄎㄨㄟˊ", weight: 5 },
+                    { word: "閣揆", core_char: "揆", zhuyin: "ㄎㄨㄟˊ", weight: 4 },
+                    { word: "向日葵", core_char: "葵", zhuyin: "ㄎㄨㄟˊ", weight: 2 },
+                    { word: "癸巳年", core_char: "癸", zhuyin: "ㄍㄨㄟˇ", weight: 3 },
+                    { word: "悻悻然", core_char: "悻", zhuyin: "ㄒㄧㄥˋ", weight: 4 },
+                    { word: "倖存", core_char: "倖", zhuyin: "ㄒㄧㄥˋ", weight: 3 },
+                    { word: "下而飲", core_char: "飲", zhuyin: "ㄧㄣˋ", weight: 4 },
+                    { word: "茹毛飲血", core_char: "飲", zhuyin: "ㄧㄣˇ", weight: 5 },
+                    { word: "痛飲", core_char: "飲", zhuyin: "ㄧㄣˇ", weight: 3 },
+                    { word: "飲恨", core_char: "飲", zhuyin: "ㄧㄣˇ", weight: 3 },
+                    { word: "勝利", core_char: "勝", zhuyin: "ㄕㄥˋ", weight: 2 },
+                    { word: "略勝一籌", core_char: "勝", zhuyin: "ㄕㄥˋ", weight: 5 },
+                    { word: "名山勝景", core_char: "勝", zhuyin: "ㄕㄥˋ", weight: 4 },
+                    { word: "不勝其擾", core_char: "勝", zhuyin: "ㄕㄥ", weight: 4 },
+                    { word: "不勝枚舉", core_char: "勝", zhuyin: "ㄕㄥ", weight: 5 },
+                    { word: "獨步天下", weight: 5 },
+                    { word: "無與倫比", weight: 5 },
+                    { word: "名列前茅", weight: 5 },
+                    { word: "冠絕古今", weight: 5 },
+                    { word: "舉世無雙", weight: 5 },
+                    { word: "風華絕代", weight: 5 },
+                    { word: "無出其右", weight: 5 },
+                    { word: "三元及第", weight: 5 },
+                    { word: "首屈一指", weight: 5 },
+                    { word: "獨占鰲頭", weight: 5 }
                 ]
             },
             "L4": {
-                name: "第四課 五柳先生傳",
+                name: "第4課 張釋之執法",
                 words: [
-                    { word: "不慕榮利", core_char: "慕", zhuyin: "ㄇㄨˋ", weight: 2 }, { word: "募款", core_char: "募", zhuyin: "ㄇㄨˋ", weight: 1 },
-                    { word: "暮色", core_char: "暮", zhuyin: "ㄇㄨˋ", weight: 1 }, { word: "簾幕", core_char: "幕", zhuyin: "ㄇㄨˋ", weight: 1 },
-                    { word: "摹帖", core_char: "摹", zhuyin: "ㄇㄛˊ", weight: 2 }, { word: "家貧", core_char: "貧", zhuyin: "ㄆㄧㄣˊ", weight: 1 },
-                    { word: "貧血", core_char: "貧", zhuyin: "ㄆㄧㄣˊ", weight: 1 }, { word: "貪贓枉法", core_char: "貪", zhuyin: "ㄊㄢ", weight: 3 },
-                    { word: "貪玩", core_char: "貪", zhuyin: "ㄊㄢ", weight: 1 }, { word: "貪官汙吏", core_char: "貪", zhuyin: "ㄊㄢ", weight: 2 },
-                    { word: "觀者如堵", core_char: "堵", zhuyin: "ㄉㄨˇ", weight: 2 }, { word: "堵塞", core_char: "堵", zhuyin: "ㄉㄨˇ", weight: 1 },
-                    { word: "爭睹", core_char: "睹", zhuyin: "ㄉㄨˇ", weight: 1 }, { word: "打賭", core_char: "賭", zhuyin: "ㄉㄨˇ", weight: 1 },
-                    { word: "不蔽風日", core_char: "蔽", zhuyin: "ㄅㄧˋ", weight: 2 }, { word: "蒙蔽", core_char: "蔽", zhuyin: "ㄅㄧˋ", weight: 2 },
-                    { word: "敝帚自珍", core_char: "敝", zhuyin: "ㄅㄧˋ", weight: 3 }, { word: "敝姓", core_char: "敝", zhuyin: "ㄅㄧˋ", weight: 2 },
-                    { word: "寬敞", core_char: "敞", zhuyin: "ㄔㄤˇ", weight: 1 }, { word: "敞開大門", core_char: "敞", zhuyin: "ㄔㄤˇ", weight: 1 },
-                    { word: "短褐穿結", core_char: "褐", zhuyin: "ㄏㄜˊ", weight: 2 }, { word: "褐色", core_char: "褐", zhuyin: "ㄏㄜˊ", weight: 1 },
-                    { word: "怒不可遏", core_char: "遏", zhuyin: "ㄜˋ", weight: 3 }, { word: "聲嘶力竭", core_char: "竭", zhuyin: "ㄐㄧㄝˊ", weight: 2 },
-                    { word: "揭竿而起", core_char: "揭", zhuyin: "ㄐㄧㄝ", weight: 2 }, { word: "揭露", core_char: "揭", zhuyin: "ㄐㄧㄝ", weight: 1 },
-                    { word: "揭幕", core_char: "揭", zhuyin: "ㄐㄧㄝ", weight: 1 }, { word: "簞瓢屢空", core_char: "屢", zhuyin: "ㄌㄩˇ", weight: 2 },
-                    { word: "草履", core_char: "履", zhuyin: "ㄌㄩˇ", weight: 1 }, { word: "履約", core_char: "履", zhuyin: "ㄌㄩˇ", weight: 1 },
-                    { word: "汲汲營營", core_char: "汲", zhuyin: "ㄐㄧˊ", weight: 2 }, { word: "汲水", core_char: "汲", zhuyin: "ㄐㄧˊ", weight: 1 },
-                    { word: "岌岌可危", core_char: "岌", zhuyin: "ㄐㄧˊ", weight: 2 }, { word: "造飲輒盡", core_char: "輒", zhuyin: "ㄓㄜˊ", weight: 2 },
-                    { word: "淺嘗輒止", core_char: "輒", zhuyin: "ㄓㄜˊ", weight: 2 }, { word: "賦詩", core_char: "賦", zhuyin: "ㄈㄨˋ", weight: 1 },
-                    { word: "賦予", core_char: "賦", zhuyin: "ㄈㄨˋ", weight: 1 }, { word: "稅賦", core_char: "賦", zhuyin: "ㄈㄨˋ", weight: 1 },
-                    { word: "稟賦", core_char: "賦", zhuyin: "ㄈㄨˋ", weight: 2 }
+                    { word: "屬之廷尉", core_char: "屬", zhuyin: "ㄓㄨˇ", weight: 3 },
+                    { word: "附屬", core_char: "屬", zhuyin: "ㄕㄨˇ", weight: 3 },
+                    { word: "親屬", core_char: "屬", zhuyin: "ㄕㄨˇ", weight: 2 },
+                    { word: "囑咐", core_char: "囑", zhuyin: "ㄓㄨˇ", weight: 3 },
+                    { word: "高瞻遠矚", core_char: "矚", zhuyin: "ㄓㄨˇ", weight: 5 },
+                    { word: "銷聲匿跡", core_char: "匿", zhuyin: "ㄋㄧˋ", weight: 5 },
+                    { word: "親暱", core_char: "暱", zhuyin: "ㄋㄧˋ", weight: 3 },
+                    { word: "誅殺", core_char: "誅", zhuyin: "ㄓㄨ", weight: 3 },
+                    { word: "口誅筆伐", core_char: "誅", zhuyin: "ㄓㄨ", weight: 5 },
+                    { word: "錙銖必較", core_char: "銖", zhuyin: "ㄓㄨ", weight: 5 },
+                    { word: "懸殊", core_char: "殊", zhuyin: "ㄕㄨ", weight: 3 },
+                    { word: "殊榮", core_char: "殊", zhuyin: "ㄕㄨ", weight: 3 },
+                    { word: "傾斜", core_char: "傾", zhuyin: "ㄑㄧㄥ", weight: 2 },
+                    { word: "傾囊相授", core_char: "傾", zhuyin: "ㄑㄧㄥ", weight: 5 },
+                    { word: "傾心", core_char: "傾", zhuyin: "ㄑㄧㄥ", weight: 2 },
+                    { word: "公頃", core_char: "頃", zhuyin: "ㄑㄧㄥˇ", weight: 2 },
+                    { word: "頃刻", core_char: "頃", zhuyin: "ㄑㄧㄥˇ", weight: 4 },
+                    { word: "嚴刑峻法", weight: 5 },
+                    { word: "貪贓枉法", weight: 5 },
+                    { word: "違法亂紀", weight: 5 },
+                    { word: "知法犯法", weight: 5 },
+                    { word: "以身試法", weight: 5 },
+                    { word: "目無法紀", weight: 5 },
+                    { word: "逍遙法外", weight: 5 },
+                    { word: "奉公守法", weight: 5 },
+                    { word: "狡兔死良狗烹", weight: 5 },
+                    { word: "無顏見江東父老", weight: 5 },
+                    { word: "燕雀安知鴻鵠之志", weight: 5 },
+                    { word: "桃李不言下自成蹊", weight: 5 },
+                    { word: "當斷不斷反受其亂", weight: 5 },
+                    { word: "智者千慮必有一失", weight: 5 }
                 ]
             },
             "L5": {
-                name: "第五課 田園之秋選",
+                name: "第5課 我所知道的康橋",
                 words: [
-                    { word: "滂沱", core_char: "滂", zhuyin: "ㄆㄤ", weight: 2 }, { word: "氣勢磅礴", core_char: "磅", zhuyin: "ㄆㄤ", weight: 3 },
-                    { word: "磅秤", core_char: "磅", zhuyin: "ㄅㄤˋ", weight: 1 }, { word: "毀謗", core_char: "謗", zhuyin: "ㄅㄤˋ", weight: 2 },
-                    { word: "霹靂", core_char: "霹", zhuyin: "ㄆㄧ", weight: 2 }, { word: "劈柴", core_char: "劈", zhuyin: "ㄆㄧ", weight: 1 },
-                    { word: "天打雷劈", core_char: "劈", zhuyin: "ㄆㄧ", weight: 1 }, { word: "劈面", core_char: "劈", zhuyin: "ㄆㄧ", weight: 2 },
-                    { word: "餓虎攫羊", core_char: "攫", zhuyin: "ㄐㄩㄝˊ", weight: 3 }, { word: "躍躍", core_char: "躍", zhuyin: "ㄩㄝˋ", weight: 2 },
-                    { word: "矍然", core_char: "矍", zhuyin: "ㄐㄩㄝˊ", weight: 3 }, { word: "震懾", core_char: "懾", zhuyin: "ㄓㄜˊ", weight: 2 },
-                    { word: "攝影", core_char: "攝", zhuyin: "ㄕㄜˋ", weight: 1 }, { word: "躡手躡腳", core_char: "躡", zhuyin: "ㄋㄧㄝˋ", weight: 2 },
-                    { word: "聶先生", core_char: "聶", zhuyin: "ㄋㄧㄝˋ", weight: 2 }, { word: "囁嚅", core_char: "囁", zhuyin: "ㄋㄧㄝˋ", weight: 3 },
-                    { word: "肆虐", core_char: "肆", zhuyin: "ㄙˋ", weight: 2 }, { word: "肆無忌憚", core_char: "肆", zhuyin: "ㄙˋ", weight: 2 },
-                    { word: "酒肆", core_char: "肆", zhuyin: "ㄙˋ", weight: 2 }, { word: "肄業", core_char: "肄", zhuyin: "ㄧˋ", weight: 2 },
-                    { word: "雷霆萬鈞", core_char: "鈞", zhuyin: "ㄐㄩㄣ", weight: 3 }, { word: "勢均力敵", core_char: "均", zhuyin: "ㄐㄩㄣ", weight: 2 },
-                    { word: "老少均安", core_char: "均", zhuyin: "ㄐㄩㄣ", weight: 1 }, { word: "勻稱", core_char: "勻", zhuyin: "ㄩㄣˊ", weight: 1 },
-                    { word: "勻出時間", core_char: "勻", zhuyin: "ㄩㄣˊ", weight: 1 }, { word: "洩洪", core_char: "洩", zhuyin: "ㄒㄧㄝˋ", weight: 1 },
-                    { word: "發洩", core_char: "洩", zhuyin: "ㄒㄧㄝˋ", weight: 1 }, { word: "洩密", core_char: "洩", zhuyin: "ㄒㄧㄝˋ", weight: 1 },
-                    { word: "一瀉千里", core_char: "瀉", zhuyin: "ㄒㄧㄝˋ", weight: 2 }, { word: "腹瀉", core_char: "瀉", zhuyin: "ㄒㄧㄝˋ", weight: 1 },
-                    { word: "行潦", core_char: "潦", zhuyin: "ㄌㄠˇ", weight: 2 }, { word: "潦倒", core_char: "潦", zhuyin: "ㄌㄧㄠˊ", weight: 2 },
-                    { word: "撩起裙子", core_char: "撩", zhuyin: "ㄌㄧㄠ", weight: 1 }, { word: "姿態撩人", core_char: "撩", zhuyin: "ㄌㄧㄠˊ", weight: 2 },
-                    { word: "星火燎原", core_char: "燎", zhuyin: "ㄌㄧㄠˊ", weight: 2 }
+                    { word: "滂沱", core_char: "滂", zhuyin: "ㄆㄤ", weight: 3 },
+                    { word: "氣勢磅礴", core_char: "磅", zhuyin: "ㄆㄤ", weight: 5 },
+                    { word: "磅秤", core_char: "磅", zhuyin: "ㄅㄤˋ", weight: 2 },
+                    { word: "毀謗", core_char: "謗", zhuyin: "ㄅㄤˋ", weight: 3 },
+                    { word: "霹靂", core_char: "霹", zhuyin: "ㄆㄧ", weight: 3 },
+                    { word: "劈柴", core_char: "劈", zhuyin: "ㄆㄧ", weight: 2 },
+                    { word: "天打雷劈", core_char: "劈", zhuyin: "ㄆㄧ", weight: 3 },
+                    { word: "劈面", core_char: "劈", zhuyin: "ㄆㄧ", weight: 3 },
+                    { word: "餓虎攫羊", core_char: "攫", zhuyin: "ㄐㄩㄝˊ", weight: 5 },
+                    { word: "雀躍", core_char: "躍", zhuyin: "ㄩㄝˋ", weight: 3 },
+                    { word: "矍然", core_char: "矍", zhuyin: "ㄐㄩㄝˊ", weight: 5 },
+                    { word: "震懾", core_char: "懾", zhuyin: "ㄓㄜˊ", weight: 4 },
+                    { word: "攝影", core_char: "攝", zhuyin: "ㄕㄜˋ", weight: 2 },
+                    { word: "躡手躡腳", core_char: "躡", zhuyin: "ㄋㄧㄝˋ", weight: 5 },
+                    { word: "聶先生", core_char: "聶", zhuyin: "ㄋㄧㄝˋ", weight: 3 },
+                    { word: "囁嚅", core_char: "囁", zhuyin: "ㄋㄧㄝˋ", weight: 5 },
+                    { word: "肆虐", core_char: "肆", zhuyin: "ㄙˋ", weight: 3 },
+                    { word: "肆無忌憚", core_char: "肆", zhuyin: "ㄙˋ", weight: 5 },
+                    { word: "肆拾圓", core_char: "肆", zhuyin: "ㄙˋ", weight: 2 },
+                    { word: "酒肆", core_char: "肆", zhuyin: "ㄙˋ", weight: 4 },
+                    { word: "肄業", core_char: "肄", zhuyin: "ㄧˋ", weight: 4 },
+                    { word: "雷霆萬鈞", core_char: "鈞", zhuyin: "ㄐㄩㄣ", weight: 5 },
+                    { word: "勢均力敵", core_char: "均", zhuyin: "ㄐㄩㄣ", weight: 5 },
+                    { word: "老少均安", core_char: "均", zhuyin: "ㄐㄩㄣ", weight: 3 },
+                    { word: "勻稱", core_char: "勻", zhuyin: "ㄩㄣˊ", weight: 3 },
+                    { word: "勻出時間", core_char: "勻", zhuyin: "ㄩㄣˊ", weight: 3 },
+                    { word: "洩洪", core_char: "洩", zhuyin: "ㄒㄧㄝˋ", weight: 3 },
+                    { word: "發洩", core_char: "洩", zhuyin: "ㄒㄧㄝˋ", weight: 2 },
+                    { word: "洩密", core_char: "洩", zhuyin: "ㄒㄧㄝˋ", weight: 2 },
+                    { word: "一瀉千里", core_char: "瀉", zhuyin: "ㄒㄧㄝˋ", weight: 5 },
+                    { word: "腹瀉", core_char: "瀉", zhuyin: "ㄒㄧㄝˋ", weight: 2 },
+                    { word: "行潦", core_char: "潦", zhuyin: "ㄌㄠˇ", weight: 4 },
+                    { word: "潦倒", core_char: "潦", zhuyin: "ㄌㄧㄠˊ", weight: 3 },
+                    { word: "撩起裙子", core_char: "撩", zhuyin: "ㄌㄧㄠ", weight: 2 },
+                    { word: "姿態撩人", core_char: "撩", zhuyin: "ㄌㄧㄠˊ", weight: 4 },
+                    { word: "星火燎原", core_char: "燎", zhuyin: "ㄌㄧㄠˊ", weight: 5 }
                 ]
             },
             "L6": {
-                name: "第六課 不要放棄你的夢想",
+                name: "第6課 迷途羔羊——弗氏海豚",
                 words: [
-                    { word: "假如", core_char: "假", zhuyin: "ㄐㄧㄚˇ", weight: 1 }, { word: "假髮", core_char: "假", zhuyin: "ㄐㄧㄚˇ", weight: 1 },
-                    { word: "狐假虎威", core_char: "假", zhuyin: "ㄐㄧㄚˇ", weight: 2 }, { word: "暑假", core_char: "假", zhuyin: "ㄐㄧㄚˋ", weight: 1 },
-                    { word: "應接不暇", core_char: "暇", zhuyin: "ㄒㄧㄚˊ", weight: 2 }, { word: "白璧無瑕", core_char: "瑕", zhuyin: "ㄒㄧㄚˊ", weight: 2 },
-                    { word: "瑕疵", core_char: "瑕", zhuyin: "ㄒㄧㄚˊ", weight: 1 }, { word: "遐邇", core_char: "遐", zhuyin: "ㄒㄧㄚˊ", weight: 3 },
-                    { word: "松鶴遐齡", core_char: "遐", zhuyin: "ㄒㄧㄚˊ", weight: 3 }, { word: "消耗", core_char: "消", zhuyin: "ㄒㄧㄠ", weight: 1 },
-                    { word: "消遣", core_char: "消", zhuyin: "ㄒㄧㄠ", weight: 1 }, { word: "煙消雲散", core_char: "消", zhuyin: "ㄒㄧㄠ", weight: 1 },
-                    { word: "銷售", core_char: "銷", zhuyin: "ㄒㄧㄠ", weight: 1 }, { word: "報銷", core_char: "銷", zhuyin: "ㄒㄧㄠ", weight: 1 },
-                    { word: "俊俏", core_char: "俏", zhuyin: "ㄑㄧㄠˋ", weight: 1 }, { word: "悄然無聲", core_char: "悄", zhuyin: "ㄑㄧㄠˇ", weight: 2 },
-                    { word: "捎信", core_char: "捎", zhuyin: "ㄕㄠ", weight: 2 }, { word: "獨斷獨行", core_char: "獨", zhuyin: "ㄉㄨˊ", weight: 2 },
-                    { word: "獨子", core_char: "獨", zhuyin: "ㄉㄨˊ", weight: 1 }, { word: "鰥寡孤獨", core_char: "獨", zhuyin: "ㄉㄨˊ", weight: 3 },
-                    { word: "蠟燭", core_char: "燭", zhuyin: "ㄓㄨˊ", weight: 1 }, { word: "洞燭機先", core_char: "燭", zhuyin: "ㄓㄨˊ", weight: 3 },
-                    { word: "躑躅", core_char: "躅", zhuyin: "ㄓㄨˊ", weight: 3 }, { word: "接觸", core_char: "觸", zhuyin: "ㄔㄨˋ", weight: 1 },
-                    { word: "觸怒", core_char: "觸", zhuyin: "ㄔㄨˋ", weight: 1 }, { word: "觸法", core_char: "觸", zhuyin: "ㄔㄨˋ", weight: 1 },
-                    { word: "汙濁", core_char: "濁", zhuyin: "ㄓㄨㄛˊ", weight: 1 }, { word: "豈敢", core_char: "豈", zhuyin: "ㄑㄧˇ", weight: 2 },
-                    { word: "覬覦", core_char: "覬", zhuyin: "ㄐㄧˋ", weight: 3 }, { word: "皚皚", core_char: "皚", zhuyin: "ㄞˊ", weight: 2 },
-                    { word: "眾口紛紜", core_char: "紜", zhuyin: "ㄩㄣˊ", weight: 2 }, { word: "耕耘", core_char: "耘", zhuyin: "ㄩㄣˊ", weight: 1 },
-                    { word: "瞻前顧後", core_char: "瞻", zhuyin: "ㄓㄢ", weight: 2 }, { word: "擔水", core_char: "擔", zhuyin: "ㄉㄢ", weight: 1 },
-                    { word: "擔當", core_char: "擔", zhuyin: "ㄉㄢ", weight: 1 }, { word: "重擔", core_char: "擔", zhuyin: "ㄉㄢˋ", weight: 1 },
-                    { word: "明目張膽", core_char: "膽", zhuyin: "ㄉㄢˇ", weight: 2 }, { word: "贍養", core_char: "贍", zhuyin: "ㄕㄢˋ", weight: 2 }
+                    { word: "迷途羔羊", core_char: "羔", zhuyin: "ㄍㄠ", weight: 3 },
+                    { word: "窯洞", core_char: "窯", zhuyin: "ㄧㄠˊ", weight: 3 },
+                    { word: "瓦窯", core_char: "窯", zhuyin: "ㄧㄠˊ", weight: 3 },
+                    { word: "清晰", core_char: "晰", zhuyin: "ㄒㄧ", weight: 2 },
+                    { word: "白皙", core_char: "皙", zhuyin: "ㄒㄧ", weight: 4 },
+                    { word: "分崩離析", core_char: "析", zhuyin: "ㄒㄧ", weight: 5 },
+                    { word: "解析", core_char: "析", zhuyin: "ㄒㄧ", weight: 2 },
+                    { word: "深奧", core_char: "奧", zhuyin: "ㄠˋ", weight: 3 },
+                    { word: "蘇澳", core_char: "澳", zhuyin: "ㄠˋ", weight: 2 },
+                    { word: "懊惱", core_char: "懊", zhuyin: "ㄠˋ", weight: 3 },
+                    { word: "倉卒", core_char: "卒", zhuyin: "ㄘㄨˋ", weight: 4 },
+                    { word: "士卒", core_char: "卒", zhuyin: "ㄗㄨˊ", weight: 3 },
+                    { word: "販夫走卒", core_char: "卒", zhuyin: "ㄗㄨˊ", weight: 5 },
+                    { word: "病卒", core_char: "卒", zhuyin: "ㄗㄨˊ", weight: 3 },
+                    { word: "卒業", core_char: "卒", zhuyin: "ㄗㄨˊ", weight: 3 },
+                    { word: "猝死", core_char: "猝", zhuyin: "ㄘㄨˋ", weight: 3 },
+                    { word: "純粹", core_char: "粹", zhuyin: "ㄘㄨㄟˋ", weight: 3 },
+                    { word: "憔悴", core_char: "悴", zhuyin: "ㄘㄨㄟˋ", weight: 4 },
+                    { word: "淬鍊", core_char: "淬", zhuyin: "ㄘㄨㄟˋ", weight: 5 },
+                    { word: "人文薈萃", core_char: "萃", zhuyin: "ㄘㄨㄟˋ", weight: 5 },
+                    { word: "盲從", core_char: "盲", zhuyin: "ㄇㄤˊ", weight: 3 },
+                    { word: "盲人", core_char: "盲", zhuyin: "ㄇㄤˊ", weight: 2 },
+                    { word: "文盲", core_char: "盲", zhuyin: "ㄇㄤˊ", weight: 2 },
+                    { word: "病入膏肓", core_char: "肓", zhuyin: "ㄏㄨㄤ", weight: 5 },
+                    { word: "潛水", core_char: "潛", zhuyin: "ㄑㄧㄢˊ", weight: 2 },
+                    { word: "潛藏", core_char: "潛", zhuyin: "ㄑㄧㄢˊ", weight: 3 },
+                    { word: "僭越", core_char: "僭", zhuyin: "ㄐㄧㄢˋ", weight: 5 },
+                    { word: "髮簪", core_char: "簪", zhuyin: "ㄗㄢ", weight: 4 },
+                    { word: "深邃", core_char: "邃", zhuyin: "ㄙㄨㄟˋ", weight: 4 },
+                    { word: "隧道", core_char: "隧", zhuyin: "ㄙㄨㄟˋ", weight: 2 }
                 ]
             },
             "自2": {
-                name: "自學二 定伯賣鬼",
+                name: "自學2 拍痰",
                 words: [
-                    { word: "共迭相擔", core_char: "迭", zhuyin: "ㄉㄧㄝˊ", weight: 2 }, { word: "高潮迭起", core_char: "迭", zhuyin: "ㄉㄧㄝˊ", weight: 2 },
-                    { word: "瓜瓞綿綿", core_char: "瓞", zhuyin: "ㄉㄧㄝˊ", weight: 3 }, { word: "散佚", core_char: "佚", zhuyin: "ㄧˋ", weight: 2 },
-                    { word: "佚文", core_char: "佚", zhuyin: "ㄧˋ", weight: 2 }, { word: "漕渠", core_char: "漕", zhuyin: "ㄘㄠˊ", weight: 2 },
-                    { word: "馬槽", core_char: "槽", zhuyin: "ㄘㄠˊ", weight: 1 }, { word: "水槽", core_char: "槽", zhuyin: "ㄘㄠˊ", weight: 1 },
-                    { word: "嘈雜", core_char: "嘈", zhuyin: "ㄘㄠˊ", weight: 2 }, { word: "糟糕", core_char: "糟", zhuyin: "ㄗㄠ", weight: 1 },
-                    { word: "遭殃", core_char: "遭", zhuyin: "ㄗㄠ", weight: 1 }, { word: "周遭", core_char: "遭", zhuyin: "ㄗㄠ", weight: 1 },
-                    { word: "漕漼", core_char: "漼", zhuyin: "ㄘㄨㄟˇ", weight: 3 }, { word: "璀璨", core_char: "璀", zhuyin: "ㄘㄨㄟˇ", weight: 2 },
-                    { word: "催促", core_char: "催", zhuyin: "ㄘㄨㄟ", weight: 1 }, { word: "摧折", core_char: "摧", zhuyin: "ㄘㄨㄟ", weight: 2 },
-                    { word: "摧毀", core_char: "摧", zhuyin: "ㄘㄨㄟ", weight: 1 }, { word: "咋咋然", core_char: "咋", zhuyin: "ㄗㄜˊ", weight: 3 },
-                    { word: "詐騙", core_char: "詐", zhuyin: "ㄓㄚˋ", weight: 1 }, { word: "奸詐", core_char: "詐", zhuyin: "ㄓㄚˋ", weight: 1 },
-                    { word: "門衰祚薄", core_char: "祚", zhuyin: "ㄗㄨㄛˋ", weight: 3 }, { word: "背擔", core_char: "擔", zhuyin: "ㄉㄢ", weight: 1 },
-                    { word: "擔責任", core_char: "擔", zhuyin: "ㄉㄢ", weight: 1 }, { word: "重擔", core_char: "擔", zhuyin: "ㄉㄢˋ", weight: 1 },
-                    { word: "一擔米", core_char: "擔", zhuyin: "ㄉㄢˋ", weight: 1 }, { word: "將非鬼也", core_char: "將", zhuyin: "ㄐㄧㄤ", weight: 2 },
-                    { word: "將要", core_char: "將", zhuyin: "ㄐㄧㄤ", weight: 1 }, { word: "將功折罪", core_char: "將", zhuyin: "ㄐㄧㄤ", weight: 2 },
-                    { word: "將信將疑", core_char: "將", zhuyin: "ㄐㄧㄤ", weight: 2 }, { word: "名將", core_char: "將", zhuyin: "ㄐㄧㄤˋ", weight: 1 },
-                    { word: "上將", core_char: "將", zhuyin: "ㄐㄧㄤˋ", weight: 1 }, { word: "主將", core_char: "將", zhuyin: "ㄐㄧㄤˋ", weight: 1 },
-                    { word: "新死", core_char: "新", zhuyin: "ㄒㄧㄣ", weight: 1 }, { word: "新衣服", core_char: "新", zhuyin: "ㄒㄧㄣ", weight: 1 },
-                    { word: "新芽", core_char: "新", zhuyin: "ㄒㄧㄣ", weight: 1 }, { word: "汰舊換新", core_char: "新", zhuyin: "ㄒㄧㄣ", weight: 1 },
-                    { word: "改過自新", core_char: "新", zhuyin: "ㄒㄧㄣ", weight: 1 }, { word: "因復擔鬼", core_char: "因", zhuyin: "ㄧㄣ", weight: 2 },
-                    { word: "因地制宜", core_char: "因", zhuyin: "ㄧㄣ", weight: 2 }, { word: "因襲", core_char: "因", zhuyin: "ㄧㄣ", weight: 2 },
-                    { word: "起因", core_char: "因", zhuyin: "ㄧㄣ", weight: 1 }, { word: "因公出差", core_char: "因", zhuyin: "ㄧㄣ", weight: 1 }
+                    { word: "胸膛", core_char: "膛", zhuyin: "ㄊㄤˊ", weight: 3 },
+                    { word: "瞠目結舌", core_char: "瞠", zhuyin: "ㄔㄥ", weight: 5 },
+                    { word: "隱晦", core_char: "晦", zhuyin: "ㄏㄨㄟˋ", weight: 4 },
+                    { word: "風雨如晦", core_char: "晦", zhuyin: "ㄏㄨㄟˋ", weight: 5 },
+                    { word: "教誨", core_char: "誨", zhuyin: "ㄏㄨㄟˋ", weight: 3 },
+                    { word: "悔恨", core_char: "悔", zhuyin: "ㄏㄨㄟˇ", weight: 2 },
+                    { word: "侮辱", core_char: "侮", zhuyin: "ㄨˇ", weight: 3 },
+                    { word: "睡眼惺忪", core_char: "忪", zhuyin: "ㄙㄨㄥ", weight: 5 },
+                    { word: "松樹", core_char: "松", zhuyin: "ㄙㄨㄥ", weight: 1 },
+                    { word: "訴訟", core_char: "訟", zhuyin: "ㄙㄨㄥˋ", weight: 3 },
+                    { word: "深邃", core_char: "邃", zhuyin: "ㄙㄨㄟˋ", weight: 4 },
+                    { word: "諸事不遂", core_char: "遂", zhuyin: "ㄙㄨㄟˋ", weight: 4 },
+                    { word: "半身不遂", core_char: "遂", zhuyin: "ㄙㄨㄟˋ", weight: 4 },
+                    { word: "未遂", core_char: "遂", zhuyin: "ㄙㄨㄟˋ", weight: 3 },
+                    { word: "追逐", core_char: "逐", zhuyin: "ㄓㄨˊ", weight: 2 },
+                    { word: "驅逐出境", core_char: "逐", zhuyin: "ㄓㄨˊ", weight: 3 },
+                    { word: "角逐", core_char: "逐", zhuyin: "ㄓㄨˊ", weight: 3 },
+                    { word: "逐年增加", core_char: "逐", zhuyin: "ㄓㄨˊ", weight: 3 },
+                    { word: "橋梁", core_char: "梁", zhuyin: "ㄌㄧㄤˊ", weight: 3 },
+                    { word: "鼻梁", core_char: "梁", zhuyin: "ㄌㄧㄤˊ", weight: 3 },
+                    { word: "高粱", core_char: "粱", zhuyin: "ㄌㄧㄤˊ", weight: 3 },
+                    { word: "看照", core_char: "看", zhuyin: "ㄎㄢ", weight: 3 },
+                    { word: "看見", core_char: "看", zhuyin: "ㄎㄢˋ", weight: 1 },
+                    { word: "刮目相看", core_char: "看", zhuyin: "ㄎㄢˋ", weight: 4 },
+                    { word: "看診", core_char: "看", zhuyin: "ㄎㄢˋ", weight: 2 },
+                    { word: "婚喪喜慶", core_char: "喪", zhuyin: "ㄙㄤ", weight: 4 },
+                    { word: "喪盡天良", core_char: "喪", zhuyin: "ㄙㄤˋ", weight: 4 }
                 ]
             },
             "L7": {
-                name: "第七課 愛蓮說",
+                name: "第7課 陋室銘",
                 words: [
-                    { word: "洗濯", core_char: "濯", zhuyin: "ㄓㄨㄛˊ", weight: 2 }, { word: "拔擢", core_char: "擢", zhuyin: "ㄓㄨㄛˊ", weight: 2 },
-                    { word: "雀躍不已", core_char: "躍", zhuyin: "ㄩㄝˋ", weight: 1 }, { word: "照耀", core_char: "耀", zhuyin: "ㄧㄠˋ", weight: 1 },
-                    { word: "炫耀", core_char: "耀", zhuyin: "ㄧㄠˋ", weight: 1 }, { word: "妖豔", core_char: "妖", zhuyin: "ㄧㄠ", weight: 2 },
-                    { word: "妖怪", core_char: "妖", zhuyin: "ㄧㄠ", weight: 1 }, { word: "夭折", core_char: "夭", zhuyin: "ㄧㄠ", weight: 2 },
-                    { word: "肥沃", core_char: "沃", zhuyin: "ㄨㄛˋ", weight: 1 }, { word: "蔓延", core_char: "蔓", zhuyin: "ㄇㄢˋ", weight: 1 },
-                    { word: "藤蔓", core_char: "蔓", zhuyin: "ㄇㄢˋ", weight: 1 }, { word: "漫山遍野", core_char: "漫", zhuyin: "ㄇㄢˋ", weight: 2 },
-                    { word: "漫不經心", core_char: "漫", zhuyin: "ㄇㄢˋ", weight: 2 }, { word: "慢工出細活", core_char: "慢", zhuyin: "ㄇㄢˋ", weight: 1 },
-                    { word: "輕慢", core_char: "慢", zhuyin: "ㄇㄢˋ", weight: 2 }, { word: "樹枝", core_char: "枝", zhuyin: "ㄓ", weight: 1 },
-                    { word: "一枝筆", core_char: "枝", zhuyin: "ㄓ", weight: 1 }, { word: "技能", core_char: "技", zhuyin: "ㄐㄧˋ", weight: 1 },
-                    { word: "歧義", core_char: "歧", zhuyin: "ㄑㄧˊ", weight: 2 }, { word: "隱居", core_char: "隱", zhuyin: "ㄧㄣˇ", weight: 1 },
-                    { word: "穩如泰山", core_char: "穩", zhuyin: "ㄨㄣˇ", weight: 2 }, { word: "十拿九穩", core_char: "穩", zhuyin: "ㄨㄣˇ", weight: 1 },
-                    { word: "穩重", core_char: "穩", zhuyin: "ㄨㄣˇ", weight: 1 }, { word: "鮮有聞", core_char: "鮮", zhuyin: "ㄒㄧㄢˇ", weight: 2 },
-                    { word: "鮮豔", core_char: "鮮", zhuyin: "ㄒㄧㄢ", weight: 1 }, { word: "新鮮", core_char: "鮮", zhuyin: "ㄒㄧㄢ", weight: 1 },
-                    { word: "海鮮", core_char: "鮮", zhuyin: "ㄒㄧㄢ", weight: 1 }, { word: "香遠益清", core_char: "益", zhuyin: "ㄧˋ", weight: 2 },
-                    { word: "利益", core_char: "益", zhuyin: "ㄧˋ", weight: 1 }, { word: "延年益壽", core_char: "益", zhuyin: "ㄧˋ", weight: 2 },
-                    { word: "隱逸者", core_char: "逸", zhuyin: "ㄧˋ", weight: 2 }, { word: "閒情逸致", core_char: "逸", zhuyin: "ㄧˋ", weight: 2 },
-                    { word: "逃逸", core_char: "逸", zhuyin: "ㄧˋ", weight: 1 }, { word: "散逸", core_char: "逸", zhuyin: "ㄧˋ", weight: 2 }
+                    { word: "苔痕上階綠", core_char: "階", zhuyin: "ㄐㄧㄝ", weight: 3 },
+                    { word: "白頭偕老", core_char: "偕", zhuyin: "ㄒㄧㄝ", weight: 5 },
+                    { word: "詼諧", core_char: "諧", zhuyin: "ㄒㄧㄝˊ", weight: 4 },
+                    { word: "博學鴻儒", core_char: "儒", zhuyin: "ㄖㄨˊ", weight: 5 },
+                    { word: "蠕動", core_char: "蠕", zhuyin: "ㄖㄨˊ", weight: 3 },
+                    { word: "簡牘", core_char: "牘", zhuyin: "ㄉㄨˊ", weight: 5 },
+                    { word: "貪汙瀆職", core_char: "瀆", zhuyin: "ㄉㄨˊ", weight: 5 },
+                    { word: "初生之犢不畏虎", core_char: "犢", zhuyin: "ㄉㄨˊ", weight: 5 },
+                    { word: "買櫝還珠", core_char: "櫝", zhuyin: "ㄉㄨˊ", weight: 5 },
+                    { word: "窮兵黷武", core_char: "黷", zhuyin: "ㄉㄨˊ", weight: 5 },
+                    { word: "案牘勞形", core_char: "形", zhuyin: "ㄒㄧㄥˊ", weight: 5 },
+                    { word: "形象", core_char: "形", zhuyin: "ㄒㄧㄥˊ", weight: 2 },
+                    { word: "情形", core_char: "形", zhuyin: "ㄒㄧㄥˊ", weight: 2 },
+                    { word: "喜形於色", core_char: "形", zhuyin: "ㄒㄧㄥˊ", weight: 5 },
+                    { word: "模型", core_char: "型", zhuyin: "ㄒㄧㄥˊ", weight: 2 },
+                    { word: "典型", core_char: "型", zhuyin: "ㄒㄧㄥˊ", weight: 3 },
+                    { word: "血型", core_char: "型", zhuyin: "ㄒㄧㄥˊ", weight: 2 },
+                    { word: "三顧茅廬", core_char: "廬", zhuyin: "ㄌㄨˊ", weight: 5 },
+                    { word: "蘆葦", core_char: "蘆", zhuyin: "ㄌㄨˊ", weight: 2 },
+                    { word: "另起爐灶", core_char: "爐", zhuyin: "ㄌㄨˊ", weight: 5 },
+                    { word: "惟吾德馨", core_char: "惟", zhuyin: "ㄨㄟˊ", weight: 4 },
+                    { word: "惟膀子疼痛", core_char: "惟", zhuyin: "ㄨㄟˊ", weight: 4 },
+                    { word: "惟聞女嘆息", core_char: "惟", zhuyin: "ㄨㄟˊ", weight: 4 },
+                    { word: "思惟", core_char: "惟", zhuyin: "ㄨㄟˊ", weight: 3 },
+                    { word: "素琴", core_char: "素", zhuyin: "ㄙㄨˋ", weight: 3 },
+                    { word: "留蚊於素帳中", core_char: "素", zhuyin: "ㄙㄨˋ", weight: 4 },
+                    { word: "樸素", core_char: "素", zhuyin: "ㄙㄨˋ", weight: 2 },
+                    { word: "素行不良", core_char: "素", zhuyin: "ㄙㄨˋ", weight: 4 },
+                    { word: "因素", core_char: "素", zhuyin: "ㄙㄨˋ", weight: 2 },
+                    { word: "尸位素餐", core_char: "素", zhuyin: "ㄙㄨˋ", weight: 5 },
+                    { word: "素不相識", core_char: "素", zhuyin: "ㄙㄨˋ", weight: 4 }
                 ]
             },
             "L8": {
-                name: "第八課 鳥",
+                name: "第8課 成功是失敗之母",
                 words: [
-                    { word: "胳膊", core_char: "膊", zhuyin: "ㄅㄛˊ", weight: 2 }, { word: "打赤膊", core_char: "膊", zhuyin: "ㄅㄛˊ", weight: 2 },
-                    { word: "搏扶搖而直上", core_char: "搏", zhuyin: "ㄅㄛˊ", weight: 3 }, { word: "搏鬥", core_char: "搏", zhuyin: "ㄅㄛˊ", weight: 1 },
-                    { word: "手無縛雞之力", core_char: "縛", zhuyin: "ㄈㄨˊ", weight: 2 }, { word: "蜷縮", core_char: "蜷", zhuyin: "ㄑㄩㄢˊ", weight: 2 },
-                    { word: "捲畫軸", core_char: "捲", zhuyin: "ㄐㄩㄢˇ", weight: 1 }, { word: "席捲", core_char: "捲", zhuyin: "ㄐㄩㄢˇ", weight: 2 },
-                    { word: "孜孜不倦", core_char: "倦", zhuyin: "ㄐㄩㄢˋ", weight: 2 }, { word: "嘹亮", core_char: "嘹", zhuyin: "ㄌㄧㄠˊ", weight: 2 },
-                    { word: "官僚", core_char: "僚", zhuyin: "ㄌㄧㄠˊ", weight: 2 }, { word: "同僚", core_char: "僚", zhuyin: "ㄌㄧㄠˊ", weight: 2 },
-                    { word: "繚繞", core_char: "繚", zhuyin: "ㄌㄧㄠˊ", weight: 2 }, { word: "遼遠", core_char: "遼", zhuyin: "ㄌㄧㄠˊ", weight: 2 },
-                    { word: "明瞭", core_char: "瞭", zhuyin: "ㄌㄧㄠˇ", weight: 1 }, { word: "曳著尾巴", core_char: "曳", zhuyin: "ㄧˋ", weight: 2 },
-                    { word: "搖曳", core_char: "曳", zhuyin: "ㄧˋ", weight: 2 }, { word: "洩洪", core_char: "洩", zhuyin: "ㄒㄧㄝˋ", weight: 1 },
-                    { word: "洩漏", core_char: "洩", zhuyin: "ㄒㄧㄝˋ", weight: 1 }, { word: "鳥喙", core_char: "喙", zhuyin: "ㄏㄨㄟˋ", weight: 2 },
-                    { word: "不容置喙", core_char: "喙", zhuyin: "ㄏㄨㄟˋ", weight: 3 }, { word: "啄食", core_char: "啄", zhuyin: "ㄓㄨㄛˊ", weight: 1 },
-                    { word: "斑斕", core_char: "斕", zhuyin: "ㄌㄢˊ", weight: 2 }, { word: "力挽狂瀾", core_char: "瀾", zhuyin: "ㄌㄢˊ", weight: 2 },
-                    { word: "夜闌人靜", core_char: "闌", zhuyin: "ㄌㄢˊ", weight: 2 }, { word: "破銅爛鐵", core_char: "爛", zhuyin: "ㄌㄢˋ", weight: 1 },
-                    { word: "燦爛", core_char: "爛", zhuyin: "ㄌㄢˋ", weight: 1 }, { word: "穠纖合度", core_char: "纖", zhuyin: "ㄒㄧㄢ", weight: 3 },
-                    { word: "殲滅", core_char: "殲", zhuyin: "ㄐㄧㄢ", weight: 2 }, { word: "抽籤", core_char: "籤", zhuyin: "ㄑㄧㄢ", weight: 1 },
-                    { word: "書籤", core_char: "籤", zhuyin: "ㄑㄧㄢ", weight: 1 }, { word: "竹籤", core_char: "籤", zhuyin: "ㄑㄧㄢ", weight: 1 },
-                    { word: "懺悔", core_char: "懺", zhuyin: "ㄔㄢˋ", weight: 2 }, { word: "一語成讖", core_char: "讖", zhuyin: "ㄔㄣˋ", weight: 3 },
-                    { word: "拳著一條腿", core_char: "拳", zhuyin: "ㄑㄩㄢˊ", weight: 2 }, { word: "摩拳擦掌", core_char: "拳", zhuyin: "ㄑㄩㄢˊ", weight: 2 },
-                    { word: "入場券", core_char: "券", zhuyin: "ㄑㄩㄢˋ", weight: 1 }, { word: "眷戀", core_char: "眷", zhuyin: "ㄐㄩㄢˋ", weight: 2 },
-                    { word: "家眷", core_char: "眷", zhuyin: "ㄐㄩㄢˋ", weight: 2 }, { word: "豢養", core_char: "豢", zhuyin: "ㄏㄨㄢˋ", weight: 3 }
+                    { word: "巔峰", core_char: "巔", zhuyin: "ㄉㄧㄢ", weight: 3 },
+                    { word: "瘋癲", core_char: "癲", zhuyin: "ㄉㄧㄢ", weight: 4 },
+                    { word: "賦詩", core_char: "賦", zhuyin: "ㄈㄨˋ", weight: 3 },
+                    { word: "賦斂", core_char: "賦", zhuyin: "ㄈㄨˋ", weight: 4 },
+                    { word: "稟賦", core_char: "賦", zhuyin: "ㄈㄨˋ", weight: 4 },
+                    { word: "威武", core_char: "武", zhuyin: "ㄨˇ", weight: 2 },
+                    { word: "武器", core_char: "武", zhuyin: "ㄨˇ", weight: 2 },
+                    { word: "鞭笞", core_char: "笞", zhuyin: "ㄔ", weight: 5 },
+                    { word: "苔蘚", core_char: "苔", zhuyin: "ㄊㄞˊ", weight: 4 },
+                    { word: "收斂", core_char: "斂", zhuyin: "ㄌㄧㄢˋ", weight: 3 },
+                    { word: "水光瀲豔", core_char: "瀲", zhuyin: "ㄌㄧㄢˋ", weight: 5 },
+                    { word: "入殮", core_char: "殮", zhuyin: "ㄌㄧㄢˋ", weight: 4 },
+                    { word: "寶劍", core_char: "劍", zhuyin: "ㄐㄧㄢˋ", weight: 2 },
+                    { word: "眼瞼", core_char: "瞼", zhuyin: "ㄐㄧㄢˇ", weight: 4 },
+                    { word: "刑罰太濫", core_char: "濫", zhuyin: "ㄌㄢˋ", weight: 3 },
+                    { word: "濫用職權", core_char: "濫", zhuyin: "ㄌㄢˋ", weight: 4 },
+                    { word: "軍艦", core_char: "艦", zhuyin: "ㄐㄧㄢˋ", weight: 3 },
+                    { word: "窗檻", core_char: "檻", zhuyin: "ㄐㄧㄢˋ", weight: 4 },
+                    { word: "門檻", core_char: "檻", zhuyin: "ㄎㄢˇ", weight: 3 },
+                    { word: "尷尬", core_char: "尷", zhuyin: "ㄍㄢ", weight: 4 },
+                    { word: "堆砌", core_char: "砌", zhuyin: "ㄑㄧˋ", weight: 3 },
+                    { word: "沏茶", core_char: "沏", zhuyin: "ㄑㄧ", weight: 3 },
+                    { word: "成敗利鈍", weight: 5 },
+                    { word: "功敗垂成", weight: 5 },
+                    { word: "成事不足敗事有餘", weight: 5 },
+                    { word: "成者為王敗者為寇", weight: 5 },
+                    { word: "勝不驕敗不餒", weight: 5 },
+                    { word: "月盈則食", weight: 5 },
+                    { word: "絕處逢生", weight: 5 },
+                    { word: "否極泰來", weight: 5 },
+                    { word: "樂極生悲", weight: 5 },
+                    { word: "興盡悲來", weight: 5 },
+                    { word: "苦盡甘來", weight: 5 }
                 ]
             },
             "L9": {
-                name: "第九課 我在圖書館的一天",
+                name: "第9課 罐頭由來",
                 words: [
-                    { word: "迥異", core_char: "迥", zhuyin: "ㄐㄩㄥˇ", weight: 2 }, { word: "炯炯有神", core_char: "炯", zhuyin: "ㄐㄩㄥˇ", weight: 2 },
-                    { word: "巡迴", core_char: "迴", zhuyin: "ㄏㄨㄟˊ", weight: 1 }, { word: "迴避", core_char: "迴", zhuyin: "ㄏㄨㄟˊ", weight: 1 },
-                    { word: "二樓", core_char: "樓", zhuyin: "ㄌㄡˊ", weight: 1 }, { word: "高樓大廈", core_char: "樓", zhuyin: "ㄌㄡˊ", weight: 1 },
-                    { word: "精雕細鏤", core_char: "鏤", zhuyin: "ㄌㄡˋ", weight: 3 }, { word: "屢見不鮮", core_char: "屢", zhuyin: "ㄌㄩˇ", weight: 2 },
-                    { word: "棧道", core_char: "棧", zhuyin: "ㄓㄢˋ", weight: 2 }, { word: "客棧", core_char: "棧", zhuyin: "ㄓㄢˋ", weight: 2 },
-                    { word: "踐踏", core_char: "踐", zhuyin: "ㄐㄧㄢˋ", weight: 1 }, { word: "實踐", core_char: "踐", zhuyin: "ㄐㄧㄢˋ", weight: 1 },
-                    { word: "餞行", core_char: "餞", zhuyin: "ㄐㄧㄢˋ", weight: 2 }, { word: "淺海", core_char: "淺", zhuyin: "ㄑㄧㄢˇ", weight: 1 },
-                    { word: "淺顯易懂", core_char: "淺", zhuyin: "ㄑㄧㄢˇ", weight: 1 }, { word: "淺黃", core_char: "淺", zhuyin: "ㄑㄧㄢˇ", weight: 1 },
-                    { word: "蕨類", core_char: "蕨", zhuyin: "ㄐㄩㄝˊ", weight: 2 }, { word: "昏厥", core_char: "厥", zhuyin: "ㄐㄩㄝˊ", weight: 2 },
-                    { word: "猖獗", core_char: "獗", zhuyin: "ㄐㄩㄝˊ", weight: 3 }, { word: "一蹶不振", core_char: "蹶", zhuyin: "ㄐㄩㄝˊ", weight: 3 },
-                    { word: "矩形", core_char: "矩", zhuyin: "ㄐㄩˇ", weight: 1 }, { word: "循規蹈矩", core_char: "矩", zhuyin: "ㄐㄩˇ", weight: 2 },
-                    { word: "拒絕", core_char: "拒", zhuyin: "ㄐㄩˋ", weight: 1 }, { word: "抗拒", core_char: "拒", zhuyin: "ㄐㄩˋ", weight: 1 },
-                    { word: "火炬", core_char: "炬", zhuyin: "ㄐㄩˋ", weight: 1 }, { word: "慵懶", core_char: "慵", zhuyin: "ㄩㄥ", weight: 2 },
-                    { word: "幫傭", core_char: "傭", zhuyin: "ㄩㄥ", weight: 1 }, { word: "無庸置疑", core_char: "庸", zhuyin: "ㄩㄥ", weight: 2 },
-                    { word: "平庸", core_char: "庸", zhuyin: "ㄩㄥ", weight: 1 }, { word: "手稿", core_char: "稿", zhuyin: "ㄍㄠˇ", weight: 1 },
-                    { word: "槁木死灰", core_char: "槁", zhuyin: "ㄍㄠˇ", weight: 3 }, { word: "搞社團", core_char: "搞", zhuyin: "ㄍㄠˇ", weight: 1 },
-                    { word: "閒散", core_char: "散", zhuyin: "ㄙㄢˇ", weight: 1 }, { word: "散沙", core_char: "散", zhuyin: "ㄙㄢˇ", weight: 1 },
-                    { word: "煙消雲散", core_char: "散", zhuyin: "ㄙㄢˋ", weight: 1 }, { word: "散心", core_char: "散", zhuyin: "ㄙㄢˋ", weight: 1 },
-                    { word: "正襟危坐", core_char: "危", zhuyin: "ㄨㄟˊ", weight: 2 }, { word: "危險", core_char: "危", zhuyin: "ㄨㄟˊ", weight: 1 },
-                    { word: "病危", core_char: "危", zhuyin: "ㄨㄟˊ", weight: 1 }
+                    { word: "循規蹈矩", core_char: "循", zhuyin: "ㄒㄩㄣˊ", weight: 5 },
+                    { word: "無所遁形", core_char: "遁", zhuyin: "ㄉㄨㄣˋ", weight: 5 },
+                    { word: "遁逃", core_char: "遁", zhuyin: "ㄉㄨㄣˋ", weight: 4 },
+                    { word: "盾牌", core_char: "盾", zhuyin: "ㄉㄨㄣˋ", weight: 2 },
+                    { word: "後盾", core_char: "盾", zhuyin: "ㄉㄨㄣˋ", weight: 2 },
+                    { word: "廝殺", core_char: "廝", zhuyin: "ㄙ", weight: 4 },
+                    { word: "小廝", core_char: "廝", zhuyin: "ㄙ", weight: 3 },
+                    { word: "聲嘶力竭", core_char: "嘶", zhuyin: "ㄙ", weight: 5 },
+                    { word: "撕毀", core_char: "撕", zhuyin: "ㄙ", weight: 3 },
+                    { word: "破釜沉舟", core_char: "釜", zhuyin: "ㄈㄨˇ", weight: 5 },
+                    { word: "斧頭", core_char: "斧", zhuyin: "ㄈㄨˇ", weight: 2 },
+                    { word: "追撞", core_char: "撞", zhuyin: "ㄓㄨㄤˋ", weight: 2 },
+                    { word: "大敗", core_char: "敗", zhuyin: "ㄅㄞˋ", weight: 3 }, // 補充：大敗(擊敗/慘敗)
+                    { word: "這幢農舍", core_char: "幢", zhuyin: "ㄔㄨㄤˊ", weight: 4 },
+                    { word: "書僮", core_char: "僮", zhuyin: "ㄊㄨㄥˊ", weight: 4 },
+                    { word: "憧憬", core_char: "憧", zhuyin: "ㄔㄨㄥ", weight: 5 },
+                    { word: "著落", core_char: "著", zhuyin: "ㄓㄨㄛˊ", weight: 3 },
+                    { word: "著衣", core_char: "著", zhuyin: "ㄓㄨㄛˊ", weight: 3 },
+                    { word: "名著", core_char: "著", zhuyin: "ㄓㄨˋ", weight: 2 },
+                    { word: "著書立說", core_char: "著", zhuyin: "ㄓㄨˋ", weight: 5 },
+                    { word: "顯著", core_char: "著", zhuyin: "ㄓㄨˋ", weight: 3 },
+                    { word: "不著店", core_char: "著", zhuyin: "ㄓㄠˊ", weight: 4 },
+                    { word: "正說著話", core_char: "著", zhuyin: "ㄓㄜ", weight: 2 },
+                    { word: "改弦更張", core_char: "更", zhuyin: "ㄍㄥ", weight: 5 },
+                    { word: "三更半夜", core_char: "更", zhuyin: "ㄍㄥ", weight: 3 },
+                    { word: "更加努力", core_char: "更", zhuyin: "ㄍㄥˋ", weight: 1 }
                 ]
             },
             "L10": {
-                name: "第十課 拆牆",
+                name: "第10課 項鍊",
                 words: [
-                    { word: "扭腰擺臀", core_char: "扭", zhuyin: "ㄋㄧㄡˇ", weight: 1 }, { word: "扭開門把", core_char: "扭", zhuyin: "ㄋㄧㄡˇ", weight: 1 },
-                    { word: "按鈕", core_char: "鈕", zhuyin: "ㄋㄧㄡˇ", weight: 1 }, { word: "小丑", core_char: "丑", zhuyin: "ㄔㄡˇ", weight: 1 },
-                    { word: "挨近", core_char: "挨", zhuyin: "ㄞ", weight: 1 }, { word: "挨餓", core_char: "挨", zhuyin: "ㄞˊ", weight: 1 },
-                    { word: "挨家挨戶", core_char: "挨", zhuyin: "ㄞ", weight: 2 }, { word: "塵埃", core_char: "埃", zhuyin: "ㄞ", weight: 2 },
-                    { word: "由來久矣", core_char: "矣", zhuyin: "ㄧˇ", weight: 2 }, { word: "郵遞", core_char: "遞", zhuyin: "ㄉㄧˋ", weight: 1 },
-                    { word: "遞減", core_char: "遞", zhuyin: "ㄉㄧˋ", weight: 1 }, { word: "褫衣", core_char: "褫", zhuyin: "ㄔˇ", weight: 3 },
-                    { word: "褫奪公權", core_char: "褫", zhuyin: "ㄔˇ", weight: 3 }, { word: "花秧", core_char: "秧", zhuyin: "ㄧㄤ", weight: 1 },
-                    { word: "遭殃", core_char: "殃", zhuyin: "ㄧㄤ", weight: 1 }, { word: "中央", core_char: "央", zhuyin: "ㄧㄤ", weight: 1 },
-                    { word: "央求", core_char: "央", zhuyin: "ㄧㄤ", weight: 1 }, { word: "笨拙", core_char: "拙", zhuyin: "ㄓㄨㄛˊ", weight: 1 },
-                    { word: "拙作", core_char: "拙", zhuyin: "ㄓㄨㄛˊ", weight: 2 }, { word: "茁壯", core_char: "茁", zhuyin: "ㄓㄨㄛˊ", weight: 1 },
-                    { word: "相形見絀", core_char: "絀", zhuyin: "ㄔㄨˋ", weight: 3 }, { word: "否極泰來", core_char: "否", zhuyin: "ㄆㄧˇ", weight: 2 },
-                    { word: "臧否人物", core_char: "否", zhuyin: "ㄆㄧˇ", weight: 3 }, { word: "否認", core_char: "否", zhuyin: "ㄈㄡˇ", weight: 1 },
-                    { word: "參差", core_char: "參", zhuyin: "ㄘㄣ", weight: 2 }, { word: "參政", core_char: "參", zhuyin: "ㄘㄢ", weight: 1 },
-                    { word: "參拜", core_char: "參", zhuyin: "ㄘㄢ", weight: 1 }, { word: "人參", core_char: "參", zhuyin: "ㄕㄣ", weight: 1 },
-                    { word: "演奏", core_char: "奏", zhuyin: "ㄗㄡˋ", weight: 1 }, { word: "奏效", core_char: "奏", zhuyin: "ㄗㄡˋ", weight: 1 },
-                    { word: "奏摺", core_char: "奏", zhuyin: "ㄗㄡˋ", weight: 2 }, { word: "節奏", core_char: "奏", zhuyin: "ㄗㄡˋ", weight: 1 }
+                    { word: "瞌睡", core_char: "瞌", zhuyin: "ㄎㄜ", weight: 2 },
+                    { word: "磕頭", core_char: "磕", zhuyin: "ㄎㄜ", weight: 3 },
+                    { word: "嗑瓜子", core_char: "嗑", zhuyin: "ㄎㄜˋ", weight: 3 },
+                    { word: "溘然長逝", core_char: "溘", zhuyin: "ㄎㄜˋ", weight: 5 },
+                    { word: "官邸", core_char: "邸", zhuyin: "ㄉㄧˇ", weight: 4 },
+                    { word: "詆毀", core_char: "詆", zhuyin: "ㄉㄧˇ", weight: 4 },
+                    { word: "抵抗", core_char: "抵", zhuyin: "ㄉㄧˇ", weight: 2 },
+                    { word: "抵債", core_char: "抵", zhuyin: "ㄉㄧˇ", weight: 3 },
+                    { word: "抵達", core_char: "抵", zhuyin: "ㄉㄧˇ", weight: 2 },
+                    { word: "根深柢固", core_char: "柢", zhuyin: "ㄉㄧˇ", weight: 5 },
+                    { word: "怦怦", core_char: "怦", zhuyin: "ㄆㄥ", weight: 3 },
+                    { word: "抨擊", core_char: "抨", zhuyin: "ㄆㄥ", weight: 4 },
+                    { word: "砰的一聲", core_char: "砰", zhuyin: "ㄆㄥ", weight: 2 },
+                    { word: "評論", core_char: "評", zhuyin: "ㄆㄧㄥˊ", weight: 2 },
+                    { word: "塌陷", core_char: "陷", zhuyin: "ㄒㄧㄢˋ", weight: 2 },
+                    { word: "陷害", core_char: "陷", zhuyin: "ㄒㄧㄢˋ", weight: 2 },
+                    { word: "陷阱", core_char: "阱", zhuyin: "ㄐㄧㄥˇ", weight: 4 },
+                    { word: "豆沙餡", core_char: "餡", zhuyin: "ㄒㄧㄢˋ", weight: 3 },
+                    { word: "火焰", core_char: "焰", zhuyin: "ㄧㄢˋ", weight: 2 },
+                    { word: "諂媚", core_char: "諂", zhuyin: "ㄔㄢˇ", weight: 5 },
+                    { word: "掐脖子", core_char: "掐", zhuyin: "ㄑㄧㄚ", weight: 4 },
+                    { word: "拎著菜籃", core_char: "拎", zhuyin: "ㄌㄧㄥ", weight: 3 },
+                    { word: "聆聽", core_char: "聆", zhuyin: "ㄌㄧㄥˊ", weight: 3 },
+                    { word: "玲瓏", core_char: "玲", zhuyin: "ㄌㄧㄥˊ", weight: 3 },
+                    { word: "門鈴", core_char: "鈴", zhuyin: "ㄌㄧㄥˊ", weight: 1 },
+                    { word: "請帖", core_char: "帖", zhuyin: "ㄊㄧㄝˇ", weight: 3 },
+                    { word: "一帖藥", core_char: "帖", zhuyin: "ㄊㄧㄝˇ", weight: 3 },
+                    { word: "妥帖", core_char: "帖", zhuyin: "ㄊㄧㄝ", weight: 4 }
                 ]
             },
             "自3": {
-                name: "自學三 買春聯",
+                name: "自學3 空城計",
                 words: [
-                    { word: "根柢", core_char: "柢", zhuyin: "ㄉㄧˇ", weight: 2 }, { word: "抵住", core_char: "抵", zhuyin: "ㄉㄧˇ", weight: 1 },
-                    { word: "抵擋", core_char: "抵", zhuyin: "ㄉㄧˇ", weight: 1 }, { word: "家書抵萬金", core_char: "抵", zhuyin: "ㄉㄧˇ", weight: 2 },
-                    { word: "抵達", core_char: "抵", zhuyin: "ㄉㄧˇ", weight: 1 }, { word: "砥行立名", core_char: "砥", zhuyin: "ㄉㄧˇ", weight: 3 },
-                    { word: "牴觸", core_char: "牴", zhuyin: "ㄉㄧˇ", weight: 2 }, { word: "詆毀", core_char: "詆", zhuyin: "ㄉㄧˇ", weight: 2 },
-                    { word: "嶄新", core_char: "嶄", zhuyin: "ㄓㄢˇ", weight: 1 }, { word: "嶄露鋒芒", core_char: "嶄", zhuyin: "ㄓㄢˇ", weight: 2 },
-                    { word: "披荊斬棘", core_char: "斬", zhuyin: "ㄓㄢˇ", weight: 2 }, { word: "大言不慚", core_char: "慚", zhuyin: "ㄘㄢˊ", weight: 2 },
-                    { word: "漸入佳境", core_char: "漸", zhuyin: "ㄐㄧㄢˋ", weight: 2 }, { word: "六畜興旺", core_char: "畜", zhuyin: "ㄔㄨˋ", weight: 2 },
-                    { word: "儲蓄", core_char: "蓄", zhuyin: "ㄒㄩˋ", weight: 1 }, { word: "蓄髮", core_char: "蓄", zhuyin: "ㄒㄩˋ", weight: 1 },
-                    { word: "磨墨", core_char: "磨", zhuyin: "ㄇㄛˊ", weight: 1 }, { word: "好事多磨", core_char: "磨", zhuyin: "ㄇㄛˊ", weight: 2 },
-                    { word: "石磨", core_char: "磨", zhuyin: "ㄇㄛˊ", weight: 1 }, { word: "臨摹", core_char: "臨", zhuyin: "ㄌㄧㄣˊ", weight: 2 },
-                    { word: "光臨", core_char: "臨", zhuyin: "ㄌㄧㄣˊ", weight: 1 }, { word: "臨危不亂", core_char: "臨", zhuyin: "ㄌㄧㄣˊ", weight: 2 },
-                    { word: "侍奉", core_char: "事", zhuyin: "ㄕˋ", weight: 2 }, { word: "多事之秋", core_char: "事", zhuyin: "ㄕˋ", weight: 2 },
-                    { word: "打根柢", core_char: "打", zhuyin: "ㄉㄚˇ", weight: 2 }, { word: "打鬥", core_char: "打", zhuyin: "ㄉㄚˇ", weight: 1 },
-                    { word: "打電話", core_char: "打", zhuyin: "ㄉㄚˇ", weight: 1 }, { word: "打瞌睡", core_char: "打", zhuyin: "ㄉㄚˇ", weight: 1 },
-                    { word: "打鐵趁熱", core_char: "打", zhuyin: "ㄉㄚˇ", weight: 1 }
+                    { word: "一班文官", core_char: "班", zhuyin: "ㄅㄢ", weight: 2 },
+                    { word: "輪班", core_char: "班", zhuyin: "ㄅㄢ", weight: 2 },
+                    { word: "黑斑", core_char: "斑", zhuyin: "ㄅㄢ", weight: 2 },
+                    { word: "妄行出入", core_char: "妄", zhuyin: "ㄨㄤˋ", weight: 4 },
+                    { word: "狂妄不羈", core_char: "妄", zhuyin: "ㄨㄤˋ", weight: 5 },
+                    { word: "得意忘形", core_char: "忘", zhuyin: "ㄨㄤˋ", weight: 5 },
+                    { word: "盲人", core_char: "盲", zhuyin: "ㄇㄤˊ", weight: 2 },
+                    { word: "文盲", core_char: "盲", zhuyin: "ㄇㄤˊ", weight: 2 },
+                    { word: "盲從", core_char: "盲", zhuyin: "ㄇㄤˊ", weight: 3 },
+                    { word: "不出所料", core_char: "料", zhuyin: "ㄌㄧㄠˋ", weight: 3 },
+                    { word: "材料", core_char: "料", zhuyin: "ㄌㄧㄠˋ", weight: 1 },
+                    { word: "學科", core_char: "科", zhuyin: "ㄎㄜ", weight: 1 },
+                    { word: "金科玉律", core_char: "科", zhuyin: "ㄎㄜ", weight: 5 },
+                    { word: "顫抖", core_char: "抖", zhuyin: "ㄉㄡˇ", weight: 3 },
+                    { word: "言訖", core_char: "訖", zhuyin: "ㄑㄧˋ", weight: 4 },
+                    { word: "屹立不搖", core_char: "屹", zhuyin: "ㄧˋ", weight: 5 },
+                    { word: "迄無音訊", core_char: "迄", zhuyin: "ㄑㄧˋ", weight: 4 },
+                    { word: "迄今", core_char: "迄", zhuyin: "ㄑㄧˋ", weight: 3 },
+                    { word: "望西城", core_char: "望", zhuyin: "ㄨㄤˋ", weight: 2 },
+                    { word: "望北山路", core_char: "望", zhuyin: "ㄨㄤˋ", weight: 2 },
+                    { word: "登城望之", core_char: "望", zhuyin: "ㄨㄤˋ", weight: 2 },
+                    { word: "止有一班", core_char: "止", zhuyin: "ㄓˇ", weight: 4 },
+                    { word: "遂止住", core_char: "止", zhuyin: "ㄓˇ", weight: 3 },
+                    { word: "故作此態", core_char: "故", zhuyin: "ㄍㄨˋ", weight: 4 },
+                    { word: "何故", core_char: "故", zhuyin: "ㄍㄨˋ", weight: 3 },
+                    { word: "孔明乃披鶴氅", core_char: "乃", zhuyin: "ㄋㄞˇ", weight: 3 },
+                    { word: "司馬懿乃魏之名將", core_char: "乃", zhuyin: "ㄋㄞˇ", weight: 4 },
+                    { word: "果見", core_char: "見", zhuyin: "ㄐㄧㄢˋ", weight: 2 },
+                    { word: "見如此模樣", core_char: "見", zhuyin: "ㄐㄧㄢˋ", weight: 2 },
+                    { word: "若某等之見", core_char: "見", zhuyin: "ㄐㄧㄢˋ", weight: 4 },
+                    { word: "為司馬懿所擒", core_char: "為", zhuyin: "ㄨㄟˊ", weight: 4 },
+                    { word: "吾若為司馬懿", core_char: "為", zhuyin: "ㄨㄟˊ", weight: 3 },
+                    { word: "皆為輕重", core_char: "為", zhuyin: "ㄨㄟˊ", weight: 4 }
                 ]
             }
         };
@@ -528,7 +709,6 @@
         const sparkleSynth = new Tone.PolySynth(Tone.PluckSynth).toDestination();
         sparkleSynth.set({ volume: -8 });
 
-
         // --- 函式 ---
         function populateLessons() {
             for (const key in lessonsData) {
@@ -557,6 +737,8 @@
 
             const words = lessonsData[lessonKey].words;
             currentWordPool = [];
+            
+            // 根據權重將詞語加入池中
             words.forEach(wordObj => {
                 for (let i = 0; i < wordObj.weight; i++) {
                     currentWordPool.push(wordObj.word);
@@ -621,6 +803,7 @@
                     updateHistory();
                 }
 
+                // 移除池中所有該詞語的實例，確保不重複抽出
                 currentWordPool = currentWordPool.filter(word => word !== selectedWord);
                 
                 counterArea.textContent = `已抽出 ${drawnWords.length} / ${totalUniqueWords} 個`;
@@ -641,14 +824,13 @@
                 reversedWords.forEach((word, index) => {
                     const wordObj = lessonsData[lessonKey].words.find(w => w.word === word);
                     
-                    let displayText = wordObj.word;
+                    let displayText = wordObj.word; 
                      if (wordObj.zhuyin && wordObj.core_char) {
                         const replacement = `${wordObj.core_char}<span class="text-base opacity-80">（${wordObj.zhuyin}）</span>`;
                         displayText = wordObj.word.replace(wordObj.core_char, replacement);
                     } else if (wordObj.zhuyin) {
                         displayText = `${wordObj.word}（${wordObj.zhuyin}）`;
                     }
-
 
                     const item = document.createElement('div');
                     item.className = 'history-item flex items-center gap-4';
