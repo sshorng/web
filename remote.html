@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPad 應急投影助手</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #222; color: white; }
+        video { width: 90%; max-height: 80vh; border: 2px solid #555; margin-top: 20px; background: #000; }
+        .controls { margin: 20px; padding: 15px; background: #333; border-radius: 8px; }
+        button { padding: 10px 20px; cursor: pointer; background: #007AFF; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h2>iPad 螢幕投影 (WebRTC)</h2>
+    
+    <div class="controls">
+        <div id="receiver-ui">
+            <p>你的電腦 ID: <strong id="my-id">連線中...</strong></p>
+            <p><small>在 iPad 上輸入此 ID 進行投影</small></p>
+        </div>
+        <hr>
+        <div id="sender-ui">
+            <input type="text" id="remote-id" placeholder="輸入電腦 ID">
+            <button onclick="startStreaming()">開始投影 (iPad 端點擊)</button>
+        </div>
+    </div>
+
+    <video id="remote-video" autoplay playsinline controls></video>
+
+    <script>
+        const peer = new Peer(); // 建立 Peer 連線
+        const videoElement = document.getElementById('remote-video');
+
+        // 當連線建立成功，顯示自己的 ID
+        peer.on('open', (id) => {
+            document.getElementById('my-id').innerText = id;
+        });
+
+        // 【接收端邏輯】當有人打電話進來（傳送畫面）
+        peer.on('call', (call) => {
+            call.answer(); // 接聽連線
+            call.on('stream', (remoteStream) => {
+                videoElement.srcObject = remoteStream; // 將畫面放進影片視窗
+            });
+        });
+
+        // 【發送端邏輯】iPad 啟動擷取並傳送
+        async function startStreaming() {
+            const remoteId = document.getElementById('remote-id').value;
+            if (!remoteId) return alert('請輸入電腦顯示的 ID');
+
+            try {
+                // 擷取螢幕與音訊
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: "always" },
+                    audio: true // 包含系統聲音
+                });
+
+                const call = peer.call(remoteId, stream);
+                alert('投影啟動中...');
+            } catch (err) {
+                console.error("擷取失敗:", err);
+                alert("投影失敗，請確保使用 HTTPS 環境並允許權限。");
+            }
+        }
+    </script>
+</body>
+</html>
