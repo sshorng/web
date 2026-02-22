@@ -1,0 +1,3018 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>國文心智圖引導助理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden
+        }
+
+        body {
+            font-family: 'Noto Sans TC', system-ui, sans-serif;
+            background: #faf8f0;
+            color: #2c2c2c;
+            -webkit-font-smoothing: antialiased
+        }
+
+        /* ===== Chinese Theme Palette ===== */
+        :root {
+            --ink: #1a1a2e;
+            --vermilion: #b03a2e;
+            --paper: #faf8f0;
+            --gold: #b8860b;
+            --cloud: #f5f0e8;
+            --mist: #e8e0d4;
+            --jade: #2e7d60;
+            --text: #2c2c2c;
+            --text-light: #6b6358;
+            --shadow: rgba(26, 26, 46, .08);
+        }
+
+        /* ===== Views ===== */
+        .view {
+            display: none;
+            height: 100vh;
+            width: 100%
+        }
+
+        .view.active {
+            display: flex
+        }
+
+        /* ===== Landing ===== */
+        #viewLanding {
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: linear-gradient(160deg, #faf8f0 0%, #f0e6d3 50%, #e8dcc8 100%);
+            position: relative;
+            overflow: hidden
+        }
+
+        #viewLanding::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c-4 8-12 12-20 12 8 4 12 12 12 20-4-8-12-12-20-12 8-4 12-12 12-20' fill='none' stroke='%23d4c5a9' stroke-width='.5' opacity='.3'/%3E%3C/svg%3E");
+            opacity: .4
+        }
+
+        .landing-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 600px;
+            padding: 40px
+        }
+
+        .landing-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: clamp(28px, 5vw, 42px);
+            font-weight: 900;
+            color: var(--ink);
+            letter-spacing: .15em;
+            margin-bottom: 8px
+        }
+
+        .landing-sub {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 48px;
+            letter-spacing: .1em
+        }
+
+        .role-cards {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap
+        }
+
+        .role-card {
+            width: 220px;
+            padding: 40px 24px;
+            background: rgba(255, 255, 255, .85);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--mist);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all .3s;
+            text-align: center
+        }
+
+        .role-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px var(--shadow);
+            border-color: var(--gold)
+        }
+
+        .role-icon {
+            font-size: 48px;
+            margin-bottom: 16px
+        }
+
+        .role-label {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 6px
+        }
+
+        .role-desc {
+            font-size: 12px;
+            color: var(--text-light)
+        }
+
+        /* ===== Password Modal ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 46, .5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center
+        }
+
+        .modal-overlay.active {
+            display: flex
+        }
+
+        .modal-box {
+            background: var(--paper);
+            border: 1px solid var(--mist);
+            border-radius: 16px;
+            padding: 32px;
+            width: 340px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .15);
+            animation: modalIn .3s ease
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(.95)
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1)
+            }
+        }
+
+        .modal-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 16px;
+            text-align: center
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--mist);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--cloud);
+            outline: none;
+            transition: border .2s
+        }
+
+        .modal-input:focus {
+            border-color: var(--gold)
+        }
+
+        .modal-error {
+            color: var(--vermilion);
+            font-size: 12px;
+            margin-top: 8px;
+            min-height: 18px;
+            text-align: center
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+            letter-spacing: .05em;
+            flex: 1
+        }
+
+        .btn-primary {
+            background: var(--ink);
+            color: #fff
+        }
+
+        .btn-primary:hover {
+            background: #2a2a4e
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-light);
+            border: 1px solid var(--mist)
+        }
+
+        .btn-ghost:hover {
+            background: var(--cloud)
+        }
+
+        .btn-danger {
+            background: #fef2f2;
+            color: var(--vermilion);
+            border: 1px solid #fecaca
+        }
+
+        .btn-danger:hover {
+            background: var(--vermilion);
+            color: #fff
+        }
+
+        .btn-gold {
+            background: var(--gold);
+            color: #fff
+        }
+
+        .btn-gold:hover {
+            background: #9a7209
+        }
+
+        .btn-jade {
+            background: var(--jade);
+            color: #fff
+        }
+
+        .btn-jade:hover {
+            background: #24664e
+        }
+
+        .btn:disabled {
+            opacity: .5;
+            cursor: not-allowed
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px var(--shadow);
+            animation: toastIn .3s ease;
+            max-width: 320px
+        }
+
+        .toast.success {
+            background: #ecfdf5;
+            color: var(--jade);
+            border: 1px solid #a7f3d0
+        }
+
+        .toast.error {
+            background: #fef2f2;
+            color: var(--vermilion);
+            border: 1px solid #fecaca
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* ===== Teacher Dashboard ===== */
+        #viewTeacher {
+            flex-direction: row;
+            background: var(--cloud)
+        }
+
+        .teacher-sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: var(--paper);
+            border-right: 1px solid var(--mist);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--mist);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .sidebar-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: .1em
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 8px
+        }
+
+        .lesson-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px
+        }
+
+        .lesson-item {
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all .2s;
+            margin-bottom: 4px;
+            border: 1px solid transparent
+        }
+
+        .lesson-item:hover {
+            background: var(--cloud)
+        }
+
+        .lesson-item.active {
+            background: var(--cloud);
+            border-color: var(--gold)
+        }
+
+        .lesson-item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink)
+        }
+
+        .lesson-item-meta {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 3px;
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .lesson-item-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block
+        }
+
+        .lesson-item-dot.ready {
+            background: var(--jade)
+        }
+
+        .lesson-item-dot.draft {
+            background: var(--gold)
+        }
+
+        .sidebar-footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--mist);
+            display: flex;
+            gap: 8px
+        }
+
+        .teacher-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .teacher-topbar {
+            height: 56px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--mist);
+            background: var(--paper)
+        }
+
+        .teacher-topbar-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--ink)
+        }
+
+        .teacher-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden
+        }
+
+        .teacher-editor {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto
+        }
+
+        .teacher-preview {
+            width: 45%;
+            min-width: 360px;
+            border-left: 1px solid var(--mist);
+            background: var(--paper);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .form-group {
+            margin-bottom: 20px
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 6px;
+            display: block;
+            letter-spacing: .08em;
+            text-transform: uppercase
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--mist);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+            outline: none;
+            transition: border .2s
+        }
+
+        .form-input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(184, 134, 11, .1)
+        }
+
+        .form-textarea {
+            height: 200px;
+            resize: none
+        }
+
+        .mode-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--mist);
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: inherit;
+            background: #fff;
+            cursor: pointer;
+            transition: all .2s;
+            font-weight: 500
+        }
+
+        .mode-btn.selected {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink)
+        }
+
+        .mode-btn:hover:not(.selected) {
+            background: var(--cloud)
+        }
+
+        .preview-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--mist);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .preview-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink)
+        }
+
+        .preview-canvas {
+            flex: 1;
+            position: relative;
+            overflow: hidden
+        }
+
+        .preview-canvas .canvas-dots {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: .03;
+            background-image: radial-gradient(#000 1.5px, transparent 1.5px);
+            background-size: 40px 40px
+        }
+
+        .preview-tree {
+            padding: 20px;
+            font-size: 13px;
+            line-height: 1.8;
+            color: var(--text);
+            white-space: pre-wrap;
+            font-family: 'Noto Sans TC', monospace;
+            overflow-y: auto;
+            height: 100%
+        }
+
+        .preview-actions {
+            padding: 12px 20px;
+            border-top: 1px solid var(--mist);
+            display: flex;
+            gap: 8px
+        }
+
+        .preview-actions {
+            padding: 12px 20px;
+            border-top: 1px solid var(--mist);
+            display: flex;
+            gap: 8px
+        }
+
+        #teacherPreviewCanvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #fff;
+            cursor: grab;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        #teacherPreviewCanvas:active {
+            cursor: grabbing;
+        }
+
+        #teacherLinesSvgPreview {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        #teacherNodesLayerPreview {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* ===== Student List ===== */
+        #viewStudentList {
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: linear-gradient(160deg, #faf8f0, #f0e6d3, #e8dcc8);
+            position: relative;
+            overflow: auto
+        }
+
+        .student-list-header {
+            text-align: center;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1
+        }
+
+        .student-list-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--ink);
+            letter-spacing: .15em
+        }
+
+        .student-list-sub {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 6px
+        }
+
+        .lesson-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            max-width: 800px;
+            width: 100%;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1
+        }
+
+        .lesson-card {
+            padding: 24px;
+            background: rgba(255, 255, 255, .9);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--mist);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all .3s;
+            text-align: center
+        }
+
+        .lesson-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px var(--shadow);
+            border-color: var(--gold)
+        }
+
+        .lesson-card-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 6px
+        }
+
+        .lesson-card-mode {
+            font-size: 11px;
+            color: var(--text-light);
+            display: inline-block;
+            padding: 2px 10px;
+            background: var(--cloud);
+            border-radius: 20px
+        }
+
+        /* ===== Lesson Dropdown ===== */
+        .lesson-dropdown {
+            appearance: none;
+            background: var(--cloud);
+            border: 1px solid var(--mist);
+            border-radius: 10px;
+            padding: 6px 30px 6px 12px;
+            font-family: 'Noto Serif TC', serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+            cursor: pointer;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231a1a2e' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            transition: all .2s;
+        }
+
+        .lesson-dropdown:hover {
+            border-color: var(--gold);
+        }
+
+        .lesson-dropdown:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(184, 134, 11, .15);
+        }
+
+        /* ===== Student Learn (Chat + Map) ===== */
+        #viewStudentLearn {
+            flex-direction: row
+        }
+
+        .panel-left {
+            width: 380px;
+            min-width: 380px;
+            display: flex;
+            flex-direction: column;
+            background: var(--paper);
+            border-right: 1px solid var(--mist);
+            box-shadow: 4px 0 24px var(--shadow);
+            z-index: 30;
+            position: relative
+        }
+
+        .panel-header {
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--mist);
+            background: var(--paper)
+        }
+
+        .panel-header .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .panel-header h1 {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: .1em;
+            color: var(--ink)
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--cloud);
+            color: var(--text-light);
+            transition: all .2s
+        }
+
+        .btn-icon:hover {
+            background: var(--mist)
+        }
+
+        .btn-icon svg {
+            width: 18px;
+            height: 18px
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px
+        }
+
+        .msg {
+            display: flex
+        }
+
+        .msg.user {
+            justify-content: flex-end
+        }
+
+        .msg-bubble {
+            max-width: 88%;
+            padding: 14px 18px;
+            border-radius: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+            word-break: break-word
+        }
+
+        .msg.user .msg-bubble {
+            background: var(--ink);
+            color: #fff;
+            border-top-right-radius: 4px;
+            box-shadow: 0 2px 10px rgba(26, 26, 46, .15)
+        }
+
+        .msg.model .msg-bubble {
+            background: var(--cloud);
+            color: var(--text);
+            border-top-left-radius: 4px
+        }
+
+        .msg-bubble p {
+            margin-bottom: 6px
+        }
+
+        .msg-bubble p:last-child {
+            margin-bottom: 0
+        }
+
+        .msg-bubble strong {
+            color: var(--vermilion);
+            font-weight: 700
+        }
+
+        .bullet-line {
+            display: flex;
+            gap: 6px;
+            margin: 3px 0
+        }
+
+        .bullet-dot {
+            color: var(--gold);
+            font-weight: bold
+        }
+
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            color: var(--text-light);
+            font-size: 13px;
+            animation: pulse 1.5s infinite
+        }
+
+        .loading-indicator svg {
+            width: 16px;
+            height: 16px;
+            color: var(--gold)
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .4
+            }
+        }
+
+        .error-box {
+            padding: 12px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--vermilion)
+        }
+
+        .input-bar {
+            padding: 12px 16px;
+            border-top: 1px solid var(--mist);
+            background: var(--paper)
+        }
+
+        .input-wrapper {
+            position: relative
+        }
+
+        .input-bar input {
+            width: 100%;
+            padding: 12px 52px 12px 16px;
+            border: 1px solid var(--mist);
+            border-radius: 24px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            background: var(--cloud);
+            transition: all .2s
+        }
+
+        .input-bar input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(184, 134, 11, .08)
+        }
+
+        .input-bar input:disabled {
+            opacity: .5
+        }
+
+        .btn-send {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 50%;
+            background: var(--ink);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .2s
+        }
+
+        .btn-send:hover:not(:disabled) {
+            background: #2a2a4e
+        }
+
+        .btn-send:disabled {
+            opacity: .4;
+            cursor: not-allowed
+        }
+
+        .btn-send svg {
+            width: 16px;
+            height: 16px
+        }
+
+        /* Canvas */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: var(--paper);
+            touch-action: none;
+        }
+
+        .canvas-dots {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: .04;
+            background-image: radial-gradient(var(--ink) 1px, transparent 1px);
+            background-size: 36px 36px
+        }
+
+        .canvas-transform {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            transform-origin: 0 0
+        }
+
+        .canvas-transform>svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible
+        }
+
+        .nodes-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%
+        }
+
+        .mm-node {
+            position: absolute;
+            pointer-events: auto;
+            transform: translate(-50%, -50%)
+        }
+
+        .mm-node-inner {
+            padding: 10px 20px;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 2px 12px var(--shadow);
+            border: 2px solid var(--mist);
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all .3s;
+            line-height: 1.3;
+            word-break: break-word
+        }
+
+        .mm-node-inner:hover {
+            transform: scale(1.05)
+        }
+
+        .mm-node.core .mm-node-inner {
+            background: var(--ink);
+            color: #fff;
+            box-shadow: 0 8px 30px rgba(26, 26, 46, .25);
+            transform: scale(1.1);
+            font-weight: 900;
+            font-size: 15px;
+            font-family: 'Noto Serif TC', serif;
+            padding: 14px 28px;
+            border: 2px solid var(--gold);
+            border-radius: 16px
+        }
+
+        .mm-node-actions {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            display: none;
+            gap: 4px;
+        }
+
+        .mm-node:hover .mm-node-actions {
+            display: flex;
+        }
+
+        .action-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--ink);
+            color: #fff;
+            border: 2px solid var(--paper);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px var(--shadow);
+            z-index: 10;
+            font-family: monospace;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .action-btn.del {
+            background: var(--vermilion);
+        }
+
+        .action-btn.add {
+            background: var(--jade);
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .mm-node.drag-over .mm-node-inner {
+            border: 2px dashed var(--gold) !important;
+            transform: scale(1.1);
+        }
+
+        .mm-node-text-input {
+            width: 100px;
+            border: none;
+            border-bottom: 2px solid var(--gold);
+            background: transparent;
+            font-size: inherit;
+            font-weight: inherit;
+            font-family: inherit;
+            color: inherit;
+            text-align: center;
+            outline: none;
+            padding: 0;
+            min-width: 60px;
+            max-width: 200px;
+        }
+
+        .mm-line {
+            fill: none;
+            stroke-linecap: round
+        }
+
+        .canvas-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 40
+        }
+
+        .ctrl-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--mist);
+            border-radius: 12px;
+            background: var(--paper);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .2s;
+            box-shadow: 0 2px 8px var(--shadow)
+        }
+
+        .ctrl-btn:hover {
+            background: var(--cloud)
+        }
+
+        .ctrl-btn.primary {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink)
+        }
+
+        .ctrl-btn svg {
+            width: 18px;
+            height: 18px
+        }
+
+        /* ===== Settings Panel (GAS URL) ===== */
+        .settings-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 46, .4);
+            backdrop-filter: blur(4px);
+            z-index: 90;
+            display: none;
+            align-items: center;
+            justify-content: center
+        }
+
+        .settings-overlay.active {
+            display: flex
+        }
+
+        .settings-box {
+            background: var(--paper);
+            border: 1px solid var(--mist);
+            border-radius: 16px;
+            padding: 28px;
+            width: 420px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .15);
+            animation: modalIn .3s ease
+        }
+
+        .settings-section {
+            margin-bottom: 20px
+        }
+
+        .settings-section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-light);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            margin-bottom: 8px
+        }
+
+        .share-block {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .share-block input {
+            flex: 1;
+            min-width: 180px
+        }
+
+        .qr-box {
+            text-align: center;
+            margin-top: 12px
+        }
+
+        .qr-box img {
+            max-width: 160px;
+            border-radius: 8px;
+            border: 1px solid var(--mist)
+        }
+
+        /* ===== Info Modal ===== */
+        .info-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 46, .5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center
+        }
+
+        .info-overlay.active {
+            display: flex
+        }
+
+        .info-box {
+            background: var(--paper);
+            border: 1px solid var(--mist);
+            border-radius: 16px;
+            padding: 28px;
+            width: 640px;
+            max-width: 90vw;
+            max-height: 80vh;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .15);
+            animation: modalIn .3s ease;
+            display: flex;
+            flex-direction: column
+        }
+
+        .info-code {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--ink);
+            color: #e0e0e0;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            line-height: 1.6;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 12px 0
+        }
+
+        textarea.preview-tree {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            font-family: 'Noto Sans TC', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            color: var(--ink);
+            resize: none;
+            padding: 16px;
+            outline: none;
+            white-space: pre;
+            overflow: auto;
+        }
+
+        /* Responsive */
+        @media(max-width:768px) {
+            .role-cards {
+                flex-direction: column;
+                align-items: center
+            }
+
+            .teacher-sidebar {
+                width: 100%;
+                min-width: auto;
+                max-height: 40vh
+            }
+
+            #viewTeacher {
+                flex-direction: column
+            }
+
+            .teacher-preview {
+                display: none
+            }
+
+            .panel-left {
+                width: 100%;
+                min-width: auto
+            }
+
+            #viewStudentLearn {
+                flex-direction: column
+            }
+
+            .canvas-area {
+                min-height: 300px
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ==================== VIEW: Landing (Hidden, not default) ==================== -->
+    <div class="view" id="viewLanding">
+        <div class="landing-content">
+            <h1 class="landing-title">國文心智圖</h1>
+            <p class="landing-sub">AI 驅動的教學引導工具</p>
+            <div class="role-cards">
+                <div class="role-card" id="cardTeacher">
+                    <div class="role-icon">📜</div>
+                    <div class="role-label">執教</div>
+                    <div class="role-desc">管理課文・生成心智圖</div>
+                </div>
+                <div class="role-card" id="cardStudent">
+                    <div class="role-icon">🖌️</div>
+                    <div class="role-label">習讀</div>
+                    <div class="role-desc">選課・互動學習</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Modal: Password ==================== -->
+    <div class="modal-overlay" id="modalPassword">
+        <div class="modal-box">
+            <div class="modal-title">教師驗證</div>
+            <input type="password" class="modal-input" id="inputPassword" placeholder="請輸入教師密碼" />
+            <div class="modal-error" id="passwordError"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="btnPasswordCancel">返回</button>
+                <button class="btn btn-primary" id="btnPasswordSubmit">進入後台</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Mind Map Preview Modal ==================== -->
+    <div class="modal-overlay" id="modalPreviewMap">
+        <div class="modal-box"
+            style="width:90vw; height:85vh; max-width:1400px; display:flex; flex-direction:column; padding:0; overflow:hidden">
+            <div class="preview-header" style="padding:16px 24px; border-bottom:1px solid var(--mist)">
+                <span class="preview-title" id="previewModalTitle" style="font-size:16px">心智圖呈現預覽</span>
+                <button class="btn btn-sm btn-ghost"
+                    onclick="document.getElementById('modalPreviewMap').classList.remove('active')"
+                    style="flex:none; width:auto">關閉預覽</button>
+            </div>
+            <div id="teacherPreviewCanvas" style="flex:1; position:relative">
+                <div class="canvas-dots"
+                    style="opacity:0.04; background-image:radial-gradient(var(--ink) 1px, transparent 1px); background-size:36px 36px">
+                </div>
+                <div class="canvas-transform" id="tPreviewTransform">
+                    <svg id="teacherLinesSvgPreview"></svg>
+                    <div class="nodes-layer" id="teacherNodesLayerPreview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW: Teacher Dashboard ==================== -->
+    <div class="view" id="viewTeacher">
+        <div class="teacher-sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">課文管理</span>
+                <button class="btn btn-sm btn-primary" id="btnAddLesson">＋ 新增</button>
+            </div>
+            <div class="lesson-list" id="lessonList">
+                <div style="padding:20px;text-align:center;color:var(--text-light);font-size:13px">載入中…</div>
+            </div>
+            <div class="sidebar-footer">
+                <button class="btn btn-sm btn-ghost" id="btnTeacherSettings" title="設定">⚙️ 設定</button>
+                <button class="btn btn-sm btn-ghost" id="btnTeacherLogout" style="color:var(--vermilion)">🚪 登出</button>
+                <button class="btn btn-sm btn-ghost" id="btnTeacherBack">← 返回學員頁</button>
+            </div>
+        </div>
+        <div class="teacher-main">
+            <div class="teacher-topbar">
+                <span class="teacher-topbar-title" id="teacherTopTitle">請選擇或新增課文</span>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-sm btn-danger" id="btnDeleteLesson" style="display:none">刪除</button>
+                </div>
+            </div>
+            <div class="teacher-body">
+                <div class="teacher-editor" id="teacherEditor" style="display:none">
+                    <div class="form-group">
+                        <label class="form-label">課次 (唯一 ID)</label>
+                        <input type="text" class="form-input" id="tLessonNum" placeholder="例：L01" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">課名</label>
+                        <input type="text" class="form-input" id="tLessonTitle" placeholder="例：木蘭詩" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">講義 / 課文內容</label>
+                        <textarea class="form-input form-textarea" id="tHandout" placeholder="貼上課文全文或教師講義…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">第一層分析方向</label>
+                        <div class="mode-group" id="tModeGroup">
+                            <button class="mode-btn selected" data-mode="auto">自動判斷</button>
+                            <button class="mode-btn" data-mode="structure">寫作結構優先</button>
+                            <button class="mode-btn" data-mode="content">內容段落優先</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">自訂生成指令 (選填)</label>
+                        <textarea class="form-input" id="tCustomPrompt" rows="2"
+                            placeholder="例：請加強寫作動機分析、避開某些詞彙…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-gold" id="btnGenMap" style="width:100%">🔍 生成參考心智圖</button>
+                    </div>
+                </div>
+                <div class="teacher-preview" id="teacherPreview" style="display:none">
+                    <div class="preview-header">
+                        <span class="preview-title">參考心智圖</span>
+                        <div style="display:flex; gap:8px; align-items:center">
+                            <span id="tDirectionTag"
+                                style="font-size:11px;padding:2px 10px;background:var(--cloud);border-radius:20px;color:var(--text-light); white-space:nowrap">—</span>
+                            <button class="btn btn-sm btn-ghost" id="btnTogglePreviewMode"
+                                style="padding:4px 8px; font-size:11px">🖼️ 全螢幕預覽</button>
+                        </div>
+                    </div>
+                    <div class="preview-canvas">
+                        <div class="canvas-dots"></div>
+                        <textarea class="preview-tree" id="tPreviewTree"
+                            placeholder="點擊「生成參考心智圖」以產生，或直接編輯樹狀結構…"></textarea>
+                    </div>
+                    <div class="preview-actions">
+                        <button class="btn btn-sm btn-jade" id="btnApplyEdit" style="width:100%">✅ 套用修改並自動儲存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW: Student Learn (DEFAULT) ==================== -->
+    <div class="view active" id="viewStudentLearn">
+        <main class="panel-left">
+            <div class="panel-header">
+                <div class="logo-group">
+                    <select class="lesson-dropdown" id="lessonSelect">
+                        <option value="">選擇課文…</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:4px">
+                    <button class="btn-icon" id="btnClearProgress" title="清空目前的進度"
+                        style="color:var(--vermilion);opacity:.6">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+                        </svg>
+                    </button>
+                    <button class="btn-icon" id="btnTeacherEntry" title="教師入口"
+                        style="font-size:10px;color:var(--text-light);opacity:.4">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="chat-area" id="chatArea">
+                <div
+                    style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-light);font-size:14px;text-align:center;padding:40px">
+                    ← 請先選擇課文</div>
+            </div>
+            <form class="input-bar" id="chatForm">
+                <div class="input-wrapper">
+                    <input type="text" id="chatInput" placeholder="回答助教…" autocomplete="off" />
+                    <button type="submit" class="btn-send" id="btnSend" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m22 2-7 20-4-9-9-4z" />
+                            <path d="M22 2 11 13" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </main>
+        <section class="canvas-area" id="canvasArea">
+            <div class="canvas-dots"></div>
+            <div class="canvas-transform" id="canvasTransform">
+                <svg id="linesSvg"></svg>
+                <div class="nodes-layer" id="nodesLayer"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Canvas Controls -->
+    <div class="canvas-controls" id="canvasControls" style="display:none">
+        <button class="ctrl-btn" id="btnZoomIn" title="放大"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                <line x1="11" x2="11" y1="8" y2="14" />
+                <line x1="8" x2="14" y1="11" y2="11" />
+            </svg></button>
+        <button class="ctrl-btn" id="btnZoomOut" title="縮小"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                <line x1="8" x2="14" y1="11" y2="11" />
+            </svg></button>
+        <button class="ctrl-btn primary" id="btnCenter" title="置中"><svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="2" fill="currentColor" />
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+            </svg></button>
+    </div>
+
+    <!-- ==================== Settings Overlay ==================== -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-box">
+            <div class="modal-title">後台設定 & 分享</div>
+            <div class="settings-section">
+                <div class="settings-section-title">系統核心設定 (連動試算表)</div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" style="font-size: 12px;">Gemini API Keys (一行一個)</label>
+                    <textarea class="form-input" id="setApiKey" rows="3" placeholder="貼上 API Keys…"
+                        style="font-family: monospace; font-size: 12px;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" style="font-size: 12px;">教師端生成模型</label>
+                    <input type="text" class="form-input" id="setTeacherModel" placeholder="例如 gemini-1.5-pro" />
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" style="font-size: 12px;">學生端導師模型</label>
+                    <input type="text" class="form-input" id="setStudentModel" placeholder="例如 gemini-2.0-flash" />
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" style="font-size: 12px;">教師後台密碼</label>
+                    <input type="password" class="form-input" id="setTeacherPw" placeholder="留空則不修改" />
+                </div>
+                <button class="btn btn-primary" id="btnSaveSettings" style="width:100%; margin-top:8px">💾
+                    儲存設定至試算表</button>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">課程分享連結</div>
+                <div class="share-block">
+                    <input type="text" class="form-input" id="shareUrl" readonly placeholder="點擊下方按鈕產生" />
+                    <button class="btn btn-sm btn-gold" id="btnGenShare">產生</button>
+                </div>
+                <div class="qr-box" id="qrBox"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost"
+                    onclick="document.getElementById('settingsOverlay').classList.remove('active')">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Confirm Modal ==================== -->
+    <div class="info-overlay" id="modalConfirm">
+        <div class="info-box" style="max-width:320px; text-align:center">
+            <div class="modal-title" id="confirmTitle">確認操作</div>
+            <p id="confirmMessage" style="font-size:14px; color:var(--text-light); margin-bottom:24px"></p>
+            <div class="modal-actions" style="justify-content:center; gap:12px">
+                <button class="btn btn-ghost" id="btnConfirmCancel">取消</button>
+                <button class="btn btn-danger" id="btnConfirmOk">確定</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Toast container -->
+    <div id="toastContainer"></div>
+
+    <script>
+
+        // ============================================================
+        //  【如果你想固定 GAS 網址，請在這裡填入】
+        //  例如: const DEFAULT_GAS_URL = "https://script.google.com/macros/s/xxxx/exec";
+        // ============================================================
+        const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbyWkT83xwBUVrhSXpzUbGp5Nc6n_wbRviV67t1z24S0Nl-RWljpi9BdwN2LlnffoX4wiA/exec";
+        const STORAGE_GAS = "mm_gas_url";
+        const STORAGE_STUDENT = "mm_student_v2";
+        const STORAGE_TEACHER_AUTH = "mm_teacher_auth";
+        const STORAGE_TEACHER_LAST_ID = "mm_teacher_last_id";
+
+        // ============================================================
+        //  GAS URL Resolution (URL param > localStorage > default)
+        // ============================================================
+        function resolveGasUrl() { return DEFAULT_GAS_URL; }
+        let GAS_URL = resolveGasUrl();
+
+        // ==================== Custom Modals Helpers ====================
+        let onConfirmApprove = null;
+        function showConfirm(title, message, onApprove) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            onConfirmApprove = onApprove;
+            document.getElementById('modalConfirm').classList.add('active');
+        }
+
+        // ============================================================
+        //  Toast (replaces alert/confirm)
+        // ============================================================
+        function showToast(msg, type = 'success', duration = 3000) {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = 'toast ' + type;
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, duration);
+        }
+
+        // ============================================================
+        //  API Helpers
+        // ============================================================
+        async function apiGet(action, params = {}) {
+            if (!GAS_URL) throw new Error('尚未設定 GAS URL');
+            const url = new URL(GAS_URL);
+            url.searchParams.set('action', action);
+            Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
+            // GAS redirect workaround
+            const res = await fetch(url.toString(), { redirect: 'follow' });
+            if (!res.ok) throw new Error('API Error: ' + res.status);
+            return res.json();
+        }
+        async function apiPost(body) {
+            if (!GAS_URL) throw new Error('尚未設定 GAS URL');
+            const res = await fetch(GAS_URL, {
+                method: 'POST', redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error('API Error: ' + res.status);
+            return res.json();
+        }
+
+        // ============================================================
+        //  View Switching
+        // ============================================================
+        const views = ['viewLanding', 'viewTeacher', 'viewStudentLearn'];
+        function switchView(id) {
+            views.forEach(v => document.getElementById(v).classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('canvasControls').style.display = id === 'viewStudentLearn' ? 'flex' : 'none';
+        }
+
+        // ============================================================
+        //  Prompts & AI Configuration
+        // ============================================================
+        const MODEL_NAME = "gemini-2.5-flash"; // 預設值，實際運作時後端代理會優先使用試算表設定
+
+        const SYSTEM_PROMPT = `你是國文心智圖引導教練。
+
+## Profile
+- Role: 國文導師
+- Language: 繁體中文
+- Description: 你的引導順序有層次：優先確立 L1 文本結構，接著是 L2 意義段。面對複雜的意義段，再引導出 L3 次標題，最後才收束於最底層的原文證據。
+
+## 📂 內部底蘊 (Hidden Baseline)
+1. 參照「目標參考圖」預判寫作手法、意義段核心與次標題層次。
+2. 未經與學生討論的後續分支情節，絕對不准出現在對話或 yaml 樹狀圖中。
+
+## 📐 Canvas 格式駭客 (YAML Format Hack)
+為了更新前端介面，**必須**將當前已解鎖的心智圖狀態包裹在 \`\`\`yaml\`\`\` 區塊內回傳。
+1. **樹狀線條公式 (請嚴格遵守方括號與縮排)**：
+   - 根節點：📦 [課名]
+   - 第一層：├── 🔖 [L1 文本結構]
+   - 第二層：│   ├── 🔹 [L2 意義段大意]
+   - 第三層：│   │   ├── 🔸 [L3 次標題]
+   - 第四層：│   │   │   ├── 💬 [L4 原文短句/關鍵詞]
+
+## 🛑 核心禁止令與引導原則
+1. **絕不劇透解答標題**：嚴禁主動喊出目標圖標題名稱。引導學生說出口，或是認可學生提出的同義詞。
+2. **原文即時訂正與解鎖 (重要)**：
+   - 當學生引用原文或關鍵詞出現錯字時（例如將「帖花黃」寫成「貼花黃」），**你必須在對話中提醒學生正確寫法，並「同時」在該次回覆的 YAML 區塊中，直接將該節點內容改為正確的原文文字。**
+   - **不需要求學生重複輸入**。只要學生意思表達對了，即便有錯字，也要在提醒後直接解鎖「正確版」的心智圖節點。
+3. **極度尊重學生的原創用詞 (最高優先級)**：
+   - 目標參考圖「僅供大方向引導」，**絕不要求**學生講出跟參考圖一模一樣的字眼。
+   - 當學生回答的核心意涵對了、或提出了合理的脈絡觀點時（例如參考圖是「虔誠宗教情懷」，學生回答「求佛」），你**必須直接採納學生的原話與字眼**來畫出 YAML 節點，**「絕對禁止」**為了貼合參考圖而擅自把學生的心血替換成標準答案。
+   - 只有在學生回答的句子過於冗長繁雜時，你才能稍微幫忙精簡提煉，但依然要保留學生的關鍵字眼與風格。
+   - **⚠️ 核心禁止附和**：只有當學生給出**明顯錯誤**、惡搞、或嚴重背離文本脈絡與文體的答案（例如：原文是「佛」卻回答「上帝」，這是一篇新詩卻回答議論文的「引、本、結」）時，才不准畫入 YAML 中，並溫和點出錯誤、給予線索引導。
+4. **說對即解鎖，解鎖必畫圖**：每輪回覆必須輸出且只能輸出一段完整的 \`\`\`yaml 區塊。
+5. **視覺清爽原則**：若節點字數過長，請在繪製 YAML 時適度精簡標題內容。
+
+【目標參考圖 (Target Map)】:
+{{TARGET_MAP}}`;
+
+        const GENERATE_MAP_PROMPT = `你是國文教學與心智圖專家。請分析以下課文，產生一份具備教學層次感、發散性且結構均衡的心智圖結構（JSON格式）。
+
+## 核心設計邏輯 (L1-L4 層次)
+你的分析必須嚴格遵守以下四層架構，這與後續的 AI 學生引導對話完全對接：
+
+1. **第一層：L1 文本結構 (標籤格式: 🔖 [名稱])**
+   - 數量：建議 **2-5 個分支**。
+   - 重點：從宏觀視角看課文內容的分類（如：背景/過程/結果、感官/情感/哲思、起/承/轉/合）。
+   - 字數：6 字以內。
+
+2. **第二層：L2 意義段 (標籤格式: 🔹 [名稱])**
+   - 數量：每個 L1 節點下，**優先尋找**具備 2 個或以上的並列大意；若內容單一則不強求。
+   - 重點：針對 L1 內容的進一步摘要，描述該段落的核心意義或情節重心。
+   - 字數：12 字以內。
+
+3. **第三層：L3 次標題 (標籤格式: 🔸 [名稱])**
+   - 數量：每個 L2 節點下，**建議**分析具備發散性的細節/手法；若邏輯垂直則可單支出去。
+   - 重點：剖析寫作手法（譬喻、對比）、情感轉折點或更細緻的邏輯拆解。
+   - 字數：15 字以內。
+
+4. **第四層：L4 原文證據 (標籤格式: 💬 [內容])**
+   - 重點：直接擷取課文中的精華關鍵字、短句或證據。
+   - 要求：必須是真實出現在原文中的文字。
+
+## 📐 結構平衡原則 (Balanced Structure)
+心智圖應兼顧「發散性」與「邏輯完整性」：
+- **鼓勵發散**：若文本層次豐富，請優先以多分支形式呈現，避免冗長的條列。
+- **尊重邏輯**：若某些概念在學理或情節上確實屬於單一脈絡，則允許單鏈產出，不須為了分支而強行拆分。
+- **目標**：產出一份既能反映文本真實邏輯，又具備良好視覺開展感的參考圖。
+
+## 生成規範
+- **中心節點**：label 為「📦 [課文名稱]」。
+- **方向模式**：{{MODE_HINT}}
+- **JSON 格式**：\`{ "id":"root", "label":"📦 課名", "direction":"模式名稱", "children": [] }\`
+- **層級標記**：請在 label 前方加入對應的符號 (🔖, 🔹, 🔸, 💬)。
+- **只回傳 JSON**：不要有任何前言或後語。
+
+課名：{{TITLE}}
+課文/講義內容：
+{{CONTENT}}`;
+
+        const MODE_HINTS = {
+            auto: '2. 第一層標題限 2~5 個。direction 填入 "寫作結構" 或 "內容段落"。優先尋找文本中的對比、因果或時序並列關係，確保各分支份量均衡。',
+            structure: '2. **硬性要求**：第一層必須使用專業結構術語（敘事、說理、抒感、評價、議論、說明、描寫等）。第一層數量限 2~5 個。JSON 中的 direction 欄位必須正確填入 "寫作結構"。嚴禁第一層直接出現情節描述。',
+            content: '2. **內容導向**：將全文情節合併為 2~5 個大主題。應確保主題之間是並列關係，而非單一的時間線。JSON 中的 direction 欄位必須填入 "內容段落"。'
+        };
+
+        const BRANCH_COLORS = ['#b03a2e', '#2e7d60', '#b8860b', '#2563eb', '#7c3aed', '#db2777', '#0891b2'];
+
+        let tPreviewState = { x: 0, y: 0, k: 0.6 }; // 教師預覽用的縮放狀態
+        let isPreviewMapMode = false;
+
+        // ============================================================
+        //  Student State (localStorage only)
+        // ============================================================
+        let studentState = { messages: [], mindMap: null, lessonId: null, lessonTitle: '', targetMap: null };
+        function loadStudentState() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_STUDENT)) || { messages: [], mindMap: null, lessonId: null, lessonTitle: '', targetMap: null }; } catch (e) { return { messages: [], mindMap: null, lessonId: null, lessonTitle: '', targetMap: null }; }
+        }
+        function saveStudentState() { localStorage.setItem(STORAGE_STUDENT, JSON.stringify(studentState)); }
+        function resetStudentState() { studentState = { messages: [], mindMap: null, lessonId: null, lessonTitle: '', targetMap: null }; saveStudentState(); }
+
+        // ============================================================
+        //  Teacher State (in-memory, saved to GAS)
+        // ============================================================
+        let teacherLessons = [];
+        let currentLesson = null;
+        let isLoading = false;
+
+        // ============================================================
+        //  Utility Functions
+        // ============================================================
+        function uid() { return 'n-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5); }
+        function normalize(s) { return String(s).replace(/[^\w\u4e00-\u9fa5]/g, '').trim(); }
+        function filterBadNodes(label) {
+            if (!label || typeof label !== 'string') return false;
+            const bad = [/總覽/, /確認/, /^\d+$/, /待定/, /未命名/, /幾個/, /部分/, /個$/, /^\d+/];
+            return !bad.some(p => p.test(label));
+        }
+        function serializeTree(node, indent = 0) {
+            const prefix = '  '.repeat(indent) + (indent > 0 ? '- ' : '');
+            let result = prefix + (node.label || '') + '\n';
+            if (node.children) node.children.forEach(c => { result += serializeTree(c, indent + 1); });
+            return result;
+        }
+        function serializeMindMap(node) {
+            const labels = [];
+            const traverse = (n) => { if (n && n.label) labels.push(n.label); if (n && Array.isArray(n.children)) n.children.forEach(traverse); };
+            traverse(node);
+            return labels.join(', ');
+        }
+        function renderSmartContent(content) {
+            if (!content) return '';
+            // 移除所有類型的代碼區塊 (支援 ```yaml, ```Yaml, ```YAML 或純 ```)
+            let cleaned = content.replace(/```(?:yaml|Yaml|YAML)?[\s\S]*?```/gi, '').trim();
+
+            // 處理換行與加粗
+            return cleaned
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        }
+
+        function parseYamlTree(text, defaultRootLabel) {
+            const lines = text.split('\n');
+            if (lines.length === 0) return null;
+
+            let rootLabel = defaultRootLabel;
+            let startIndex = 0;
+
+            // 找出根節點
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const match = line.match(/(?:\[?📦\]?)\s*(.*)/); // 支援 [📦] 或 📦
+                if (match) {
+                    let candidate = match[1].trim();
+                    if (candidate.startsWith('[')) candidate = candidate.substring(1);
+                    if (candidate.endsWith(']')) candidate = candidate.slice(0, -1);
+                    rootLabel = candidate;
+                    startIndex = i + 1;
+                    break;
+                }
+            }
+
+            const root = { id: uid(), label: rootLabel, children: [], revealed: true };
+            const stack = [{ node: root, indent: -1 }];
+
+            for (let i = startIndex; i < lines.length; i++) {
+                let raw = lines[i];
+                if (!raw.trim()) continue;
+
+                // 移除樹狀引導符號但保留前導空格計算縮排
+                const cleanStr = raw.replace(/[│├─└]/g, ' ');
+                const match = cleanStr.match(/^(\s*)(.+)/);
+                if (!match) continue;
+
+                const indentLevel = match[1].length;
+                let content = match[2].trim();
+
+                // 提取 [] 中的文字
+                let label = content;
+                const labelMatch = content.match(/\[([^\]]+)\]/);
+                if (labelMatch) {
+                    label = labelMatch[1].trim();
+                } else {
+                    // 若無 [] 則移除圖示，使用 (?:...) 替換字元集避免 Emoji Surrogate Pair 被拆斷
+                    label = content.replace(/^(?:🔖|🔹|🔸|💬|📦|[#*\-?])\s*/, '').trim();
+                }
+
+                if (!label || label === 'yaml') continue; // 排除誤抓的語法標籤
+
+                const newNode = { id: uid(), label: label, children: [], revealed: true };
+
+                // 根據縮排層級尋找父節點
+                while (stack.length > 1 && stack[stack.length - 1].indent >= indentLevel) {
+                    stack.pop();
+                }
+
+                stack[stack.length - 1].node.children.push(newNode);
+                stack.push({ node: newNode, indent: indentLevel });
+            }
+            return root;
+        }
+
+        // ============================================================
+        //  Generate Target Map (Gemini API)
+        // ============================================================
+        async function generateTargetMap(title, handout, mode, customPrompt = '') {
+            const modeHint = MODE_HINTS[mode] || MODE_HINTS.auto;
+            let prompt = GENERATE_MAP_PROMPT.replace('{{MODE_HINT}}', modeHint).replace('{{TITLE}}', title).replace('{{CONTENT}}', handout);
+
+            if (customPrompt.trim()) {
+                prompt += `\n\n## 教師特別指令 (請優先遵守):\n${customPrompt}`;
+            }
+
+            const payload = {
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
+            };
+
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    // 傳入 source: 'teacher' 指定使用教師端模型
+                    const response = await apiPost({ action: 'proxy_gemini', source: 'teacher', payload: payload });
+
+                    if (response.error) {
+                        const errMsg = typeof response.error === 'string' ? response.error : (response.error.message || JSON.stringify(response.error));
+                        if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
+                            await new Promise(r => setTimeout(r, (attempt + 1) * 3000));
+                            continue;
+                        }
+                        throw new Error(errMsg);
+                    }
+
+                    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error('Empty response');
+
+                    let jsonStr = text.trim();
+                    const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+                    if (fenceMatch) jsonStr = fenceMatch[1].trim();
+                    return JSON.parse(jsonStr);
+                } catch (e) {
+                    if (attempt === 2) throw e;
+                    showToast(`生成嘗試 ${attempt + 1} 失敗，準備重試…`, 'warning');
+                    console.warn(`Attempt ${attempt + 1} failed, retrying...`, e);
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            }
+            throw new Error('API 調用失敗，請稍後再試');
+        }
+
+        // ============================================================
+        //  Mind Map Layout & Render
+        // ============================================================
+        let transform = { x: 0, y: 0, k: 1 };
+        let isDragging = false, lastMouse = { x: 0, y: 0 };
+
+        // 新增：遞迴計算每個節點所需的「子樹寬度」(或佔比)
+        function calcSubtreeWeight(node) {
+            if (!node.children || node.children.length === 0) return 1;
+            let weight = 0;
+            node.children.forEach(c => { weight += calcSubtreeWeight(c); });
+            return Math.max(weight, 1.2); // 避免太窄
+        }
+
+        function calcNodePositions(node, level, parentAngle, totalParentWeight, weightOffset, parentPos, index = 0) {
+            // Root node handled specifically
+            if (level === 0) {
+                const pos = { x: (node.offsetX || 0), y: (node.offsetY || 0) };
+                const results = [{ node, pos, level, index: 0, parentPos: null }];
+                if (node.children && node.children.length > 0) {
+                    const totalWeight = calcSubtreeWeight(node);
+                    let currentWeightOffset = 0;
+                    node.children.forEach((c, i) => {
+                        const cWeight = calcSubtreeWeight(c);
+                        const centerAngle = (currentWeightOffset + cWeight / 2) / totalWeight * 360 - 90;
+                        results.push(...calcNodePositions(c, 1, centerAngle, totalWeight, 0, pos, i));
+                        currentWeightOffset += cWeight;
+                    });
+                }
+                return results;
+            }
+
+            const currentWeight = calcSubtreeWeight(node);
+            // 增加深層間距，防止重疊
+            const distance = level === 1 ? 320 : (level === 2 ? 260 : 220);
+            const rad = parentAngle * (Math.PI / 180);
+            const pos = {
+                x: parentPos.x + Math.cos(rad) * distance + (node.offsetX || 0),
+                y: parentPos.y + Math.sin(rad) * distance + (node.offsetY || 0)
+            };
+
+            const results = [{ node, pos, level, index, parentAngle, parentPos }];
+
+            if (node.children && node.children.length > 0) {
+                const totalWeight = currentWeight;
+                let currentWeightOffset = 0;
+                // 子層展開角度動態擴張
+                const spreadAngle = level === 1 ? 180 : (level === 2 ? 140 : 120);
+                const startAngle = parentAngle - spreadAngle / 2;
+
+                node.children.forEach((c, i) => {
+                    const cWeight = calcSubtreeWeight(c);
+                    // 確保鄰近節點有足夠 Angular 距離
+                    const cAngle = startAngle + (currentWeightOffset + cWeight / 2) / totalWeight * spreadAngle;
+                    results.push(...calcNodePositions(c, level + 1, cAngle, totalWeight, 0, pos, i));
+                    currentWeightOffset += cWeight;
+                });
+            }
+            return results;
+        }
+
+        function generatePath(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const cp1x = x1 + dx * 0.5;
+            const cp2x = x1 + dx * 0.5;
+            return `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp2x} ${y2}, ${x2} ${y2}`;
+        }
+
+        function getBranchColor(flat, nodeId) {
+            const find = (id) => {
+                for (const item of flat) {
+                    if (item.node.id === id) {
+                        if (item.level === 1) return item.index;
+                        if (item.level === 0) return -1;
+                        for (const p of flat) {
+                            if (p.node.children && p.node.children.some(c => c.id === id)) return find(p.node.id);
+                        }
+                    }
+                }
+                return 0;
+            };
+            const idx = find(nodeId);
+            return idx < 0 ? 'var(--ink)' : BRANCH_COLORS[idx % BRANCH_COLORS.length];
+        }
+
+        function renderMindMap() {
+            if (!studentState.mindMap) return;
+            // 使用全新的權重演算法計算位置
+            const flat = calcNodePositions(studentState.mindMap, 0, 0, 0, 0, { x: 0, y: 0 });
+
+            const svg = document.getElementById('linesSvg');
+            let svgHTML = '';
+            flat.forEach(item => {
+                if (item.level === 0 || !item.parentPos) return;
+                const color = getBranchColor(flat, item.node.id);
+                const sw = Math.max(1, 4 - item.level); // 越深層線條越細
+                svgHTML += `<path class="mm-line" d="${generatePath(item.parentPos.x, item.parentPos.y, item.pos.x, item.pos.y)}" stroke="${color}" stroke-width="${sw}" fill="none" opacity="0.6" style="transition: all 0.3s"/>`;
+            });
+            svg.innerHTML = svgHTML;
+
+            const layer = document.getElementById('nodesLayer');
+            let nodesHTML = '';
+            flat.forEach(item => {
+                const isRoot = item.level === 0;
+                const cls = isRoot ? 'mm-node core' : 'mm-node';
+                const color = item.level > 0 ? getBranchColor(flat, item.node.id) : '';
+                const style = item.level > 0 ? `border-color:${color}; box-shadow: 0 4px 12px ${color}22;` : '';
+
+                // 計算適當的 z-index, 根節點最高
+                const zIndex = 100 - item.level;
+
+                // 去除前面的特定符號
+                const cleanLabel = item.node.label.replace(/^(?:🔖|🔹|🔸|💬|📦|[#*\-?])\s*/, '').trim();
+
+                nodesHTML += `
+                    <div class="${cls}" data-id="${item.node.id}"
+                         style="left:${item.pos.x}px; top:${item.pos.y}px; z-index:${zIndex};">
+                        <div class="mm-node-inner" style="${style}">
+                            <div class="mm-node-text" ondblclick="editNodeInline(event, '${item.node.id}')" title="雙擊可編輯">${item.level >= 2 && cleanLabel.length > 8 ? '<small>' + cleanLabel + '</small>' : cleanLabel}</div>
+                            <div class="mm-node-actions">
+                                <button class="action-btn add" title="新增子節點" onclick="addChildNode(event, '${item.node.id}')">+</button>
+                                ${!isRoot ? `<button class="action-btn del" title="刪除節點" onclick="deleteNode(event, '${item.node.id}')">×</button>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            layer.innerHTML = nodesHTML;
+        }
+        // ============================================================
+        //  Mind Map Editing & Interaction (Pointer Event)
+        // ============================================================
+        let draggedNodeInfo = null;
+        let isDraggingCanvas = false;
+        let hoverTargetId = null;
+
+        function findNodeAndParent(id, curr = studentState.mindMap, parent = null) {
+            if (!curr) return null;
+            if (curr.id === id) return { node: curr, parent };
+            if (curr.children) {
+                for (let c of curr.children) {
+                    const res = findNodeAndParent(id, c, curr);
+                    if (res) return res;
+                }
+            }
+            return null;
+        }
+
+        window.addChildNode = function (e, parentId) {
+            e.stopPropagation();
+            const res = findNodeAndParent(parentId);
+            if (!res) return;
+            if (!res.node.children) res.node.children = [];
+            const newNode = { id: uid(), label: '新節點', children: [], offsetX: 0, offsetY: 0 };
+            res.node.children.push(newNode);
+            saveStudentState();
+            renderMindMap();
+            setTimeout(() => {
+                const el = document.querySelector(`.mm-node[data-id="${newNode.id}"] .mm-node-text`);
+                if (el) el.dispatchEvent(new Event('dblclick'));
+            }, 50);
+        };
+
+        window.deleteNode = function (e, id) {
+            e.stopPropagation();
+            showConfirm('刪除節點', '確定要刪除此節點及其所有子分支嗎？', () => {
+                const res = findNodeAndParent(id);
+                if (res && res.parent) {
+                    res.parent.children = res.parent.children.filter(c => c.id !== id);
+                    saveStudentState();
+                    renderMindMap();
+                    showToast('節點已刪除');
+                    document.getElementById('modalConfirm').classList.remove('active');
+                }
+            });
+        };
+
+        window.editNodeInline = function (e, id) {
+            e.stopPropagation();
+            const el = e.currentTarget;
+            if (el.querySelector('input')) return;
+
+            let currentLabel = el.innerText.trim();
+            const width = Math.max(80, currentLabel.length * 15);
+            el.innerHTML = `<input type="text" class="mm-node-text-input" style="width:${width}px" value="${currentLabel}" />`;
+            const inp = el.querySelector('input');
+            inp.focus();
+            inp.select();
+
+            const finishEdit = () => {
+                const newVal = inp.value.trim() || '未命名';
+                const res = findNodeAndParent(id);
+                if (res) {
+                    res.node.label = newVal;
+                    saveStudentState();
+                    renderMindMap();
+                }
+            };
+
+            inp.addEventListener('blur', finishEdit);
+            inp.addEventListener('keydown', (ke) => {
+                if (ke.key === 'Enter') {
+                    inp.removeEventListener('blur', finishEdit);
+                    finishEdit();
+                }
+                ke.stopPropagation();
+            });
+            inp.addEventListener('pointerdown', (ke) => ke.stopPropagation());
+        };
+
+        function applyTransform() {
+            document.getElementById('canvasTransform').style.transform = `translate(${transform.x}px,${transform.y}px) scale(${transform.k})`;
+        }
+        function centerCanvas() {
+            const area = document.getElementById('canvasArea');
+            if (!area) return;
+            transform = { x: area.clientWidth / 2, y: area.clientHeight / 2, k: 1 };
+            applyTransform();
+        }
+
+        function getEventPoint(e) {
+            if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        function initCanvasEvents() {
+            const area = document.getElementById('canvasArea');
+
+            // Zoom (Wheel)
+            area.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                transform.k = Math.max(0.2, Math.min(3, transform.k + (e.deltaY > 0 ? -0.08 : 0.08)));
+                applyTransform();
+            }, { passive: false });
+
+            // Universal Pointer Down
+            area.addEventListener('pointerdown', (e) => {
+                // Ignore if it's an action button
+                if (e.target.closest('.action-btn')) return;
+
+                const nodeEl = e.target.closest('.mm-node');
+
+                if (nodeEl) {
+                    e.stopPropagation();
+                    const id = nodeEl.getAttribute('data-id');
+
+                    const pt = getEventPoint(e);
+                    draggedNodeInfo = {
+                        id: id,
+                        el: nodeEl,
+                        startX: parseFloat(nodeEl.style.left) || 0,
+                        startY: parseFloat(nodeEl.style.top) || 0,
+                        initialClientX: pt.x,
+                        initialClientY: pt.y,
+                        hasMoved: false
+                    };
+                    nodeEl.style.zIndex = 1000;
+                    nodeEl.style.opacity = '0.8';
+                    nodeEl.setPointerCapture(e.pointerId);
+                } else {
+                    isDraggingCanvas = true;
+                    lastMouse = getEventPoint(e);
+                    area.setPointerCapture(e.pointerId);
+                }
+            });
+
+            // Universal Pointer Move
+            area.addEventListener('pointermove', (e) => {
+                if (draggedNodeInfo) {
+                    const pt = getEventPoint(e);
+                    const dx = (pt.x - draggedNodeInfo.initialClientX) / transform.k;
+                    const dy = (pt.y - draggedNodeInfo.initialClientY) / transform.k;
+
+                    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) draggedNodeInfo.hasMoved = true;
+
+                    if (draggedNodeInfo.hasMoved) {
+                        draggedNodeInfo.el.style.left = (draggedNodeInfo.startX + dx) + 'px';
+                        draggedNodeInfo.el.style.top = (draggedNodeInfo.startY + dy) + 'px';
+
+                        // Temporarily hide to find underlying element
+                        draggedNodeInfo.el.style.display = 'none';
+                        const under = document.elementFromPoint(pt.x, pt.y);
+                        draggedNodeInfo.el.style.display = '';
+
+                        let overNodeId = null;
+                        if (under) {
+                            const overNodeEl = under.closest('.mm-node');
+                            if (overNodeEl) overNodeId = overNodeEl.getAttribute('data-id');
+                        }
+
+                        document.querySelectorAll('.mm-node.drag-over').forEach(el => el.classList.remove('drag-over'));
+                        hoverTargetId = null;
+
+                        if (overNodeId && overNodeId !== draggedNodeInfo.id) {
+                            const overEl = document.querySelector(`.mm-node[data-id="${overNodeId}"]`);
+                            if (overEl) {
+                                overEl.classList.add('drag-over');
+                                hoverTargetId = overNodeId;
+                            }
+                        }
+                    }
+                } else if (isDraggingCanvas) {
+                    const pt = getEventPoint(e);
+                    const dx = pt.x - lastMouse.x;
+                    const dy = pt.y - lastMouse.y;
+                    transform.x += dx;
+                    transform.y += dy;
+                    lastMouse = pt;
+                    applyTransform();
+                }
+            });
+
+            // Universal Pointer Up / Cancel
+            const handlePointerUp = (e) => {
+                if (draggedNodeInfo) {
+                    draggedNodeInfo.el.releasePointerCapture(e.pointerId);
+                    const pt = getEventPoint(e);
+                    const dx = (pt.x - draggedNodeInfo.initialClientX) / transform.k;
+                    const dy = (pt.y - draggedNodeInfo.initialClientY) / transform.k;
+
+                    const targetId = hoverTargetId;
+                    const draggedId = draggedNodeInfo.id;
+
+                    // Cleanup visual styles
+                    draggedNodeInfo.el.style.opacity = '';
+                    document.querySelectorAll('.mm-node.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+                    draggedNodeInfo = null;
+                    hoverTargetId = null;
+
+                    const dragged = findNodeAndParent(draggedId);
+
+                    if (targetId && draggedId !== studentState.mindMap.id) {
+                        // Reparent logic
+                        const target = findNodeAndParent(targetId);
+                        if (dragged && target && dragged.parent.id !== targetId) {
+                            let isChild = false;
+                            let current = target.node;
+                            while (current) {
+                                const up = findNodeAndParent(current.id);
+                                if (!up || !up.parent) break;
+                                if (up.parent.id === draggedId) { isChild = true; break; }
+                                current = up.parent;
+                            }
+                            if (isChild) {
+                                showToast('無法移動到自己的子節點下', 'error');
+                            } else {
+                                dragged.parent.children = dragged.parent.children.filter(c => c.id !== draggedId);
+                                if (!target.node.children) target.node.children = [];
+                                target.node.children.push(dragged.node);
+                                // Reset offset when changing parent
+                                dragged.node.offsetX = 0;
+                                dragged.node.offsetY = 0;
+                            }
+                        }
+                    } else if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+                        // Position offset logic (pan current node)
+                        if (dragged) {
+                            dragged.node.offsetX = (dragged.node.offsetX || 0) + dx;
+                            dragged.node.offsetY = (dragged.node.offsetY || 0) + dy;
+                        }
+                    }
+
+                    saveStudentState();
+                    renderMindMap(); // Trigger a full re-render
+                } else if (isDraggingCanvas) {
+                    isDraggingCanvas = false;
+                    area.releasePointerCapture(e.pointerId);
+                }
+            };
+
+            area.addEventListener('pointerup', handlePointerUp);
+            area.addEventListener('pointercancel', handlePointerUp);
+        }
+
+        // ============================================================
+        //  Chat / AI Communication
+        // ============================================================
+        function renderMessages() {
+            const area = document.getElementById('chatArea');
+            let html = '';
+            studentState.messages.forEach(m => {
+                const cls = m.role === 'user' ? 'user' : 'model';
+                html += `<div class="msg ${cls}"><div class="msg-bubble">${renderSmartContent(m.content)}</div></div>`;
+            });
+            if (isLoading) html += `<div class="loading-indicator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>思考中…</div>`;
+            area.innerHTML = html;
+            requestAnimationFrame(() => area.scrollTop = area.scrollHeight);
+        }
+        function updateInputState() {
+            const inp = document.getElementById('chatInput');
+            const btn = document.getElementById('btnSend');
+            if (inp) inp.disabled = isLoading;
+            if (btn) btn.disabled = isLoading || !(inp && inp.value.trim());
+        }
+        async function sendMessage(text) {
+            if (isLoading || !text.trim()) return;
+            studentState.messages.push({ role: 'user', content: text });
+            isLoading = true; updateInputState(); renderMessages();
+            try {
+                const history = studentState.messages.slice(-10).map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] }));
+                const payload = {
+                    contents: history,
+                    systemInstruction: { parts: [{ text: SYSTEM_PROMPT.replace('{{TARGET_MAP}}', studentState.targetMap ? serializeTree(studentState.targetMap) : '尚未生成') }] }
+                };
+                // 改為呼叫 GAS 後端代理
+                // 傳入 source: 'student' 指定使用學生端模型
+                const response = await apiPost({ action: 'proxy_gemini', source: 'student', payload: payload });
+
+                if (response.error) {
+                    const errMsg = typeof response.error === 'string' ? response.error : (response.error.message || JSON.stringify(response.error));
+                    throw new Error(errMsg);
+                }
+                const aiText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (aiText) {
+                    console.log('AI Response:', aiText); // 除錯用
+
+                    studentState.messages.push({ role: 'model', content: aiText });
+
+                    let mapUpdated = false;
+                    // 放寬匹配規則，支援 ```yaml, ```Yaml, ```YAML 或純 ```
+                    const yamlMatch = aiText.match(/```(?:yaml|Yaml|YAML)?\s*([\s\S]*?)```/i);
+                    if (yamlMatch) {
+                        const yamlText = yamlMatch[1].trim();
+                        console.log('Detected YAML Block:', yamlText);
+                        try {
+                            const newMap = parseYamlTree(yamlText, studentState.lessonTitle);
+                            if (newMap && newMap.children && newMap.children.length > 0) {
+                                studentState.mindMap = newMap;
+                                mapUpdated = true;
+                                console.log('Mind Map successfully updated via YAML');
+                            } else {
+                                console.warn('Parsed YAML yielded no children or invalid structure');
+                            }
+                        } catch (e) {
+                            console.error('YAML Parsing Error:', e);
+                        }
+                    } else {
+                        console.warn('No YAML block found in AI response');
+                    }
+
+                    saveStudentState();
+                    renderMessages();
+                    if (mapUpdated) renderMindMap();
+                }
+            } catch (err) { console.error(err); showToast('連線異常，請重試', 'error'); }
+            finally { isLoading = false; updateInputState(); renderMessages(); }
+        }
+
+        // ============================================================
+        //  GAS Code for Info Modal
+        // ============================================================
+        const GAS_CODE = `/** 國文心智圖引導助理 — 旗艦升級後端 */
+const SHEET_NAME = '課文資料庫';
+const SETTINGS_SHEET = '系統設定';
+const HEADERS = ['編號','課名','講義內容','分析模式','參考心智圖','顯示順序','建立時間','更新時間'];
+
+function initializeSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss.getSheetByName(SHEET_NAME)) {
+    const s = ss.insertSheet(SHEET_NAME);
+    s.getRange(1,1,1,HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
+    s.setFrozenRows(1);
+  }
+  if (!ss.getSheetByName(SETTINGS_SHEET)) {
+    const s = ss.insertSheet(SETTINGS_SHEET);
+    s.getRange(1,1,1,2).setValues([['設定項', '內容']]).setFontWeight('bold');
+    s.appendRow(['Gemini_API_Keys', '請在此填入 API Keys (一行一個)']);
+    s.appendRow(['Gemini_Model', 'gemini-1.5-flash']);
+    s.appendRow(['Teacher_Password', 'admin']);
+    s.setColumnWidth(2, 400);
+  }
+}
+
+function getSetting(key) {
+  const s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SETTINGS_SHEET);
+  if (!s) return null;
+  const data = s.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === key) return data[i][1];
+  }
+  return null;
+}
+
+function getApiKey() {
+  const keysStr = getSetting('Gemini_API_Keys') || '';
+  const keys = keysStr.split('\\n').map(k => k.trim()).filter(k => k && !k.includes('請在此填入'));
+  if (keys.length === 0) throw new Error('未設定 API Key，請在「系統設定」分頁中填入。');
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
+function doGet(e) {
+  const action = (e.parameter && e.parameter.action) || '';
+  try {
+    if (action === 'list') return res(listLessons());
+    if (action === 'get') return res(getLesson(e.parameter.id));
+    return res({ success: false, error: '未知動作' });
+  } catch (err) { return res({ success: false, error: err.message }); }
+}
+
+function doPost(e) {
+  let body;
+  try { body = JSON.parse(e.postData.contents); } catch(err) { return res({success:false,error:'無效JSON'}); }
+  try {
+    if (body.action === 'proxy_gemini') {
+      const apiKey = getApiKey();
+      const model = getSetting('Gemini_Model') || 'gemini-1.5-flash';
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+      const options = {
+        method: 'post', contentType: 'application/json',
+        payload: JSON.stringify(body.payload), muteHttpExceptions: true
+      };
+      const response = UrlFetchApp.fetch(url, options);
+      return ContentService.createTextOutput(response.getContentText()).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (body.action === 'auth') return res({ success: body.password === (getSetting('Teacher_Password') || 'admin') });
+    if (body.action === 'get_settings') {
+      return res({
+        success: true,
+        settings: {
+          Gemini_API_Keys: getSetting('Gemini_API_Keys'),
+          Gemini_Model: getSetting('Gemini_Model'),
+        }
+      });
+    }
+    if (body.action === 'save_settings') {
+      const s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SETTINGS_SHEET);
+      const data = s.getDataRange().getValues();
+      const updates = body.settings;
+      for (let k in updates) {
+        let found = false;
+        for (let i = 1; i < data.length; i++) {
+          if (data[i][0] === k) {
+            s.getRange(i + 1, 2).setValue(updates[k]);
+            found = true; break;
+          }
+        }
+        if (!found) s.appendRow([k, updates[k]]);
+      }
+      return res({ success: true });
+    }
+    if (body.action === 'save') return res(saveLesson(body.lesson));
+    if (body.action === 'delete') return res(deleteLesson(body.id));
+    return res({ success: false, error: '未知動作' });
+  } catch(err) { return res({ success: false, error: err.message }); }
+}
+
+function res(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+function getSheet() { return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME) || (initializeSheet() || SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME)); }
+function listLessons() {
+  const s = getSheet(), lr = s.getLastRow();
+  if (lr < 2) return { success: true, lessons: [] };
+  const d = s.getRange(2, 1, lr - 1, HEADERS.length).getValues();
+  const lessons = d.map(r => ({ id: r[0], title: r[1], mode: r[3], hasTargetMap: !!r[4], order: r[5] || 0, createdAt: r[6] }));
+  lessons.sort((a,b) => (a.order||0) - (b.order||0));
+  return { success: true, lessons };
+}
+function getLesson(id) {
+  const s = getSheet(), lr = s.getLastRow();
+  const d = s.getRange(2, 1, lr - 1, HEADERS.length).getValues();
+  for (let i = 0; i < d.length; i++) {
+    if (d[i][0] === id) {
+      let tm = null; try { tm = JSON.parse(d[i][4]); } catch (e) {}
+      return { success: true, lesson: { id: d[i][0], title: d[i][1], handout: d[i][2], mode: d[i][3], targetMap: tm, order: d[i][5] } };
+    }
+  }
+  return { success: false, error: '查無此課文' };
+}
+function saveLesson(lesson) {
+  const s = getSheet(), lr = s.getLastRow(), now = new Date().toLocaleString('zh-TW');
+  if (lesson.id && lr >= 2) {
+    const ids = s.getRange(2, 1, lr - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (ids[i][0] === lesson.id) {
+        const r = i + 2;
+        s.getRange(r, 2, 1, 5).setValues([[lesson.title, lesson.handout||'', lesson.mode||'auto', lesson.targetMap?JSON.stringify(lesson.targetMap):'', lesson.order||0]]);
+        s.getRange(r, 8).setValue(now);
+        return { success: true, id: lesson.id };
+      }
+    }
+  }
+  const nid = 'L-' + Utilities.getUuid().substring(0, 8);
+  s.appendRow([nid, lesson.title, lesson.handout||'', lesson.mode||'auto', lesson.targetMap?JSON.stringify(lesson.targetMap):'', lesson.order||lr, now, now]);
+  return { success: true, id: nid };
+}
+function deleteLesson(id) {
+  const s = getSheet(), lr = s.getLastRow();
+  const ids = s.getRange(2, 1, lr - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (ids[i][0] === id) { s.deleteRow(i + 2); return { success: true }; }
+  }
+  return { success: false, error: '刪除失敗' };
+}`;
+
+        // ============================================================
+        //  INIT
+        // ============================================================
+        function init() {
+            // ---- Teacher Entry (shield icon) ----
+            document.getElementById('btnTeacherEntry').addEventListener('click', () => {
+                document.getElementById('modalPassword').classList.add('active');
+                document.getElementById('inputPassword').focus();
+            });
+            // Landing cards (kept as fallback)
+            document.getElementById('cardTeacher').addEventListener('click', () => {
+                document.getElementById('modalPassword').classList.add('active');
+                document.getElementById('inputPassword').focus();
+            });
+            document.getElementById('cardStudent').addEventListener('click', () => {
+                switchView('viewStudentLearn');
+                loadStudentLessons();
+            });
+
+            // ---- Lesson Dropdown ----
+            document.getElementById('lessonSelect').addEventListener('change', (e) => {
+                const id = e.target.value;
+                if (id) startLesson(id);
+            });
+
+            // ---- Password Modal ----
+            document.getElementById('btnPasswordCancel').addEventListener('click', () => { document.getElementById('modalPassword').classList.remove('active'); });
+            document.getElementById('btnPasswordSubmit').addEventListener('click', async () => {
+                const pw = document.getElementById('inputPassword').value;
+                const errEl = document.getElementById('passwordError');
+                if (!GAS_URL) { errEl.textContent = '請先設定 GAS URL（右上角⚙️）'; return; }
+                try {
+                    errEl.textContent = '驗證中…';
+                    const res = await apiPost({ action: 'auth', password: pw });
+                    if (res.success) {
+                        document.getElementById('modalPassword').classList.remove('active');
+                        localStorage.setItem(STORAGE_TEACHER_AUTH, '1');
+                        switchView('viewTeacher');
+                        loadTeacherLessons();
+                    } else { errEl.textContent = res.error || '密碼錯誤'; }
+                } catch (e) { errEl.textContent = '連線失敗：' + e.message; }
+            });
+            document.getElementById('inputPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('btnPasswordSubmit').click(); });
+
+            // ---- Teacher Dashboard ----
+            document.getElementById('btnTeacherBack').addEventListener('click', () => {
+                switchView('viewStudentLearn');
+                loadStudentLessons();
+            });
+            document.getElementById('btnTeacherLogout').addEventListener('click', () => {
+                showConfirm('確認登出', '登出後下次進入後台需重新輸入密碼。', () => {
+                    localStorage.removeItem(STORAGE_TEACHER_AUTH);
+                    switchView('viewStudentLearn');
+                    loadStudentLessons();
+                    showToast('已登出');
+                });
+            });
+            document.getElementById('btnAddLesson').addEventListener('click', () => {
+                currentLesson = { id: '', title: '', handout: '', mode: 'auto', targetMap: null, order: teacherLessons.length + 1, isNew: true };
+                showLessonEditor();
+            });
+
+            document.getElementById('btnDeleteLesson').addEventListener('click', deleteCurrentLesson);
+            document.getElementById('btnGenMap').addEventListener('click', generateMapForLesson);
+
+            document.getElementById('btnApplyEdit').addEventListener('click', async () => {
+                if (!currentLesson) return;
+                const text = document.getElementById('tPreviewTree').value.trim();
+                if (!text) { showToast('請先編輯樹狀結構', 'error'); return; }
+                const parsed = parseTreeText(text);
+                if (parsed) {
+                    parsed.direction = currentLesson.targetMap?.direction || '';
+                    currentLesson.targetMap = parsed;
+                    document.getElementById('tPreviewTree').value = serializeTree(parsed);
+
+                    // 自動儲存至雲端
+                    await saveCurrentLesson();
+                } else { showToast('解析失敗，請檢查格式', 'error'); }
+            });
+            document.querySelectorAll('#tModeGroup .mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#tModeGroup .mode-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    if (currentLesson) currentLesson.mode = btn.dataset.mode;
+                });
+            });
+
+            // ---- Chat ----
+            const chatInput = document.getElementById('chatInput');
+            chatInput.addEventListener('input', updateInputState);
+            document.getElementById('chatForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = chatInput.value.trim();
+                if (!text) return;
+                chatInput.value = '';
+                updateInputState();
+                sendMessage(text);
+            });
+
+            // ---- Canvas ----
+            document.getElementById('btnZoomIn').addEventListener('click', () => { transform.k = Math.min(3, transform.k + 0.15); applyTransform(); });
+            document.getElementById('btnZoomOut').addEventListener('click', () => { transform.k = Math.max(0.2, transform.k - 0.15); applyTransform(); });
+            document.getElementById('btnCenter').addEventListener('click', centerCanvas);
+            initCanvasEvents();
+
+            // ---- Teacher Preview Toggle (Modal Mode) ----
+            document.getElementById('btnTogglePreviewMode').addEventListener('click', () => {
+                const text = document.getElementById('tPreviewTree').value.trim();
+                if (!text) { showToast('請先產生或編輯心智圖內容', 'error'); return; }
+
+                document.getElementById('modalPreviewMap').classList.add('active');
+                document.getElementById('previewModalTitle').textContent = '預覽：' + (document.getElementById('tLessonTitle').value || '未命名課文');
+
+                // 延遲渲染以確保視窗尺寸已正確計算
+                setTimeout(renderTeacherPreviewMap, 50);
+            });
+
+            // Teacher Preview Pan/Zoom
+            const tCanvas = document.getElementById('teacherPreviewCanvas');
+            tCanvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                tPreviewState.k = Math.max(0.1, Math.min(3, tPreviewState.k * delta));
+                applyTPreviewTransform();
+            }, { passive: false });
+
+            let isTDragging = false, tLastMouse = { x: 0, y: 0 };
+            tCanvas.addEventListener('pointerdown', (e) => {
+                isTDragging = true;
+                tLastMouse = { x: e.clientX, y: e.clientY };
+                tCanvas.setPointerCapture(e.pointerId);
+            });
+            tCanvas.addEventListener('pointermove', (e) => {
+                if (!isTDragging) return;
+                const dx = e.clientX - tLastMouse.x;
+                const dy = e.clientY - tLastMouse.y;
+                tPreviewState.x += dx;
+                tPreviewState.y += dy;
+                tLastMouse = { x: e.clientX, y: e.clientY };
+                applyTPreviewTransform();
+            });
+            tCanvas.addEventListener('pointerup', (e) => {
+                isTDragging = false;
+                tCanvas.releasePointerCapture(e.pointerId);
+            });
+
+            // ---- Confirm Modal Events ----
+            document.getElementById('btnConfirmCancel').addEventListener('click', () => { document.getElementById('modalConfirm').classList.remove('active'); });
+            document.getElementById('btnConfirmOk').addEventListener('click', () => {
+                document.getElementById('modalConfirm').classList.remove('active');
+                if (onConfirmApprove) onConfirmApprove();
+            });
+
+            // ---- Progress Actions ----
+            document.getElementById('btnClearProgress').addEventListener('click', () => {
+                if (!studentState.lessonId) return;
+                showConfirm('清刷進度', '確定要清空目前的對話與心智圖嗎？操作無法復原。', () => {
+                    const id = studentState.lessonId;
+                    resetStudentState();
+                    startLesson(id); // Re-init with same lesson
+                    showToast('進度已清空');
+                });
+            });
+
+            // ---- Settings (Simplified) ----
+            document.getElementById('btnTeacherSettings').addEventListener('click', openSettings);
+            document.getElementById('btnSaveSettings').addEventListener('click', async () => {
+                const keys = document.getElementById('setApiKey').value.trim();
+                const tModel = document.getElementById('setTeacherModel').value.trim();
+                const sModel = document.getElementById('setStudentModel').value.trim();
+                const pw = document.getElementById('setTeacherPw').value.trim();
+
+                if (!keys || !tModel || !sModel) { showToast('Key 與模型不可為空', 'error'); return; }
+
+                const settings = {
+                    Gemini_API_Keys: keys,
+                    Gemini_Model: tModel,
+                    Gemini_Model_Student: sModel
+                };
+                if (pw) settings.Teacher_Password = pw;
+
+                try {
+                    showToast('儲存中…');
+                    const res = await apiPost({ action: 'save_settings', settings });
+                    if (res.success) {
+                        showToast('系統設定已同步至雲端');
+                    } else {
+                        showToast(res.error, 'error');
+                    }
+                } catch (e) { showToast('儲存失敗', 'error'); }
+            });
+            document.getElementById('btnGenShare').addEventListener('click', generateShareLink);
+            document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+            });
+
+            // Remove old save/clear settings handlers as they are no longer needed for these fields
+
+
+
+            document.getElementById('modalPassword').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); });
+
+            window.addEventListener('resize', centerCanvas);
+
+            // ---- Auto-load & Restore progress ----
+            if (!GAS_URL) {
+                setTimeout(() => openSettings(), 300);
+            } else {
+                // Check teacher auth
+                if (localStorage.getItem(STORAGE_TEACHER_AUTH) === '1') {
+                    switchView('viewTeacher');
+                    loadTeacherLessons().then(() => {
+                        const lastId = localStorage.getItem(STORAGE_TEACHER_LAST_ID);
+                        if (lastId) loadLessonForEdit(lastId);
+                    });
+                    return;
+                }
+                // Check student progress
+                const saved = loadStudentState();
+                if (saved && saved.lessonId && saved.mindMap && saved.messages && saved.messages.length > 0) {
+                    studentState = saved;
+                    renderMessages();
+                    renderMindMap();
+                    requestAnimationFrame(centerCanvas);
+                }
+                loadStudentLessons();
+            }
+        }
+
+        function applyTPreviewTransform() {
+            const el = document.getElementById('tPreviewTransform');
+            if (el) el.style.transform = `translate(${tPreviewState.x}px, ${tPreviewState.y}px) scale(${tPreviewState.k})`;
+        }
+
+        function renderTeacherPreviewMap() {
+            const text = document.getElementById('tPreviewTree').value.trim();
+            if (!text) return;
+            const parsed = parseTreeText(text);
+            if (!parsed) return;
+
+            // 調整解析後的 root
+            parsed.label = document.getElementById('tLessonTitle').value || '預覽中';
+
+            const flat = calcNodePositions(parsed, 0, 0, 0, 0, { x: 0, y: 0 });
+
+            const svg = document.getElementById('teacherLinesSvgPreview');
+            let svgHTML = '';
+            flat.forEach(item => {
+                if (item.level === 0 || !item.parentPos) return;
+                const color = getBranchColor(flat, item.node.id);
+                const sw = Math.max(1, 4 - item.level);
+                svgHTML += `<path class="mm-line" d="${generatePath(item.parentPos.x, item.parentPos.y, item.pos.x, item.pos.y)}" stroke="${color}" stroke-width="${sw}" fill="none" opacity="0.6" />`;
+            });
+            svg.innerHTML = svgHTML;
+
+            const layer = document.getElementById('teacherNodesLayerPreview');
+            let nodesHTML = '';
+            flat.forEach(item => {
+                const isRoot = item.level === 0;
+                const cls = isRoot ? 'mm-node core' : 'mm-node';
+                const color = item.level > 0 ? getBranchColor(flat, item.node.id) : '';
+                const style = item.level > 0 ? `border-color:${color};` : '';
+                const zIndex = 100 - item.level;
+
+                const cleanLabel = item.node.label.replace(/^(?:🔖|🔹|🔸|💬|📦|[#*\-?])\s*/, '').trim();
+
+                nodesHTML += `
+                    <div class="${cls}" style="left:${item.pos.x}px; top:${item.pos.y}px; z-index:${zIndex};">
+                        <div class="mm-node-inner" style="${style}">
+                            <div class="mm-node-text">${item.level >= 2 && cleanLabel.length > 8 ? '<small>' + cleanLabel + '</small>' : cleanLabel}</div>
+                        </div>
+                    </div>`;
+            });
+            layer.innerHTML = nodesHTML;
+
+            // 自動置中圖形 (根據容器大小初估)
+            const rect = document.getElementById('teacherPreviewCanvas').getBoundingClientRect();
+            tPreviewState.x = rect.width / 2;
+            tPreviewState.y = rect.height / 2;
+            applyTPreviewTransform();
+        }
+
+        async function openSettings() {
+
+            // 如果已有 GAS_URL，則從雲端獲取最新模型設定
+            if (GAS_URL) {
+                try {
+                    const res = await apiPost({ action: 'get_settings' });
+                    if (res.success && res.settings) {
+                        // 這裡需對應 HTML 中的 id="setApiKey"
+                        document.getElementById('setApiKey').value = res.settings.Gemini_API_Keys || '';
+                        document.getElementById('setTeacherModel').value = res.settings.Gemini_Model || 'gemini-1.5-pro';
+                        document.getElementById('setStudentModel').value = res.settings.Gemini_Model_Student || 'gemini-2.0-flash';
+                    }
+                } catch (e) {
+                    console.warn('無法從雲端獲取設定', e);
+                    showToast('雲端設定同步失敗（請檢查 GAS 網址）', 'warning');
+                }
+            }
+
+            document.getElementById('settingsOverlay').classList.add('active');
+        }
+
+        async function generateShareLink() {
+            const gasUrl = localStorage.getItem(STORAGE_GAS);
+            if (!gasUrl) { showToast('請先設定 GAS URL', 'error'); return; }
+            const encoded = btoa(gasUrl);
+            const longUrl = location.origin + location.pathname + '?config=' + encoded;
+            document.getElementById('shareUrl').value = longUrl;
+            // Try is.gd
+            try {
+                const res = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(longUrl));
+                const data = await res.json();
+                if (data.shorturl) {
+                    document.getElementById('shareUrl').value = data.shorturl;
+                    document.getElementById('qrBox').innerHTML = `<img src="https://quickchart.io/qr?text=${encodeURIComponent(data.shorturl)}&size=160" alt="QR Code"/>`;
+                }
+            } catch (e) {
+                document.getElementById('qrBox').innerHTML = `<img src="https://quickchart.io/qr?text=${encodeURIComponent(longUrl)}&size=160" alt="QR Code"/>`;
+            }
+        }
+
+        // ============================================================
+        //  Teacher: Lesson CRUD
+        // ============================================================
+        async function loadTeacherLessons() {
+            try {
+                const res = await apiGet('list');
+                if (res.success) { teacherLessons = res.lessons; renderTeacherLessonList(); }
+                else showToast(res.error, 'error');
+            } catch (e) { showToast('載入失敗：' + e.message, 'error'); document.getElementById('lessonList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-light);font-size:13px">無法連線</div>'; }
+        }
+        function renderTeacherLessonList() {
+            const list = document.getElementById('lessonList');
+            if (!teacherLessons.length) { list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-light);font-size:13px">尚無課文，點擊「新增」開始</div>'; return; }
+            list.innerHTML = teacherLessons.map(l => `<div class="lesson-item${currentLesson && currentLesson.id === l.id ? ' active' : ''}" data-id="${l.id}">
+        <div class="lesson-item-title">${l.id}: ${l.title}</div>
+        <div class="lesson-item-meta"><span class="lesson-item-dot ${l.hasTargetMap ? 'ready' : 'draft'}"></span>${l.hasTargetMap ? '已備課' : '草稿'}</div>
+    </div>`).join('');
+            list.querySelectorAll('.lesson-item').forEach(el => {
+                el.addEventListener('click', () => loadLessonForEdit(el.dataset.id));
+            });
+        }
+        async function loadLessonForEdit(id) {
+            try {
+                showToast('載入中…');
+                localStorage.setItem(STORAGE_TEACHER_LAST_ID, id);
+                const res = await apiGet('get', { id });
+                if (res.success) { currentLesson = res.lesson; showLessonEditor(); renderTeacherLessonList(); }
+                else showToast(res.error, 'error');
+            } catch (e) { showToast('載入失敗', 'error'); }
+        }
+        // ---- Parse tree text back to JSON ----
+        function parseTreeText(text) {
+            const lines = text.split('\n').filter(l => l.trim());
+            if (!lines.length) return null;
+            // First non-indented line = root
+            const rootLabel = lines[0].replace(/^[\-\s]*/, '').trim();
+            const root = { id: 'root', label: rootLabel, children: [], direction: currentLesson?.targetMap?.direction || '' };
+            const stack = [{ node: root, indent: -1 }];
+            for (let i = 1; i < lines.length; i++) {
+                const raw = lines[i];
+                const match = raw.match(/^(\s*)[-]?\s*(.+)/);
+                if (!match) continue;
+                const indent = match[1].length;
+                const label = match[2].trim();
+                if (!label) continue;
+                const newNode = { id: uid(), label, children: [] };
+                // Pop stack until we find a parent with smaller indent
+                while (stack.length > 1 && stack[stack.length - 1].indent >= indent) stack.pop();
+                stack[stack.length - 1].node.children.push(newNode);
+                stack.push({ node: newNode, indent });
+            }
+            return root;
+        }
+        function showLessonEditor() {
+            document.getElementById('teacherEditor').style.display = 'block';
+            document.getElementById('teacherPreview').style.display = 'flex';
+
+            document.getElementById('btnDeleteLesson').style.display = (currentLesson.id && !currentLesson.isNew) ? 'inline-flex' : 'none';
+            document.getElementById('teacherTopTitle').textContent = (currentLesson.id && !currentLesson.isNew) ? '編輯：' + currentLesson.title : '新增課文';
+
+            const numInp = document.getElementById('tLessonNum');
+            numInp.value = currentLesson.id || '';
+            numInp.disabled = (currentLesson.id && !currentLesson.isNew); // 已建立的不能改課次 ID
+
+            document.getElementById('tLessonTitle').value = currentLesson.title;
+            document.getElementById('tHandout').value = currentLesson.handout || '';
+            document.querySelectorAll('#tModeGroup .mode-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === (currentLesson.mode || 'auto')));
+            if (currentLesson.targetMap) {
+                document.getElementById('tPreviewTree').value = serializeTree(currentLesson.targetMap);
+                document.getElementById('tDirectionTag').textContent = currentLesson.targetMap.direction || '—';
+            } else {
+                document.getElementById('tPreviewTree').value = '';
+                document.getElementById('tDirectionTag').textContent = '—';
+            }
+        }
+        async function saveCurrentLesson() {
+            if (!currentLesson) return;
+            const newId = document.getElementById('tLessonNum').value.trim();
+            currentLesson.title = document.getElementById('tLessonTitle').value.trim();
+            currentLesson.handout = document.getElementById('tHandout').value.trim();
+
+            if (!newId) { showToast('請輸入課次', 'error'); return; }
+            if (!currentLesson.title) { showToast('請輸入課名', 'error'); return; }
+
+            if (currentLesson.isNew) {
+                currentLesson.id = newId;
+            }
+
+            const treeText = document.getElementById('tPreviewTree').value.trim();
+            if (treeText && currentLesson.targetMap) {
+                const currentSerialized = serializeTree(currentLesson.targetMap).trim();
+                if (treeText !== currentSerialized) {
+                    const parsed = parseTreeText(treeText);
+                    if (parsed) { parsed.direction = currentLesson.targetMap.direction || ''; currentLesson.targetMap = parsed; }
+                }
+            }
+            try {
+                showToast('儲存中…');
+                const res = await apiPost({ action: 'save', lesson: currentLesson });
+                if (res.success) {
+                    currentLesson.isNew = false;
+                    showToast('已儲存至雲端');
+                    loadTeacherLessons();
+                }
+                else showToast(res.error, 'error');
+            } catch (e) { showToast('儲存失敗：' + e.message, 'error'); }
+        }
+        async function deleteCurrentLesson() {
+            if (!currentLesson || !currentLesson.id) return;
+            try {
+                showToast('刪除中…');
+                const res = await apiPost({ action: 'delete', id: currentLesson.id });
+                if (res.success) { currentLesson = null; document.getElementById('teacherEditor').style.display = 'none'; document.getElementById('teacherPreview').style.display = 'none'; document.getElementById('btnDeleteLesson').style.display = 'none'; document.getElementById('teacherTopTitle').textContent = '請選擇或新增課文'; showToast('已刪除'); loadTeacherLessons(); }
+                else showToast(res.error, 'error');
+            } catch (e) { showToast('刪除失敗', 'error'); }
+        }
+        async function generateMapForLesson() {
+            if (!currentLesson) return;
+            const title = document.getElementById('tLessonTitle').value.trim();
+            const handout = document.getElementById('tHandout').value.trim();
+            const customPrompt = document.getElementById('tCustomPrompt').value.trim();
+            if (!title || !handout) { showToast('請先填寫課名與講義', 'error'); return; }
+
+            const modeBtn = document.querySelector('#tModeGroup .mode-btn.selected');
+            const mode = modeBtn ? modeBtn.dataset.mode : 'auto';
+
+            const previewArea = document.getElementById('tPreviewTree');
+            try {
+                showToast('AI 生成中，請稍候…');
+                previewArea.value = '⏳ AI 正在深度分析中，這可能需要 10-20 秒…';
+                document.getElementById('tDirectionTag').textContent = '分析中…';
+
+                const result = await generateTargetMap(title, handout, mode, customPrompt);
+                currentLesson.targetMap = result;
+                currentLesson.mode = mode;
+
+                previewArea.value = serializeTree(result);
+                document.getElementById('tDirectionTag').textContent = result.direction || '—';
+                showToast('生成成功，請檢閱並套用修改');
+            } catch (e) {
+                console.error(e);
+                previewArea.value = `❌ 生成失敗\n原因：${e.message}\n\n建議：您可以試著調整「自訂指令」縮小範圍，或直接在上方手動輸入結構後套用。`;
+                document.getElementById('tDirectionTag').textContent = '錯誤';
+                showToast('生成失敗：' + e.message, 'error');
+            }
+        }
+        // ============================================================
+        //  Student: Lesson Selection & Learning
+        // ============================================================
+        async function loadStudentLessons() {
+            const sel = document.getElementById('lessonSelect');
+            const currentVal = sel.value;
+            try {
+                const res = await apiGet('list');
+                if (res.success) {
+                    const ready = res.lessons.filter(l => l.hasTargetMap);
+                    sel.innerHTML = '<option value="">選擇課文…</option>';
+                    ready.forEach(l => {
+                        const opt = document.createElement('option');
+                        opt.value = l.id;
+                        opt.textContent = l.title;
+                        sel.appendChild(opt);
+                    });
+                    // Restore selection if already in a lesson
+                    if (studentState.lessonId) sel.value = studentState.lessonId;
+                    else if (currentVal) sel.value = currentVal;
+                } else { showToast(res.error, 'error'); }
+            } catch (e) { showToast('載入課文失敗：' + e.message, 'error'); }
+        }
+        async function startLesson(id) {
+            try {
+                showToast('載入課文…');
+                const res = await apiGet('get', { id });
+                if (!res.success) { showToast(res.error, 'error'); return; }
+                const lesson = res.lesson;
+                resetStudentState();
+                studentState.lessonId = lesson.id;
+                studentState.lessonTitle = lesson.title;
+                studentState.targetMap = lesson.targetMap;
+                studentState.mindMap = { id: 'root', label: lesson.title, revealed: true, children: [] };
+                const direction = lesson.targetMap?.direction || '內容段落';
+
+                let hintText = '';
+                if (direction.includes('結構')) {
+                    hintText = '例如：總分總、議論文的引/本/結，或是小說的開端/發展/結局？';
+                } else {
+                    hintText = '例如：依據時間的發展、地點的轉換，或是事件的起點/過程/結果來劃分？';
+                }
+
+                studentState.messages.push({ role: 'model', content: `👋 嗨！我是你的筆記導師，目前已為「**${lesson.title}**」準備好空白學習單。\n\n這課的文體很有意思，採用「**${direction}**」方向展開。你覺得整篇課文在『文本結構』上可以怎麼劃分？（${hintText}）如果結構不明顯，我們也可以用大的意義段來分喔！` });
+                saveStudentState();
+                renderMessages(); renderMindMap();
+                requestAnimationFrame(centerCanvas);
+            } catch (e) { showToast('載入失敗：' + e.message, 'error'); }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+
+</html>
