@@ -141,8 +141,8 @@
                 </div>
 
                 <div class="flex items-center gap-8 shrink-0">
-                    <!-- 重新開始按鈕移至此處 -->
-                    <button onclick="resetCurrentProgress()" class="h-16 px-6 bg-red-900/40 hover:bg-red-900/60 text-amber-200 rounded-2xl font-black text-xs tracking-[0.1em] border border-amber-500/20 transition-all flex items-center gap-2 group">
+                    <!-- 重新開始按鈕 -->
+                    <button onclick="requestReset()" class="h-16 px-6 bg-red-900/40 hover:bg-red-900/60 text-amber-200 rounded-2xl font-black text-xs tracking-[0.1em] border border-amber-500/20 transition-all flex items-center gap-2 group">
                         <i data-lucide="refresh-cw" size="14" class="group-hover:rotate-180 transition-transform duration-500"></i> 重新開始
                     </button>
 
@@ -154,7 +154,7 @@
                         </div>
                     </button>
                     
-                    <div class="w-24"></div> <!-- 保持視覺平衡的占位 -->
+                    <div class="w-24"></div> 
                 </div>
             </div>
 
@@ -209,7 +209,7 @@
         <section id="view-history" class="hidden h-full flex flex-col py-4 max-w-3xl mx-auto w-full">
             <div class="flex justify-between items-center mb-6 shrink-0">
                 <h2 class="text-2xl font-black tracking-tighter italic uppercase font-festive text-amber-500">🧧 中獎功德榜 🧧</h2>
-                <button onclick="clearHistory()" class="p-2 text-red-300/50 hover:text-white transition-colors">
+                <button onclick="requestClearHistory()" class="p-2 text-red-300/50 hover:text-white transition-colors">
                     <i data-lucide="trash-2" size="20"></i>
                 </button>
             </div>
@@ -220,9 +220,10 @@
     </main>
 
     <footer class="relative z-10 py-4 text-center text-[9px] font-bold text-red-900/50 tracking-[0.8em] uppercase shrink-0">
-        Lunar New Year Lottery // Year of the Dragon // v1.8.Pro
+        Lunar New Year Lottery // Year of the Dragon // v1.9.Stable
     </footer>
 
+    <!-- 中獎彈窗 -->
     <div id="winner-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
         <div class="absolute inset-0 bg-red-950/95 backdrop-blur-xl"></div>
         <div class="relative w-full max-w-xl bg-gradient-to-b from-red-800 to-red-950 border-2 border-amber-500/50 rounded-[3rem] p-10 text-center shadow-[0_0_100px_rgba(185,28,28,0.5)] scale-90 opacity-0 transition-all duration-300" id="winner-modal-content">
@@ -246,13 +247,29 @@
         </div>
     </div>
 
+    <!-- 自定義確認彈窗 -->
+    <div id="confirm-modal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-md bg-red-950 border border-amber-500/30 rounded-3xl p-8 text-center shadow-2xl transform scale-95 opacity-0 transition-all duration-200" id="confirm-modal-content">
+            <h3 class="text-xl font-bold text-amber-500 mb-4 flex items-center justify-center gap-2">
+                <i data-lucide="alert-triangle"></i> 系統確認
+            </h3>
+            <p id="confirm-text" class="text-amber-100/80 mb-8 leading-relaxed"></p>
+            <div class="flex gap-4">
+                <button onclick="closeConfirmModal()" class="flex-1 py-3 bg-red-900/40 hover:bg-red-900/60 text-amber-500 rounded-xl font-bold border border-amber-500/20 transition-all">
+                    取消
+                </button>
+                <button id="confirm-execute-btn" class="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-red-950 rounded-xl font-bold transition-all shadow-lg">
+                    確定
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const DEFAULT_NAMES = ['陳大春', '李美花', '王好運', '趙大吉', '孫發財', '周利市', '蔡招財', '林平安', '郭長壽', '張團圓'];
         const DEFAULT_PRIZES = ['開運紅包 8888', '黃金萬兩金條', '五星級飯店雙人餐券', '高級氣泡水機', '限量紀念版公仔', '安慰獎刮刮樂'];
 
-        // 核心邏輯修改：
-        // originalNames / originalPrizes 存儲的是「Master List」，也就是設定頁面的內容
-        // names / prizes 存儲的是「剩餘進度」，也就是前台顯示的內容
         let originalNames = JSON.parse(localStorage.getItem('lottery_names_original')) || [...DEFAULT_NAMES];
         let originalPrizes = JSON.parse(localStorage.getItem('lottery_prizes_original')) || [...DEFAULT_PRIZES];
         
@@ -353,7 +370,6 @@
             if (tabId === 'history') renderHistory();
             if (tabId === 'draw') renderLivePools();
             if (tabId === 'settings') {
-                // 修改處：設定頁面顯示「原始名單」，不會隨進度變動
                 document.getElementById('input-names').value = originalNames.join('\n');
                 document.getElementById('input-prizes').value = originalPrizes.join('\n');
             }
@@ -371,27 +387,54 @@
             }, 3000);
         }
 
+        // --- 自定義確認彈窗邏輯 ---
+        function openConfirmModal(text, onExecute) {
+            document.getElementById('confirm-text').innerText = text;
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => content.classList.remove('scale-95', 'opacity-0'), 10);
+            
+            document.getElementById('confirm-execute-btn').onclick = () => {
+                onExecute();
+                closeConfirmModal();
+            };
+            lucide.createIcons();
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-modal-content');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        function requestReset() {
+            openConfirmModal('確定要「重新開始」嗎？這會抓取後台的原始名單，並將目前的中獎榜單清空。', resetCurrentProgress);
+        }
+
+        function requestClearHistory() {
+            openConfirmModal('確定要清空所有的中獎紀錄嗎？此動作無法復原。', clearHistory);
+        }
+
+        function resetCurrentProgress() {
+            names = [...originalNames];
+            prizes = [...originalPrizes];
+            history = []; 
+            
+            localStorage.setItem('lottery_names', JSON.stringify(names));
+            localStorage.setItem('lottery_prizes', JSON.stringify(prizes));
+            localStorage.setItem('lottery_history', JSON.stringify(history));
+            
+            renderLivePools();
+            renderHistory(); 
+            showToast('系統已恢復至初始狀態');
+        }
+
         function restoreToDefault(target) {
             if (target === 'names') { document.getElementById('input-names').value = DEFAULT_NAMES.join('\n'); }
             else { document.getElementById('input-prizes').value = DEFAULT_PRIZES.join('\n'); }
             showToast('已填入新春範例內容');
-        }
-
-        function resetCurrentProgress() {
-            if (confirm('確定要「重新開始」嗎？這會恢復原始名單並【清空目前的中獎榜單】。')) {
-                // 直接從原始備份恢復進度
-                names = [...originalNames];
-                prizes = [...originalPrizes];
-                history = []; 
-                
-                localStorage.setItem('lottery_names', JSON.stringify(names));
-                localStorage.setItem('lottery_prizes', JSON.stringify(prizes));
-                localStorage.setItem('lottery_history', JSON.stringify(history));
-                
-                renderLivePools();
-                renderHistory(); 
-                showToast('已恢復原始狀態並清空榜單');
-            }
         }
 
         function saveSettings() {
@@ -399,10 +442,8 @@
             const p = document.getElementById('input-prizes').value.split('\n').filter(x => x.trim());
             if (n.length === 0 || p.length === 0) return showToast('名單或獎項不得為空', 'error');
             
-            // 儲存原始數據備份
             originalNames = [...n]; 
             originalPrizes = [...p];
-            // 同步重置當前進度
             names = [...n]; 
             prizes = [...p];
             history = []; 
@@ -413,15 +454,15 @@
             localStorage.setItem('lottery_prizes_original', JSON.stringify(originalPrizes));
             localStorage.setItem('lottery_history', JSON.stringify(history));
 
-            showToast('原始數據已更新，系統已同步重置');
+            showToast('設定已儲存，抽獎進度已重置');
             renderLivePools(); 
             switchTab('draw');
         }
 
         function startDraw() {
             if (names.length === 0 || prizes.length === 0 || isDrawing) {
-                if (names.length === 0) showToast('名單已空，請點擊重新開始！', 'error');
-                else if (prizes.length === 0) showToast('獎品已發送完畢！', 'error');
+                if (names.length === 0) showToast('目前已無剩餘名單，請點擊重新開始！', 'error');
+                else if (prizes.length === 0) showToast('所有獎品已發送完畢！', 'error');
                 return;
             }
             isDrawing = true; SoundManager.init();
@@ -501,12 +542,10 @@
         }
 
         function clearHistory() {
-            if (confirm('確定清空中獎榜單嗎？')) {
-                history = [];
-                localStorage.setItem('lottery_history', JSON.stringify(history));
-                renderHistory();
-                showToast('榜單已成功清空');
-            }
+            history = [];
+            localStorage.setItem('lottery_history', JSON.stringify(history));
+            renderHistory();
+            showToast('榜單已成功清空');
         }
 
         window.onload = () => {
