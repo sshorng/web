@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Lottery Interface 2077</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        :root {
+            --cyan: #06b6d4;
+            --purple: #a855f7;
+            --bg: #050505;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow: hidden; /* 禁用全域捲軸 */
+            margin: 0;
+            height: 100vh;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* 內部自定義捲軸樣式 */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: rgba(6, 182, 212, 0.3); 
+            border-radius: 10px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+            background: var(--cyan);
+        }
+
+        .neon-border-active {
+            border-color: var(--cyan);
+            box-shadow: 0 0 40px rgba(6, 182, 212, 0.2);
+        }
+
+        .tab-active {
+            color: var(--cyan);
+        }
+
+        .tab-active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .chip-name {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+        }
+
+        .chip-prize {
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            color: #d8b4fe;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scanline::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent, rgba(6, 182, 212, 0.05), transparent);
+            animation: scanline 4s linear infinite;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+    <canvas id="particleCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+    <!-- 頂部導覽 -->
+    <nav class="relative z-10 flex justify-center py-5 shrink-0 space-x-12">
+        <button onclick="switchTab('draw')" id="btn-draw" class="relative group px-2 py-1 text-sm font-bold tracking-widest transition-all">
+            <span class="flex items-center gap-2"><i data-lucide="play" size="18"></i> 極限抽獎</span>
+        </button>
+        <button onclick="switchTab('settings')" id="btn-settings" class="relative group px-2 py-1 text-sm font-bold tracking-widest transition-all text-slate-500">
+            <span class="flex items-center gap-2"><i data-lucide="settings" size="18"></i> 名單設定</span>
+        </button>
+        <button onclick="switchTab('history')" id="btn-history" class="relative group px-2 py-1 text-sm font-bold tracking-widest transition-all text-slate-500">
+            <span class="flex items-center gap-2"><i data-lucide="history" size="18"></i> 榮譽紀錄</span>
+        </button>
+    </nav>
+
+    <!-- 訊息提示 -->
+    <div id="toast" class="fixed top-10 right-10 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-xl hidden transform translate-x-full transition-transform duration-300">
+        <i data-lucide="alert-circle" size="20"></i>
+        <span id="toast-text" class="font-bold"></span>
+    </div>
+
+    <!-- 主要內容區 -->
+    <main class="relative z-10 flex-grow w-full max-w-[1400px] mx-auto px-6 overflow-hidden">
+        
+        <!-- 抽獎會場 (三欄佈局) -->
+        <section id="view-draw" class="h-full grid grid-cols-12 gap-6 py-4 overflow-hidden">
+            
+            <!-- 左欄：參與名單 -->
+            <div class="col-span-3 flex flex-col h-full overflow-hidden">
+                <div class="flex items-center justify-between mb-3 px-2">
+                    <h3 class="text-xs font-black tracking-widest text-slate-500 flex items-center gap-2">
+                        <i data-lucide="users" size="14"></i> 參與名單 (<span id="count-names">0</span>)
+                    </h3>
+                </div>
+                <div id="live-names-list" class="flex-grow glass-panel rounded-2xl p-4 overflow-y-auto custom-scrollbar flex flex-wrap content-start gap-2">
+                    <!-- 名單標籤將生成於此 -->
+                </div>
+            </div>
+
+            <!-- 中欄：主抽獎區 -->
+            <div class="col-span-6 flex flex-col items-center justify-between space-y-4 py-2">
+                <!-- 中央大螢幕 -->
+                <div id="display-screen" class="relative w-full flex-grow rounded-[3rem] border border-white/5 bg-white/5 transition-all duration-700 overflow-hidden flex flex-col items-center justify-center scanline">
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.1),transparent_75%)] pointer-events-none"></div>
+                    <div id="current-name" class="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-center px-4 text-slate-700 transition-colors uppercase leading-tight">READY?</div>
+                    <p id="system-status" class="text-cyan-500/50 tracking-[0.5em] text-[10px] font-bold animate-pulse mt-8 uppercase">System Standby // Ready to Launch</p>
+                    
+                    <!-- 裝飾元素 -->
+                    <div class="absolute top-8 left-8 border-l border-t border-cyan-500/30 w-10 h-10"></div>
+                    <div class="absolute bottom-8 right-8 border-r border-b border-white/10 w-10 h-10"></div>
+                </div>
+
+                <!-- 開始按鈕 -->
+                <button id="draw-button" onclick="startDraw()" class="group relative h-24 w-24 shrink-0 rounded-full transition-all duration-500 hover:scale-110 active:scale-95">
+                    <div class="absolute inset-0 rounded-full bg-cyan-500 animate-ping opacity-20"></div>
+                    <div class="absolute -inset-4 bg-cyan-500/20 rounded-full blur-2xl"></div>
+                    <div class="relative h-full w-full rounded-full bg-gradient-to-tr from-cyan-600 to-blue-400 flex items-center justify-center border-4 border-white/20 shadow-2xl">
+                        <i data-lucide="play" fill="white" size="32"></i>
+                    </div>
+                </button>
+            </div>
+
+            <!-- 右欄：獎項內容 -->
+            <div class="col-span-3 flex flex-col h-full overflow-hidden">
+                <div class="flex items-center justify-between mb-3 px-2">
+                    <h3 class="text-xs font-black tracking-widest text-purple-400 flex items-center gap-2 uppercase">
+                        <i data-lucide="gift" size="14"></i> 剩餘獎項 (<span id="count-prizes">0</span>)
+                    </h3>
+                </div>
+                <div id="live-prizes-list" class="flex-grow glass-panel rounded-2xl p-4 overflow-y-auto custom-scrollbar space-y-2">
+                    <!-- 獎項標籤將生成於此 -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 名單設定 (維持原樣) -->
+        <section id="view-settings" class="hidden h-full flex flex-col py-4">
+            <div class="grid md:grid-cols-2 gap-8 h-full overflow-hidden pb-4">
+                <div class="glass-panel p-6 rounded-[2rem] flex flex-col h-full overflow-hidden">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-3 text-cyan-400 shrink-0">
+                        <i data-lucide="users" size="20"></i> 參與名單管理
+                    </h3>
+                    <textarea id="input-names" class="flex-grow w-full bg-black/40 border border-white/10 rounded-2xl p-5 font-mono text-sm focus:border-cyan-500 outline-none transition-all resize-none custom-scrollbar" placeholder="一行一個名字..."></textarea>
+                </div>
+                <div class="glass-panel p-6 rounded-[2rem] flex flex-col h-full overflow-hidden">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-3 text-purple-400 shrink-0">
+                        <i data-lucide="gift" size="20"></i> 獎項內容管理
+                    </h3>
+                    <textarea id="input-prizes" class="flex-grow w-full bg-black/40 border border-white/10 rounded-2xl p-5 font-mono text-sm focus:border-purple-500 outline-none transition-all resize-none mb-6 custom-scrollbar" placeholder="一行一個獎項..."></textarea>
+                    <button onclick="saveSettings()" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl font-black text-sm tracking-[0.2em] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all shrink-0">
+                        DEPLOY SYSTEM DATA
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 榮譽紀錄 (維持原樣) -->
+        <section id="view-history" class="hidden h-full flex flex-col py-4 max-w-3xl mx-auto w-full">
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <h2 class="text-2xl font-black tracking-tighter italic uppercase">Winning Logs</h2>
+                <button onclick="clearHistory()" class="p-2 text-slate-500 hover:text-red-400 transition-colors">
+                    <i data-lucide="trash-2" size="20"></i>
+                </button>
+            </div>
+            <div id="history-list" class="flex-grow space-y-3 overflow-y-auto pr-4 custom-scrollbar pb-10">
+                <!-- 紀錄列表 -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="relative z-10 py-4 text-center text-[9px] font-bold text-slate-800 tracking-[0.8em] uppercase shrink-0">
+        Cyber Lottery 2077 // All-in-One Dashboard // v1.5
+    </footer>
+
+    <!-- 中獎彈窗 -->
+    <div id="winner-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-black/95 backdrop-blur-xl"></div>
+        <div class="relative w-full max-w-xl bg-gradient-to-b from-slate-900 to-black border border-white/20 rounded-[3rem] p-10 text-center shadow-[0_0_100px_rgba(0,0,0,1)] scale-90 opacity-0 transition-all duration-300" id="winner-modal-content">
+            <button onclick="closeModal()" class="absolute top-8 right-8 text-slate-500 hover:text-white">
+                <i data-lucide="x" size="28"></i>
+            </button>
+            <div class="mb-6">
+                <div class="inline-block p-4 rounded-full bg-cyan-500/10 text-cyan-400 mb-4 border border-cyan-500/20">
+                    <i data-lucide="trophy" size="40"></i>
+                </div>
+                <h4 class="text-cyan-500 font-black tracking-[0.4em] text-xs mb-2 uppercase">Extraction Successful</h4>
+                <h2 id="winner-name" class="text-6xl md:text-7xl font-black text-white tracking-tighter mb-4"></h2>
+            </div>
+            <div class="relative inline-block px-10 py-5">
+                <div class="absolute inset-0 bg-cyan-500 skew-x-[-12deg] shadow-[0_0_40px_rgba(6,182,212,0.5)]"></div>
+                <span id="winner-prize" class="relative z-10 text-black text-2xl font-black italic uppercase"></span>
+            </div>
+            <div class="mt-10">
+                <button onclick="closeModal()" class="text-slate-500 hover:text-cyan-400 text-[10px] font-bold tracking-widest uppercase transition-colors">Confirm Result</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 狀態初始化 ---
+        let names = JSON.parse(localStorage.getItem('lottery_names')) || ['林小明', '張美麗', '王大同', '李小龍', '陳志強', '趙子龍', '孫悟空', '周杰倫', '蔡依林', '林俊傑'];
+        let prizes = JSON.parse(localStorage.getItem('lottery_prizes')) || ['iPhone 16 Pro Max', 'RTX 5090 GPU', 'PS5 Pro Console', '星巴克買一送一', '虛擬貨幣獎勵', '安慰獎禮包'];
+        let history = JSON.parse(localStorage.getItem('lottery_history')) || [];
+        let isDrawing = false;
+
+        // --- 音效管理器 ---
+        const SoundManager = {
+            ctx: null,
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            playTick() {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+            },
+            playWin() {
+                this.init();
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.1);
+                    gain.gain.setValueAtTime(0.04, this.ctx.currentTime + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.1 + 0.5);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + i * 0.1); osc.stop(this.ctx.currentTime + i * 0.1 + 0.5);
+                });
+            }
+        };
+
+        // --- 粒子系統 ---
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * (isDrawing ? 15 : 1.2);
+                this.speedY = (Math.random() - 0.5) * (isDrawing ? 15 : 1.2);
+                this.color = isDrawing ? `hsla(${Math.random() * 60 + 10}, 100%, 50%, 0.8)` : 'rgba(255, 255, 255, 0.1)';
+            }
+            update() {
+                this.x += this.speedX; this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        function initParticles() { for (let i = 0; i < 60; i++) particles.push(new Particle()); }
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+
+        // --- 核心顯示更新 ---
+        function renderLivePools() {
+            const nameList = document.getElementById('live-names-list');
+            const prizeList = document.getElementById('live-prizes-list');
+            
+            // 更新名單標籤
+            nameList.innerHTML = names.map(n => `
+                <div class="chip-name text-[10px] font-bold px-3 py-1 rounded-md animate-in fade-in zoom-in duration-300">
+                    ${n}
+                </div>
+            `).join('');
+
+            // 更新獎項標籤
+            prizeList.innerHTML = prizes.map(p => `
+                <div class="chip-prize text-xs font-bold px-4 py-2 rounded-xl border border-purple-500/20 flex items-center gap-2 animate-in slide-in-from-right duration-300">
+                    <i data-lucide="star" size="10" class="shrink-0"></i> ${p}
+                </div>
+            `).join('');
+            
+            lucide.createIcons(); // 重新觸發圖標
+            updateCounts();
+        }
+
+        function updateCounts() {
+            document.getElementById('count-names').innerText = names.length;
+            document.getElementById('count-prizes').innerText = prizes.length;
+        }
+
+        function switchTab(tabId) {
+            ['draw', 'settings', 'history'].forEach(id => {
+                document.getElementById(`view-${id}`).classList.add('hidden');
+                document.getElementById(`btn-${id}`).classList.remove('tab-active');
+                document.getElementById(`btn-${id}`).classList.add('text-slate-500');
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`btn-${tabId}`).classList.add('tab-active');
+            document.getElementById(`btn-${tabId}`).classList.remove('text-slate-500');
+            if (tabId === 'history') renderHistory();
+            if (tabId === 'draw') renderLivePools();
+            if (tabId === 'settings') {
+                document.getElementById('input-names').value = names.join('\n');
+                document.getElementById('input-prizes').value = prizes.join('\n');
+            }
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const text = document.getElementById('toast-text');
+            text.innerText = msg;
+            toast.className = `fixed top-10 right-10 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-xl transform transition-transform duration-300 ${type === 'error' ? 'bg-red-500/20 border-red-500/50 text-red-200' : 'bg-green-500/20 border-green-500/50 text-green-200'}`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        function saveSettings() {
+            const n = document.getElementById('input-names').value.split('\n').filter(x => x.trim());
+            const p = document.getElementById('input-prizes').value.split('\n').filter(x => x.trim());
+            if (n.length === 0 || p.length === 0) return showToast('資料不得為空', 'error');
+            names = n; prizes = p;
+            localStorage.setItem('lottery_names', JSON.stringify(names));
+            localStorage.setItem('lottery_prizes', JSON.stringify(prizes));
+            showToast('核心資料已同步更新');
+            renderLivePools();
+            switchTab('draw');
+        }
+
+        function startDraw() {
+            if (names.length === 0 || prizes.length === 0 || isDrawing) return;
+
+            isDrawing = true;
+            SoundManager.init();
+            particles.forEach(p => p.reset());
+
+            const targetName = names[Math.floor(Math.random() * names.length)];
+            const targetPrize = prizes[Math.floor(Math.random() * prizes.length)];
+            const nameEl = document.getElementById('current-name');
+            const statusEl = document.getElementById('system-status');
+            const screen = document.getElementById('display-screen');
+
+            screen.classList.add('neon-border-active');
+            nameEl.classList.remove('text-slate-700');
+            nameEl.classList.add('text-white');
+            statusEl.innerText = 'Analyzing Biometric Signatures...';
+
+            let speed = 50;
+            let elapsed = 0;
+            const duration = 3000;
+
+            const tick = () => {
+                nameEl.innerText = names[Math.floor(Math.random() * names.length)];
+                SoundManager.playTick();
+                elapsed += speed;
+                if (elapsed > duration * 0.7) speed += 30;
+
+                if (elapsed < duration) {
+                    setTimeout(tick, speed);
+                } else {
+                    finalizeDraw(targetName, targetPrize);
+                }
+            };
+            tick();
+        }
+
+        function finalizeDraw(wName, wPrize) {
+            isDrawing = false;
+            particles.forEach(p => p.reset());
+            document.getElementById('current-name').innerText = wName;
+            document.getElementById('system-status').innerText = 'System Standby // Extraction Complete';
+            document.getElementById('display-screen').classList.remove('neon-border-active');
+
+            // 彈窗
+            document.getElementById('winner-name').innerText = wName;
+            document.getElementById('winner-prize').innerText = wPrize;
+            const modal = document.getElementById('winner-modal');
+            const content = document.getElementById('winner-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => content.classList.remove('scale-90', 'opacity-0'), 10);
+
+            SoundManager.playWin();
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#06b6d4', '#ffffff', '#a855f7'] });
+
+            // 移除資料並儲存
+            names = names.filter(n => n !== wName);
+            const pIdx = prizes.indexOf(wPrize);
+            if (pIdx > -1) prizes.splice(pIdx, 1);
+            
+            history.unshift({ name: wName, prize: wPrize, time: new Date().toLocaleTimeString() });
+            
+            localStorage.setItem('lottery_names', JSON.stringify(names));
+            localStorage.setItem('lottery_prizes', JSON.stringify(prizes));
+            localStorage.setItem('lottery_history', JSON.stringify(history));
+            
+            renderLivePools(); // 即時更新首頁監控列表
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('winner-modal');
+            const content = document.getElementById('winner-modal-content');
+            content.classList.add('scale-90', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            if (history.length === 0) {
+                list.innerHTML = `<div class="text-center py-20 border border-dashed border-white/5 rounded-3xl text-slate-700 font-bold uppercase tracking-widest text-xs">No records found</div>`;
+                return;
+            }
+            list.innerHTML = history.map(item => `
+                <div class="bg-white/5 p-4 rounded-xl border border-white/5 flex items-center justify-between">
+                    <div>
+                        <div class="text-xl font-black">${item.name}</div>
+                        <div class="text-[9px] text-slate-600 font-bold">${item.time}</div>
+                    </div>
+                    <div class="bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-lg font-bold border border-cyan-500/20 text-sm">${item.prize}</div>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            if (confirm('確定清空所有中獎紀錄？')) {
+                history = [];
+                localStorage.setItem('lottery_history', JSON.stringify(history));
+                renderHistory();
+            }
+        }
+
+        window.onload = () => {
+            lucide.createIcons();
+            window.addEventListener('resize', resize);
+            resize();
+            initParticles();
+            animate();
+            renderLivePools();
+            switchTab('draw');
+        };
+    </script>
+</body>
+</html>
