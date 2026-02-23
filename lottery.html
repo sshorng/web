@@ -28,12 +28,10 @@
             height: 100vh;
         }
 
-        /* 新年標題字體 */
         .font-festive {
             font-family: 'ZCOOL XiaoWei', serif;
         }
 
-        /* 內部自定義捲軸樣式 (金黃色) */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(251, 191, 36, 0.05); }
         .custom-scrollbar::-webkit-scrollbar-thumb { 
@@ -82,7 +80,6 @@
             color: #fca5a5;
         }
 
-        /* 掃描線改為祥雲感或淡淡金光 */
         @keyframes scanline {
             0% { transform: translateY(-100%); }
             100% { transform: translateY(100%); }
@@ -94,23 +91,11 @@
             background: linear-gradient(to bottom, transparent, rgba(251, 191, 36, 0.08), transparent);
             animation: scanline 5s linear infinite;
         }
-
-        /* 燈籠搖晃效果 */
-        @keyframes sway {
-            0%, 100% { transform: rotate(-5deg); }
-            50% { transform: rotate(5deg); }
-        }
-        .sway {
-            animation: sway 3s ease-in-out infinite;
-            transform-origin: top center;
-        }
     </style>
 </head>
 <body class="flex flex-col h-screen">
-    <!-- 粒子背景 (金粉) -->
     <canvas id="particleCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
 
-    <!-- 頂部導覽 -->
     <nav class="relative z-10 flex justify-center py-5 shrink-0 space-x-12">
         <button onclick="switchTab('draw')" id="btn-draw" class="relative group px-2 py-1 text-sm font-bold tracking-widest transition-all">
             <span class="flex items-center gap-2"><i data-lucide="sparkles" size="18"></i> 新春大抽獎</span>
@@ -123,13 +108,11 @@
         </button>
     </nav>
 
-    <!-- 訊息提示 (Toast) -->
     <div id="toast" class="fixed top-10 right-10 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-xl hidden transform translate-x-full transition-transform duration-300">
         <i data-lucide="info" size="20"></i>
         <span id="toast-text" class="font-bold"></span>
     </div>
 
-    <!-- 主要內容區 -->
     <main class="relative z-10 flex-grow w-full max-w-[1400px] mx-auto px-6 overflow-hidden">
         
         <!-- 抽獎會場 (三欄佈局) -->
@@ -139,46 +122,50 @@
             <div class="col-span-3 flex flex-col h-full overflow-hidden">
                 <div class="flex items-center justify-between mb-3 px-2">
                     <h3 class="text-xs font-black tracking-widest text-amber-500/70 flex items-center gap-2 uppercase">
-                        <i data-lucide="users" size="14"></i> 嘉賓名單 (<span id="count-names">0</span>)
+                        <i data-lucide="users" size="14"></i> 剩餘名單 (<span id="count-names">0</span>)
                     </h3>
                 </div>
                 <div id="live-names-list" class="flex-grow glass-panel rounded-2xl p-4 overflow-y-auto custom-scrollbar flex flex-wrap content-start gap-2">
-                    <!-- 名單標籤將生成於此 -->
                 </div>
             </div>
 
             <!-- 中欄：主抽獎區 -->
             <div class="col-span-6 flex flex-col items-center justify-between space-y-4 py-2">
-                <!-- 中央大螢幕 (大紅燈籠背景感) -->
                 <div id="display-screen" class="relative w-full flex-grow rounded-[3rem] border-2 border-amber-500/20 bg-red-900/10 transition-all duration-700 overflow-hidden flex flex-col items-center justify-center scanline">
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.1),transparent_75%)] pointer-events-none"></div>
                     <div id="current-name" class="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-center px-4 text-red-950 transition-colors uppercase leading-tight font-festive">恭喜發財</div>
                     <p id="system-status" class="text-amber-500/50 tracking-[0.5em] text-[10px] font-bold animate-pulse mt-8 uppercase">🧧 鴻運當頭 // 準備開獎 🧧</p>
                     
-                    <!-- 裝飾元素 (傳統花紋) -->
                     <div class="absolute top-8 left-8 border-l-4 border-t-4 border-amber-600/30 w-12 h-12"></div>
                     <div class="absolute bottom-8 right-8 border-r-4 border-b-4 border-amber-600/30 w-12 h-12"></div>
                 </div>
 
-                <!-- 開始按鈕 (如大紅燈籠或印章) -->
-                <button id="draw-button" onclick="startDraw()" class="group relative h-28 w-28 shrink-0 rounded-full transition-all duration-500 hover:scale-110 active:scale-95">
-                    <div class="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-20"></div>
-                    <div class="absolute -inset-4 bg-red-600/20 rounded-full blur-2xl"></div>
-                    <div class="relative h-full w-full rounded-full bg-gradient-to-tr from-red-700 to-amber-500 flex items-center justify-center border-4 border-amber-200/50 shadow-[0_0_30px_rgba(185,28,28,0.5)]">
-                        <i data-lucide="gift" class="text-white" size="40"></i>
-                    </div>
-                </button>
+                <div class="flex items-center gap-8 shrink-0">
+                    <!-- 重新開始按鈕移至此處 -->
+                    <button onclick="resetCurrentProgress()" class="h-16 px-6 bg-red-900/40 hover:bg-red-900/60 text-amber-200 rounded-2xl font-black text-xs tracking-[0.1em] border border-amber-500/20 transition-all flex items-center gap-2 group">
+                        <i data-lucide="refresh-cw" size="14" class="group-hover:rotate-180 transition-transform duration-500"></i> 重新開始
+                    </button>
+
+                    <button id="draw-button" onclick="startDraw()" class="group relative h-28 w-28 rounded-full transition-all duration-500 hover:scale-110 active:scale-95">
+                        <div class="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-20"></div>
+                        <div class="absolute -inset-4 bg-red-600/20 rounded-full blur-2xl"></div>
+                        <div class="relative h-full w-full rounded-full bg-gradient-to-tr from-red-700 to-amber-500 flex items-center justify-center border-4 border-amber-200/50 shadow-[0_0_30px_rgba(185,28,28,0.5)]">
+                            <i data-lucide="gift" class="text-white" size="40"></i>
+                        </div>
+                    </button>
+                    
+                    <div class="w-24"></div> <!-- 保持視覺平衡的占位 -->
+                </div>
             </div>
 
             <!-- 右欄：獎項內容 -->
             <div class="col-span-3 flex flex-col h-full overflow-hidden">
                 <div class="flex items-center justify-between mb-3 px-2">
                     <h3 class="text-xs font-black tracking-widest text-amber-500 flex items-center gap-2 uppercase">
-                        <i data-lucide="trophy" size="14"></i> 豐富獎項 (<span id="count-prizes">0</span>)
+                        <i data-lucide="trophy" size="14"></i> 剩餘獎項 (<span id="count-prizes">0</span>)
                     </h3>
                 </div>
                 <div id="live-prizes-list" class="flex-grow glass-panel rounded-2xl p-4 overflow-y-auto custom-scrollbar space-y-2">
-                    <!-- 獎項標籤將生成於此 -->
                 </div>
             </div>
 
@@ -190,7 +177,7 @@
                 <div class="glass-panel p-6 rounded-[2rem] flex flex-col h-full overflow-hidden">
                     <div class="flex items-center justify-between mb-4 shrink-0">
                         <h3 class="text-lg font-bold flex items-center gap-3 text-amber-500">
-                            <i data-lucide="users" size="20"></i> 名單管理
+                            <i data-lucide="users" size="20"></i> 原始總名單
                         </h3>
                         <button onclick="restoreToDefault('names')" class="text-[10px] text-red-300/50 hover:text-amber-400 flex items-center gap-1 transition-colors uppercase font-black">
                             <i data-lucide="rotate-ccw" size="12"></i> 恢復範例
@@ -201,7 +188,7 @@
                 <div class="glass-panel p-6 rounded-[2rem] flex flex-col h-full overflow-hidden">
                     <div class="flex items-center justify-between mb-4 shrink-0">
                         <h3 class="text-lg font-bold flex items-center gap-3 text-amber-500">
-                            <i data-lucide="gift" size="20"></i> 獎項管理
+                            <i data-lucide="gift" size="20"></i> 原始總獎項
                         </h3>
                         <button onclick="restoreToDefault('prizes')" class="text-[10px] text-red-300/50 hover:text-amber-400 flex items-center gap-1 transition-colors uppercase font-black">
                             <i data-lucide="rotate-ccw" size="12"></i> 恢復範例
@@ -209,12 +196,9 @@
                     </div>
                     <textarea id="input-prizes" class="flex-grow w-full bg-black/30 border border-amber-500/10 rounded-2xl p-5 font-mono text-sm focus:border-amber-500 outline-none transition-all resize-none mb-6 custom-scrollbar text-amber-100" placeholder="一行一個獎項..."></textarea>
                     
-                    <div class="grid grid-cols-2 gap-4 shrink-0">
-                        <button onclick="resetCurrentProgress()" class="py-4 bg-red-900/40 hover:bg-red-900/60 text-amber-200 rounded-2xl font-black text-xs tracking-[0.1em] border border-amber-500/20 transition-all flex items-center justify-center gap-2">
-                            <i data-lucide="refresh-cw" size="14"></i> 重新開始 (並清空榜單)
-                        </button>
-                        <button onclick="saveSettings()" class="py-4 bg-gradient-to-r from-red-700 to-amber-600 rounded-2xl font-black text-xs tracking-[0.2em] hover:shadow-[0_0_30px_rgba(185,28,28,0.4)] transition-all flex items-center justify-center gap-2 text-white">
-                            <i data-lucide="save" size="14"></i> 儲存數據並建立備份
+                    <div class="flex justify-end shrink-0">
+                        <button onclick="saveSettings()" class="w-full py-4 bg-gradient-to-r from-red-700 to-amber-600 rounded-2xl font-black text-xs tracking-[0.2em] hover:shadow-[0_0_30px_rgba(185,28,28,0.4)] transition-all flex items-center justify-center gap-2 text-white">
+                            <i data-lucide="save" size="14"></i> 儲存原始數據並重置進度
                         </button>
                     </div>
                 </div>
@@ -230,18 +214,15 @@
                 </button>
             </div>
             <div id="history-list" class="flex-grow space-y-3 overflow-y-auto pr-4 custom-scrollbar pb-10">
-                <!-- 紀錄列表 -->
             </div>
         </section>
 
     </main>
 
-    <!-- 頁尾 -->
     <footer class="relative z-10 py-4 text-center text-[9px] font-bold text-red-900/50 tracking-[0.8em] uppercase shrink-0">
-        Lunar New Year Lottery // Year of the Dragon // v1.7.Fix
+        Lunar New Year Lottery // Year of the Dragon // v1.8.Pro
     </footer>
 
-    <!-- 中獎彈窗 -->
     <div id="winner-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
         <div class="absolute inset-0 bg-red-950/95 backdrop-blur-xl"></div>
         <div class="relative w-full max-w-xl bg-gradient-to-b from-red-800 to-red-950 border-2 border-amber-500/50 rounded-[3rem] p-10 text-center shadow-[0_0_100px_rgba(185,28,28,0.5)] scale-90 opacity-0 transition-all duration-300" id="winner-modal-content">
@@ -266,15 +247,18 @@
     </div>
 
     <script>
-        // --- 預設資料 ---
         const DEFAULT_NAMES = ['陳大春', '李美花', '王好運', '趙大吉', '孫發財', '周利市', '蔡招財', '林平安', '郭長壽', '張團圓'];
         const DEFAULT_PRIZES = ['開運紅包 8888', '黃金萬兩金條', '五星級飯店雙人餐券', '高級氣泡水機', '限量紀念版公仔', '安慰獎刮刮樂'];
 
-        // --- 狀態初始化 ---
-        let names = JSON.parse(localStorage.getItem('lottery_names')) || [...DEFAULT_NAMES];
-        let prizes = JSON.parse(localStorage.getItem('lottery_prizes')) || [...DEFAULT_PRIZES];
-        let originalNames = JSON.parse(localStorage.getItem('lottery_names_original')) || [...names];
-        let originalPrizes = JSON.parse(localStorage.getItem('lottery_prizes_original')) || [...prizes];
+        // 核心邏輯修改：
+        // originalNames / originalPrizes 存儲的是「Master List」，也就是設定頁面的內容
+        // names / prizes 存儲的是「剩餘進度」，也就是前台顯示的內容
+        let originalNames = JSON.parse(localStorage.getItem('lottery_names_original')) || [...DEFAULT_NAMES];
+        let originalPrizes = JSON.parse(localStorage.getItem('lottery_prizes_original')) || [...DEFAULT_PRIZES];
+        
+        let names = JSON.parse(localStorage.getItem('lottery_names')) || [...originalNames];
+        let prizes = JSON.parse(localStorage.getItem('lottery_prizes')) || [...originalPrizes];
+        
         let history = JSON.parse(localStorage.getItem('lottery_history')) || [];
         let isDrawing = false;
 
@@ -365,11 +349,13 @@
             document.getElementById(`view-${tabId}`).classList.remove('hidden');
             document.getElementById(`btn-${tabId}`).classList.add('tab-active');
             document.getElementById(`btn-${tabId}`).classList.remove('text-red-300/50');
+            
             if (tabId === 'history') renderHistory();
             if (tabId === 'draw') renderLivePools();
             if (tabId === 'settings') {
-                document.getElementById('input-names').value = names.join('\n');
-                document.getElementById('input-prizes').value = prizes.join('\n');
+                // 修改處：設定頁面顯示「原始名單」，不會隨進度變動
+                document.getElementById('input-names').value = originalNames.join('\n');
+                document.getElementById('input-prizes').value = originalPrizes.join('\n');
             }
         }
 
@@ -391,19 +377,19 @@
             showToast('已填入新春範例內容');
         }
 
-        // --- 重置功能修正：復原時直接清除榜單 ---
         function resetCurrentProgress() {
-            if (confirm('確定要「重新開始」嗎？這會恢復原始清單並【清空目前的中獎榜單】。')) {
+            if (confirm('確定要「重新開始」嗎？這會恢復原始名單並【清空目前的中獎榜單】。')) {
+                // 直接從原始備份恢復進度
                 names = [...originalNames];
                 prizes = [...originalPrizes];
-                history = []; // 清空榜單
+                history = []; 
                 
                 localStorage.setItem('lottery_names', JSON.stringify(names));
                 localStorage.setItem('lottery_prizes', JSON.stringify(prizes));
                 localStorage.setItem('lottery_history', JSON.stringify(history));
                 
                 renderLivePools();
-                renderHistory(); // 更新榜單 UI
+                renderHistory(); 
                 showToast('已恢復原始狀態並清空榜單');
             }
         }
@@ -412,19 +398,29 @@
             const n = document.getElementById('input-names').value.split('\n').filter(x => x.trim());
             const p = document.getElementById('input-prizes').value.split('\n').filter(x => x.trim());
             if (n.length === 0 || p.length === 0) return showToast('名單或獎項不得為空', 'error');
-            names = [...n]; prizes = [...p];
-            originalNames = [...n]; originalPrizes = [...p];
+            
+            // 儲存原始數據備份
+            originalNames = [...n]; 
+            originalPrizes = [...p];
+            // 同步重置當前進度
+            names = [...n]; 
+            prizes = [...p];
+            history = []; 
+
             localStorage.setItem('lottery_names', JSON.stringify(names));
             localStorage.setItem('lottery_prizes', JSON.stringify(prizes));
             localStorage.setItem('lottery_names_original', JSON.stringify(originalNames));
             localStorage.setItem('lottery_prizes_original', JSON.stringify(originalPrizes));
-            showToast('數據已更新並建立備份');
-            renderLivePools(); switchTab('draw');
+            localStorage.setItem('lottery_history', JSON.stringify(history));
+
+            showToast('原始數據已更新，系統已同步重置');
+            renderLivePools(); 
+            switchTab('draw');
         }
 
         function startDraw() {
             if (names.length === 0 || prizes.length === 0 || isDrawing) {
-                if (names.length === 0) showToast('參加者已抽完，請至設定重新開始！', 'error');
+                if (names.length === 0) showToast('名單已空，請點擊重新開始！', 'error');
                 else if (prizes.length === 0) showToast('獎品已發送完畢！', 'error');
                 return;
             }
@@ -504,12 +500,11 @@
             lucide.createIcons();
         }
 
-        // --- 修正：清除榜單函式 ---
         function clearHistory() {
             if (confirm('確定清空中獎榜單嗎？')) {
                 history = [];
                 localStorage.setItem('lottery_history', JSON.stringify(history));
-                renderHistory(); // 確保重新渲染介面
+                renderHistory();
                 showToast('榜單已成功清空');
             }
         }
