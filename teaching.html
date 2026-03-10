@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        
+
         :root {
             --primary-color: #9d8ec7;
             --primary-light: #d4cce3;
@@ -16,7 +17,7 @@
             --gray-medium: #e2e2e7;
             --gray-dark: #6b7280;
         }
-        
+
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: var(--gray-light);
@@ -25,22 +26,22 @@
                雖然 Tailwind 通常會處理，但明確加上可以增加一層保障。*/
             -webkit-tap-highlight-color: transparent;
         }
-        
+
         .tab-active {
             background-color: var(--primary-color);
             color: white;
         }
-        
+
         .timer-btn {
             transition: all 0.2s;
             border: 1px solid var(--primary-light);
         }
-        
+
         .timer-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        
+
         .confetti {
             position: absolute;
             width: 10px;
@@ -48,185 +49,212 @@
             border-radius: 50%;
             animation: fall 3s ease-in infinite;
         }
-        
+
         @keyframes fall {
             0% {
                 transform: translateY(-100px) rotate(0deg);
                 opacity: 1;
             }
+
             100% {
                 transform: translateY(500px) rotate(360deg);
                 opacity: 0;
             }
         }
-        
+
         .winner-animation {
             animation: pop 0.5s ease-out;
         }
-        
+
         @keyframes pop {
             0% {
                 transform: scale(0.8);
                 opacity: 0;
             }
+
             50% {
                 transform: scale(1.2);
             }
+
             100% {
                 transform: scale(1);
                 opacity: 1;
             }
         }
-        
+
         .progress-ring {
             transform: rotate(-90deg);
             transform-origin: 50% 50%;
         }
-        
+
         .btn {
             transition: all 0.3s ease;
             /* 【修復】確保按鈕能明確地被使用者操作，尤其在觸控裝置上 */
             cursor: pointer;
-            user-select: none; /* 防止長按時選取文字 */
+            user-select: none;
+            /* 防止長按時選取文字 */
         }
-        
+
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        
+
         .btn:active {
             transform: translateY(0);
         }
-        
+
         .modal {
             backdrop-filter: blur(5px);
         }
-        
+
         .timer-active {
             background-color: var(--primary-dark);
             color: white;
         }
-        
+
         .toast {
             animation: slideIn 0.3s ease-out forwards, fadeOut 0.5s ease-in 2s forwards;
         }
-        
+
         @keyframes slideIn {
             from {
                 transform: translateY(-20px);
                 opacity: 0;
             }
+
             to {
                 transform: translateY(0);
                 opacity: 1;
             }
         }
-        
+
         @keyframes fadeOut {
             from {
                 opacity: 1;
             }
+
             to {
                 opacity: 0;
             }
         }
-        
+
         /* Hide number input arrows */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-          -webkit-appearance: none; 
-          margin: 0; 
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
+
         input[type=number] {
-          -moz-appearance: textfield;
+            -moz-appearance: textfield;
         }
     </style>
 </head>
+
 <body>
     <audio id="countdown-audio" src="https://sshorng.github.io/web/countdown.mp3" preload="auto"></audio>
 
     <div class="min-h-screen bg-gradient-to-br from-[#f8f6ff] to-[#f0f0f5]">
         <div class="container mx-auto px-4 py-8 max-w-4xl">
             <h1 class="text-3xl font-bold text-center text-[#6c5b9c] mb-8">課堂工具</h1>
-            
-            <div id="toast" class="fixed top-4 right-4 bg-[#6c5b9c] text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden">
+
+            <div id="toast"
+                class="fixed top-4 right-4 bg-[#6c5b9c] text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden">
                 <span id="toast-message"></span>
             </div>
-            
+
             <div class="flex justify-center mb-8">
-                <button id="timer-tab" class="tab-active px-6 py-3 rounded-l-lg font-medium text-lg focus:outline-none transition duration-300">
+                <button id="timer-tab"
+                    class="tab-active px-6 py-3 rounded-l-lg font-medium text-lg focus:outline-none transition duration-300">
                     ⏱️ 倒數計時
                 </button>
-                <button id="picker-tab" class="bg-[#e2e2e7] px-6 py-3 rounded-r-lg font-medium text-lg text-[#6b7280] focus:outline-none transition duration-300">
+                <button id="picker-tab"
+                    class="bg-[#e2e2e7] px-6 py-3 rounded-r-lg font-medium text-lg text-[#6b7280] focus:outline-none transition duration-300">
                     🎯 抽籤工具
                 </button>
             </div>
-            
+
             <div id="timer-section" class="bg-white rounded-xl shadow-lg p-8 mb-8">
                 <div class="flex flex-col items-center">
                     <div class="relative w-64 h-64 mb-8">
                         <svg class="w-full h-full" viewBox="0 0 100 100">
-                            <circle class="text-[#e2e2e7]" stroke-width="5" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
-                            <circle id="timer-progress" class="progress-ring text-[#9d8ec7]" stroke-width="5" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" stroke-dasharray="283" stroke-dashoffset="0" />
+                            <circle class="text-[#e2e2e7]" stroke-width="5" stroke="currentColor" fill="transparent"
+                                r="45" cx="50" cy="50" />
+                            <circle id="timer-progress" class="progress-ring text-[#9d8ec7]" stroke-width="5"
+                                stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" stroke-dasharray="283"
+                                stroke-dashoffset="0" />
                         </svg>
                         <div class="absolute inset-0 flex items-center justify-center">
                             <span id="timer-display" class="text-5xl font-bold text-[#6c5b9c]">00:00</span>
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-3 gap-3 md:grid-cols-6 mb-8 w-full">
-                        <button data-time="30" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                        <button data-time="30"
+                            class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
                             30 秒
                         </button>
-                        <button data-time="60" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                        <button data-time="60"
+                            class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
                             1 分
                         </button>
-                        <button data-time="90" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                        <button data-time="90"
+                            class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
                             1.5 分
                         </button>
-                        <button data-time="120" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                        <button data-time="120"
+                            class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
                             2 分
                         </button>
-                        <button data-time="180" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                        <button data-time="180"
+                            class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
                             3 分
                         </button>
-                        <button id="custom-time-btn" class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
+                        <button id="custom-time-btn"
+                            class="timer-btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] font-medium py-2 px-4 rounded-lg">
                             自訂
                         </button>
                     </div>
-                    
+
                     <div class="flex space-x-4">
-                        <button id="pause-btn" class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-3 px-6 rounded-lg shadow transition duration-200" disabled>
+                        <button id="pause-btn"
+                            class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-3 px-6 rounded-lg shadow transition duration-200"
+                            disabled>
                             暫停
                         </button>
-                        <button id="reset-btn" class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-3 px-6 rounded-lg shadow transition duration-200" disabled>
+                        <button id="reset-btn"
+                            class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-3 px-6 rounded-lg shadow transition duration-200"
+                            disabled>
                             重置
                         </button>
                     </div>
                 </div>
             </div>
-            
+
             <div id="picker-section" class="bg-white rounded-xl shadow-lg p-8 hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="md:border-r md:pr-6">
                         <h2 class="text-xl font-bold text-[#6c5b9c] mb-4">抽籤</h2>
-                        
-                        <div id="confetti-container" class="relative w-full h-48 bg-gradient-to-r from-[#f0ebff] to-[#f5f5f8] rounded-lg flex items-center justify-center mb-6 overflow-hidden border border-[#e2e2e7]">
+
+                        <div id="confetti-container"
+                            class="relative w-full h-48 bg-gradient-to-r from-[#f0ebff] to-[#f5f5f8] rounded-lg flex items-center justify-center mb-6 overflow-hidden border border-[#e2e2e7]">
                             <div id="winner-display" class="text-4xl font-bold text-[#6c5b9c] text-center px-4 z-10">
                                 準備抽籤
                             </div>
                         </div>
-                        
+
                         <div class="flex justify-center space-x-4 mb-6">
-                            <button id="pick-btn" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-bold py-3 px-6 rounded-lg shadow transition duration-200">
+                            <button id="pick-btn"
+                                class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-bold py-3 px-6 rounded-lg shadow transition duration-200">
                                 抽一位
                             </button>
-                            <button id="pick-multiple-btn" class="btn bg-[#b3a8cc] hover:bg-[#a395c0] text-white font-bold py-3 px-6 rounded-lg shadow transition duration-200">
+                            <button id="pick-multiple-btn"
+                                class="btn bg-[#b3a8cc] hover:bg-[#a395c0] text-white font-bold py-3 px-6 rounded-lg shadow transition duration-200">
                                 抽多位
                             </button>
                         </div>
-                        
+
                         <div>
                             <div class="flex justify-between items-center mb-2">
                                 <h3 class="font-medium text-[#6b7280]">已抽出名單</h3>
@@ -234,21 +262,24 @@
                                     重置已抽出名單
                                 </button>
                             </div>
-                            <div id="picked-list" class="bg-[#f5f5f8] rounded-lg p-4 min-h-[100px] max-h-[200px] overflow-y-auto border border-[#e2e2e7]">
+                            <div id="picked-list"
+                                class="bg-[#f5f5f8] rounded-lg p-4 min-h-[100px] max-h-[200px] overflow-y-auto border border-[#e2e2e7]">
                             </div>
                         </div>
                     </div>
-                    
+
                     <div>
                         <h2 class="text-xl font-bold text-[#6c5b9c] mb-4">班級管理</h2>
-                        
+
                         <div class="mb-6">
                             <label class="block text-[#6b7280] mb-2">選擇班級</label>
                             <div class="flex mb-2">
-                                <select id="class-select" class="flex-grow bg-[#f5f5f8] border border-[#e2e2e7] rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]">
+                                <select id="class-select"
+                                    class="flex-grow bg-[#f5f5f8] border border-[#e2e2e7] rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]">
                                     <option value="class1">班級 1</option>
                                 </select>
-                                <button id="add-class-btn" class="bg-[#9d8ec7] text-white px-4 py-2 rounded-r-lg hover:bg-[#8a7bb4]">
+                                <button id="add-class-btn"
+                                    class="bg-[#9d8ec7] text-white px-4 py-2 rounded-r-lg hover:bg-[#8a7bb4]">
                                     新增班級
                                 </button>
                             </div>
@@ -261,17 +292,21 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div class="mb-6">
                             <label for="name-input" class="block text-[#6b7280] mb-2">輸入名單 (每行一個名字)</label>
-                            <textarea id="name-input" class="w-full h-40 bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" placeholder="王小明&#10;李小華&#10;張小美"></textarea>
+                            <textarea id="name-input"
+                                class="w-full h-40 bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]"
+                                placeholder="王小明&#10;李小華&#10;張小美"></textarea>
                         </div>
-                        
+
                         <div class="flex justify-between">
-                            <button id="save-names-btn" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                            <button id="save-names-btn"
+                                class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
                                 儲存名單
                             </button>
-                            <button id="clear-names-btn" class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-2 px-4 rounded-lg">
+                            <button id="clear-names-btn"
+                                class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-2 px-4 rounded-lg">
                                 清空名單
                             </button>
                         </div>
@@ -281,102 +316,131 @@
         </div>
     </div>
 
-    <div id="custom-time-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+    <div id="custom-time-modal"
+        class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
         <div class="bg-white rounded-xl p-6 sm:p-8 w-auto shadow-xl mx-4">
             <h3 class="text-2xl font-bold text-[#6c5b9c] mb-6 text-center">自訂時間</h3>
-            
+
             <div class="mb-6">
                 <label class="block text-center text-lg text-[#6b7280] mb-3">分鐘</label>
                 <div class="flex items-center justify-center space-x-4">
-                    <button id="decrease-minutes" class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">-</button>
-                    <input type="number" id="custom-minutes-input" class="text-6xl font-bold w-28 text-center text-[#6c5b9c] bg-transparent focus:outline-none" value="00" min="0" max="90">
-                    <button id="increase-minutes" class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">+</button>
+                    <button id="decrease-minutes"
+                        class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">-</button>
+                    <input type="number" id="custom-minutes-input"
+                        class="text-6xl font-bold w-28 text-center text-[#6c5b9c] bg-transparent focus:outline-none"
+                        value="00" min="0" max="90">
+                    <button id="increase-minutes"
+                        class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">+</button>
                 </div>
             </div>
 
             <div class="mb-8">
                 <label class="block text-center text-lg text-[#6b7280] mb-3">秒數</label>
                 <div class="flex items-center justify-center space-x-4">
-                    <button id="decrease-seconds" class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">-</button>
-                    <input type="number" id="custom-seconds-input" class="text-6xl font-bold w-28 text-center text-[#6c5b9c] bg-transparent focus:outline-none" value="00" min="0" max="59">
-                    <button id="increase-seconds" class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">+</button>
+                    <button id="decrease-seconds"
+                        class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">-</button>
+                    <input type="number" id="custom-seconds-input"
+                        class="text-6xl font-bold w-28 text-center text-[#6c5b9c] bg-transparent focus:outline-none"
+                        value="00" min="0" max="59">
+                    <button id="increase-seconds"
+                        class="btn w-16 h-16 rounded-full bg-[#f5f5f8] hover:bg-[#e2e2e7] text-[#6c5b9c] text-4xl font-light flex items-center justify-center select-none">+</button>
                 </div>
             </div>
 
             <div class="flex justify-end space-x-3">
-                <button id="cancel-custom-time" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-3 px-6 rounded-lg">
+                <button id="cancel-custom-time"
+                    class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-3 px-6 rounded-lg">
                     取消
                 </button>
-                <button id="confirm-custom-time" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-3 px-6 rounded-lg">
+                <button id="confirm-custom-time"
+                    class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-3 px-6 rounded-lg">
                     確定
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="multiple-pick-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+    <div id="multiple-pick-modal"
+        class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
         <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
             <h3 class="text-xl font-bold text-[#6c5b9c] mb-4">抽多位</h3>
             <div class="mb-6">
                 <label for="pick-count" class="block text-[#6b7280] mb-2">抽出人數</label>
-                <input type="number" id="pick-count" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" min="1" value="3">
+                <input type="number" id="pick-count"
+                    class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]"
+                    min="1" value="3">
             </div>
             <div class="flex justify-end space-x-2">
-                <button id="cancel-multiple-pick" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                <button id="cancel-multiple-pick"
+                    class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
                     取消
                 </button>
-                <button id="confirm-multiple-pick" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                <button id="confirm-multiple-pick"
+                    class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
                     確定
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="add-class-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+    <div id="add-class-modal"
+        class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
         <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
             <h3 class="text-xl font-bold text-[#6c5b9c] mb-4">新增班級</h3>
             <div class="mb-6">
                 <label for="class-name" class="block text-[#6b7280] mb-2">班級名稱</label>
-                <input type="text" id="class-name" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" placeholder="輸入班級名稱">
+                <input type="text" id="class-name"
+                    class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]"
+                    placeholder="輸入班級名稱">
             </div>
             <div class="flex justify-end space-x-2">
-                <button id="cancel-add-class" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                <button id="cancel-add-class"
+                    class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
                     取消
                 </button>
-                <button id="confirm-add-class" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                <button id="confirm-add-class"
+                    class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
                     確定
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="rename-class-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+    <div id="rename-class-modal"
+        class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
         <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
             <h3 class="text-xl font-bold text-[#6c5b9c] mb-4">重新命名班級</h3>
             <div class="mb-6">
                 <label for="new-class-name" class="block text-[#6b7280] mb-2">新班級名稱</label>
-                <input type="text" id="new-class-name" class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]" placeholder="輸入新班級名稱">
+                <input type="text" id="new-class-name"
+                    class="w-full bg-[#f5f5f8] border border-[#e2e2e7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]"
+                    placeholder="輸入新班級名稱">
             </div>
             <div class="flex justify-end space-x-2">
-                <button id="cancel-rename-class" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                <button id="cancel-rename-class"
+                    class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
                     取消
                 </button>
-                <button id="confirm-rename-class" class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                <button id="confirm-rename-class"
+                    class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
                     確定
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="delete-class-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
+    <div id="delete-class-modal"
+        class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden modal">
         <div class="bg-white rounded-xl p-6 w-80 shadow-xl">
             <h3 class="text-xl font-bold text-[#dc2626] mb-4">刪除班級</h3>
             <p class="mb-6 text-[#6b7280]">確定要刪除 <span id="delete-class-name" class="font-medium"></span> 嗎？此操作無法復原。</p>
             <div class="flex justify-end space-x-2">
-                <button id="cancel-delete-class" class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
+                <button id="cancel-delete-class"
+                    class="btn bg-[#e2e2e7] hover:bg-[#d4d4d9] text-[#6b7280] font-medium py-2 px-4 rounded-lg">
                     取消
                 </button>
-                <button id="confirm-delete-class" class="btn bg-[#dc2626] hover:bg-[#b91c1c] text-white font-medium py-2 px-4 rounded-lg">
+                <button id="confirm-delete-class"
+                    class="btn bg-[#dc2626] hover:bg-[#b91c1c] text-white font-medium py-2 px-4 rounded-lg">
                     刪除
                 </button>
             </div>
@@ -390,7 +454,7 @@
         let remainingSeconds = 0;
         let isPaused = false;
         let activeTimerBtn = null;
-        
+
         const timerDisplay = document.getElementById('timer-display');
         const timerProgress = document.getElementById('timer-progress');
         const pauseBtn = document.getElementById('pause-btn');
@@ -400,7 +464,7 @@
         const cancelCustomTime = document.getElementById('cancel-custom-time');
         const confirmCustomTime = document.getElementById('confirm-custom-time');
         const countdownAudio = document.getElementById('countdown-audio');
-        
+
         // Custom Time Modal elements
         const customMinutesInput = document.getElementById('custom-minutes-input');
         const increaseMinutesBtn = document.getElementById('increase-minutes');
@@ -410,7 +474,7 @@
         const decreaseSecondsBtn = document.getElementById('decrease-seconds');
         let customTimeMinutes = 0;
         let customTimeSeconds = 0;
-        
+
         // Name picker functionality
         let classes = {
             class1: {
@@ -419,9 +483,9 @@
                 picked: []
             }
         };
-        
+
         let currentClass = 'class1';
-        
+
         const classSelect = document.getElementById('class-select');
         const nameInput = document.getElementById('name-input');
         const saveNamesBtn = document.getElementById('save-names-btn');
@@ -452,13 +516,13 @@
         const confirmDeleteClass = document.getElementById('confirm-delete-class');
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toast-message');
-        
+
         // Tab functionality
         const timerTab = document.getElementById('timer-tab');
         const pickerTab = document.getElementById('picker-tab');
         const timerSection = document.getElementById('timer-section');
         const pickerSection = document.getElementById('picker-section');
-        
+
         // Initialize
         function init() {
             loadClassesFromStorage();
@@ -466,7 +530,7 @@
             updateNameInput();
             updatePickedList();
             setupCustomTimeControls();
-            
+
             // Set up timer buttons
             document.querySelectorAll('.timer-btn').forEach(btn => {
                 if (btn.id !== 'custom-time-btn') {
@@ -474,7 +538,7 @@
                         const seconds = parseInt(btn.dataset.time);
                         setTimer(seconds);
                         startTimer();
-                        
+
                         // Highlight active button
                         if (activeTimerBtn) {
                             activeTimerBtn.classList.remove('timer-active');
@@ -485,26 +549,26 @@
                 }
             });
         }
-        
+
         // Toast notification
         function showToast(message, duration = 2500) {
             toastMessage.textContent = message;
             toast.classList.remove('hidden');
             toast.classList.add('toast');
-            
+
             setTimeout(() => {
                 toast.classList.add('hidden');
                 toast.classList.remove('toast');
             }, duration);
         }
-        
+
         // Timer functions
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
-        
+
         function setTimer(seconds) {
             clearInterval(timerInterval);
             totalSeconds = seconds;
@@ -512,7 +576,7 @@
             timerDisplay.textContent = formatTime(remainingSeconds);
             updateTimerProgress();
         }
-        
+
         function updateTimerProgress() {
             if (totalSeconds === 0) return;
             const circumference = 2 * Math.PI * 45;
@@ -520,10 +584,10 @@
             timerProgress.style.strokeDasharray = `${circumference} ${circumference}`;
             timerProgress.style.strokeDashoffset = offset;
         }
-        
+
         function startTimer(isResuming = false) {
             if (remainingSeconds <= 0) return;
-            
+
             if (!isResuming) {
                 countdownAudio.currentTime = 0;
             }
@@ -531,28 +595,28 @@
 
             clearInterval(timerInterval);
             isPaused = false;
-            
+
             pauseBtn.disabled = false;
             resetBtn.disabled = false;
-            
+
             pauseBtn.classList.remove('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
             resetBtn.classList.remove('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
             pauseBtn.classList.add('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
             resetBtn.classList.add('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
-            
+
             timerInterval = setInterval(() => {
                 if (remainingSeconds <= 0) {
                     clearInterval(timerInterval);
                     timerComplete();
                     return;
                 }
-                
+
                 remainingSeconds--;
                 timerDisplay.textContent = formatTime(remainingSeconds);
                 updateTimerProgress();
             }, 1000);
         }
-        
+
         function pauseTimer() {
             if (isPaused) {
                 isPaused = false;
@@ -565,7 +629,7 @@
                 pauseBtn.textContent = '繼續';
             }
         }
-        
+
         function resetTimer() {
             countdownAudio.pause();
             countdownAudio.currentTime = 0;
@@ -575,23 +639,23 @@
             remainingSeconds = 0;
             timerDisplay.textContent = formatTime(remainingSeconds);
             updateTimerProgress();
-            
+
             pauseBtn.disabled = true;
             resetBtn.disabled = true;
             pauseBtn.textContent = '暫停';
             isPaused = false;
-            
+
             pauseBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
             resetBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
             pauseBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
             resetBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
-            
+
             if (activeTimerBtn) {
                 activeTimerBtn.classList.remove('timer-active');
                 activeTimerBtn = null;
             }
         }
-        
+
         function timerComplete() {
             countdownAudio.pause();
             countdownAudio.currentTime = 0;
@@ -600,27 +664,27 @@
             pauseBtn.disabled = true;
             pauseBtn.textContent = '暫停';
             isPaused = false;
-            
+
             pauseBtn.classList.add('bg-[#a8a8b3]', 'hover:bg-[#9a9aa5]');
             pauseBtn.classList.remove('bg-[#9d8ec7]', 'hover:bg-[#8a7bb4]');
-            
+
             timerDisplay.classList.add('text-red-600');
             setTimeout(() => {
                 timerDisplay.classList.remove('text-red-600');
             }, 2000);
-            
+
             if (activeTimerBtn) {
                 activeTimerBtn.classList.remove('timer-active');
                 activeTimerBtn = null;
             }
         }
-        
+
         // Name picker functions
         function loadClassesFromStorage() {
             const savedClasses = localStorage.getItem('classroomTool_classes');
             if (savedClasses) {
                 classes = JSON.parse(savedClasses);
-                
+
                 if (Object.keys(classes).length === 0) {
                     classes = { class1: { name: '班級 1', students: [], picked: [] } };
                 }
@@ -629,11 +693,11 @@
                 }
             }
         }
-        
+
         function saveClassesToStorage() {
             localStorage.setItem('classroomTool_classes', JSON.stringify(classes));
         }
-        
+
         function updateClassSelect() {
             classSelect.innerHTML = '';
             Object.keys(classes).forEach(classId => {
@@ -644,51 +708,70 @@
             });
             classSelect.value = currentClass;
         }
-        
+
         function updateNameInput() {
             if (classes[currentClass]) {
                 nameInput.value = classes[currentClass].students.join('\n');
             }
         }
-        
+
         function updatePickedList() {
             pickedList.innerHTML = '';
             if (classes[currentClass]) {
                 classes[currentClass].picked.forEach(name => {
                     const div = document.createElement('div');
                     div.className = 'py-1 px-2 mb-1 bg-white rounded border border-[#e2e2e7]';
-                    div.textContent = name;
+                    div.textContent = name.trim(); // 隱藏空格
                     pickedList.appendChild(div);
                 });
             }
         }
-        
+
         function pickName() {
             const availableStudents = classes[currentClass].students.filter(
                 student => !classes[currentClass].picked.includes(student)
             );
-            
+
             if (availableStudents.length === 0) {
                 winnerDisplay.textContent = '名單已抽完';
                 return null;
             }
-            
-            const randomIndex = Math.floor(Math.random() * availableStudents.length);
-            const winner = availableStudents[randomIndex];
-            
+
+            // 加權隨機抽籤邏輯
+            // 權重計算：1 + 名字後方的空格數量
+            const weightedStudents = availableStudents.map(student => {
+                const trailingSpaces = (student.match(/ *$/) || [""])[0].length;
+                return {
+                    name: student,
+                    weight: 1 + trailingSpaces
+                };
+            });
+
+            const totalWeight = weightedStudents.reduce((sum, s) => sum + s.weight, 0);
+            let random = Math.random() * totalWeight;
+
+            let winner = weightedStudents[0].name;
+            for (const student of weightedStudents) {
+                if (random < student.weight) {
+                    winner = student.name;
+                    break;
+                }
+                random -= student.weight;
+            }
+
             classes[currentClass].picked.push(winner);
             saveClassesToStorage();
-            
+
             return winner;
         }
-        
+
         function createConfetti() {
             const confettiContainer = document.getElementById('confetti-container');
-            confettiContainer.innerHTML = ''; 
+            confettiContainer.innerHTML = '';
             confettiContainer.appendChild(winnerDisplay);
-            
+
             const colors = ['#9d8ec7', '#b3a8cc', '#c4b5fd', '#ddd6fe', '#f5f3ff'];
-            
+
             for (let i = 0; i < 50; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
@@ -699,30 +782,30 @@
                 confettiContainer.appendChild(confetti);
             }
         }
-        
+
         // ** MODIFIED SECTION START **
         // 這是被修改過的函數，用來解決 iPad 上的觸控問題
         function setupCustomTimeControls() {
-            
+
             const setupHoldableButton = (button, action) => {
                 // 【修改一】將 intervalId 移至此處，
                 // 讓每個按鈕（'increase-minutes', 'decrease-minutes'等）
                 // 都有自己獨立的 intervalId 變數，這樣它們就不會互相干擾。
-                let intervalId = null; 
+                let intervalId = null;
 
                 const startAction = (e) => {
                     e.preventDefault(); // 防止觸控時的預設行為（如頁面滾動或縮放）
-                    
+
                     // 【修改二】在啟動新計時器前，先清除任何可能存在的舊計時器。
                     // 這是一個安全防護，防止 "zombie" 計時器。
                     if (intervalId) {
                         clearInterval(intervalId);
                     }
-                    
+
                     action(); // 立即執行一次
                     intervalId = setInterval(action, 120); // 然後設定計時器
                 };
-                
+
                 const stopAction = () => {
                     // 【修改三】只在 intervalId 存在時才清除
                     if (intervalId) {
@@ -733,7 +816,7 @@
 
                 // 監聽 mousedown 和 touchstart 事件來啟動
                 ['mousedown', 'touchstart'].forEach(type => button.addEventListener(type, startAction));
-                
+
                 // 【修改四】在監聽列表中加入 'touchcancel'，
                 // 這是處理 iPad Slide Over 或其他系統手勢中斷觸控的關鍵。
                 // 'mouseleave' 確保滑鼠移開按鈕時也會停止。
@@ -753,7 +836,7 @@
             // 為四個按鈕設置長按功能
             setupHoldableButton(increaseMinutesBtn, () => updateMinutes(customTimeMinutes + 1));
             setupHoldableButton(decreaseMinutesBtn, () => updateMinutes(customTimeMinutes - 1));
-            
+
             setupHoldableButton(increaseSecondsBtn, () => {
                 // (保持您原有的 +10 秒邏輯)
                 const currentSecs = parseInt(customSecondsInput.value, 10) || 0;
@@ -787,7 +870,7 @@
         // Event listeners
         pauseBtn.addEventListener('click', pauseTimer);
         resetBtn.addEventListener('click', resetTimer);
-        
+
         customTimeBtn.addEventListener('click', () => {
             customTimeMinutes = 0;
             customTimeSeconds = 0;
@@ -795,19 +878,19 @@
             customSecondsInput.value = '00';
             customTimeModal.classList.remove('hidden');
         });
-        
+
         cancelCustomTime.addEventListener('click', () => {
             customTimeModal.classList.add('hidden');
         });
-        
+
         confirmCustomTime.addEventListener('click', () => {
-            const totalSecondsValue = (parseInt(customMinutesInput.value,10) * 60) + parseInt(customSecondsInput.value,10);
-            
+            const totalSecondsValue = (parseInt(customMinutesInput.value, 10) * 60) + parseInt(customSecondsInput.value, 10);
+
             if (totalSecondsValue > 0) {
                 setTimer(totalSecondsValue);
                 startTimer();
                 customTimeModal.classList.add('hidden');
-                
+
                 if (activeTimerBtn) {
                     activeTimerBtn.classList.remove('timer-active');
                 }
@@ -816,7 +899,7 @@
                 showToast('請設定大於 0 秒的時間');
             }
         });
-        
+
         timerTab.addEventListener('click', () => {
             timerTab.classList.add('tab-active');
             timerTab.classList.remove('bg-[#e2e2e7]', 'text-[#6b7280]');
@@ -825,7 +908,7 @@
             timerSection.classList.remove('hidden');
             pickerSection.classList.add('hidden');
         });
-        
+
         pickerTab.addEventListener('click', () => {
             pickerTab.classList.add('tab-active');
             pickerTab.classList.remove('bg-[#e2e2e7]', 'text-[#6b7280]');
@@ -834,43 +917,45 @@
             pickerSection.classList.remove('hidden');
             timerSection.classList.add('hidden');
         });
-        
+
         classSelect.addEventListener('change', () => {
             currentClass = classSelect.value;
             updateNameInput();
             updatePickedList();
             winnerDisplay.textContent = '準備抽籤';
         });
-        
+
         saveNamesBtn.addEventListener('click', () => {
-            const names = nameInput.value.split('\n').map(name => name.trim()).filter(name => name !== '');
+            const names = nameInput.value.split('\n')
+                .map(name => name.replace(/^\s+/, "")) // 只移除首部空格，保留尾部空格
+                .filter(name => name !== '');
             if (classes[currentClass]) {
                 classes[currentClass].students = names;
                 saveClassesToStorage();
                 showToast('名單已儲存！');
             }
         });
-        
+
         clearNamesBtn.addEventListener('click', () => {
             nameInput.value = '';
         });
-        
+
         pickBtn.addEventListener('click', () => {
             if (!classes[currentClass] || classes[currentClass].students.length === 0) {
                 showToast('請先新增名單！');
                 return;
             }
-            
+
             const winner = pickName();
             if (winner) {
-                winnerDisplay.textContent = winner;
+                winnerDisplay.textContent = winner.trim(); // 隱藏空格
                 createConfetti();
                 winnerDisplay.classList.add('winner-animation');
                 setTimeout(() => winnerDisplay.classList.remove('winner-animation'), 500);
                 updatePickedList();
             }
         });
-        
+
         pickMultipleBtn.addEventListener('click', () => {
             if (!classes[currentClass] || classes[currentClass].students.length === 0) {
                 showToast('請先新增名單！');
@@ -878,18 +963,18 @@
             }
             multiplePickModal.classList.remove('hidden');
         });
-        
+
         cancelMultiplePick.addEventListener('click', () => {
             multiplePickModal.classList.add('hidden');
         });
-        
+
         confirmMultiplePick.addEventListener('click', () => {
             const count = parseInt(pickCount.value) || 1;
             multiplePickModal.classList.add('hidden');
             let winners = [];
             for (let i = 0; i < count; i++) {
                 const winner = pickName();
-                if (winner) winners.push(winner);
+                if (winner) winners.push(winner.trim()); // 隱藏空格
                 else break;
             }
             if (winners.length > 0) {
@@ -900,7 +985,7 @@
                 updatePickedList();
             }
         });
-        
+
         resetPickedBtn.addEventListener('click', () => {
             if (classes[currentClass]) {
                 classes[currentClass].picked = [];
@@ -910,7 +995,7 @@
                 showToast('已重置抽籤名單');
             }
         });
-        
+
         addClassBtn.addEventListener('click', () => addClassModal.classList.remove('hidden'));
         cancelAddClass.addEventListener('click', () => addClassModal.classList.add('hidden'));
         confirmAddClass.addEventListener('click', () => {
@@ -928,7 +1013,7 @@
                 showToast(`已新增班級：${name}`);
             }
         });
-        
+
         renameClassBtn.addEventListener('click', () => {
             if (classes[currentClass]) {
                 newClassName.value = classes[currentClass].name;
@@ -947,7 +1032,7 @@
                 showToast(`已將「${oldName}」重新命名為「${name}」`);
             }
         });
-        
+
         deleteClassBtn.addEventListener('click', () => {
             if (Object.keys(classes).length <= 1) {
                 showToast('無法刪除唯一的班級');
@@ -970,15 +1055,15 @@
             deleteClassModal.classList.add('hidden');
             showToast(`已刪除班級：${deletedClassName}`);
         });
-        
+
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 e.target.classList.add('hidden');
             }
         });
-        
+
         init();
     </script>
 </body>
-</html>
 
+</html>
