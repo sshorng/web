@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,23 +17,377 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        .page-card:hover .card-actions { opacity: 1; }
-        .sortable-ghost { opacity: 0.3; background: #ebf8ff; border: 2px dashed #4299e1; }
-        #drop-zone.dragover { border-color: #3b82f6; background-color: #f8fafc; }
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; flex-direction: column; color: white; }
-        .advanced-settings { display: none; }
-        .advanced-settings.active { display: block; }
-        .page-card.is-selected { border: 2px solid #3b82f6; background-color: #eff6ff; }
-        .page-card.is-selected .select-checkbox { background-color: #3b82f6; border-color: #3b82f6; }
+        :root {
+            --primary: 221.2 83.2% 53.3%;
+            /* Blue 600 */
+            --primary-hover: 226.3 70.7% 40.2%;
+            --bg-glass: rgba(255, 255, 255, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.3);
+            --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --card-shadow-hover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .glass-panel {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            box-shadow: var(--card-shadow);
+        }
+
+        .advanced-settings {
+            display: none;
+        }
+
+        .advanced-settings.active {
+            display: block;
+        }
+
+        .page-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e2e8f0;
+            background: white;
+            position: relative;
+        }
+
+        .page-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: var(--card-shadow-hover);
+            border-color: hsl(var(--primary));
+        }
+
+        .page-card.is-selected {
+            border: 2px solid hsl(var(--primary));
+            background-color: #eff6ff;
+        }
+
+        .page-card:hover .card-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-actions {
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: all 0.2s ease;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2px;
+            /* 縮小間距 */
+        }
+
+        /* 縮小按鈕與圖示尺寸 */
+        .card-actions button {
+            padding: 4px !important;
+        }
+
+        .card-actions i {
+            width: 12px !important;
+            height: 12px !important;
+        }
+
+        .sortable-ghost {
+            opacity: 0;
+        }
+
+        .sortable-drag {
+            opacity: 1 !important;
+            transform: scale(1.1) rotate(2deg);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            z-index: 50;
+        }
+
+        #drop-zone.dragover {
+            border-color: hsl(var(--primary));
+            background-color: #f1f5f9;
+            transform: scale(1.01);
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+        }
+
+        #custom-confirm,
+        #crop-modal,
+        #range-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        #signature-manager-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 3000; /* 必須大於 preview-modal 的 1000 和 preview-footer 的 2000 */
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            animation: fadeIn 0.1s ease-out;
+        }
+
+        /* 預覽視窗獨立佈局 - 防止頂部裁切 */
+        #preview-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+        }
+
+        .preview-img-container {
+            position: absolute;
+            inset: 0;
+            overflow: auto;
+            background: rgba(15, 23, 42, 0.98);
+            display: block;
+            padding: 40px; /* 留白 */
+        }
+
+        .preview-content-wrapper {
+            position: relative;
+            display: block;
+            margin: 0 auto; /* 恢復置中，利用 margin auto 特性在小於視窗時置中，大於視窗時靠左不裁切 */
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            background: white;
+        }
+
+        .preview-footer {
+            position: fixed;
+            bottom: 32px;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: fit-content;
+            min-width: 420px;
+            background: rgba(15, 23, 42, 0.96);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 99px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 2000;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            touch-action: none; /* 禁用任何原生捲動手勢 */
+        }
+
+        #zoom-slider {
+            width: 160px;
+            cursor: pointer;
+            touch-action: none;
+            accent-color: #3b82f6;
+        }
         
-        #drop-indicator { display: none; position: absolute; width: 4px; background-color: #3b82f6; border-radius: 2px; z-index: 30; pointer-events: none; transition: all 0.1s ease; }
-        #custom-confirm, #crop-modal, #range-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        #zoom-slider::-webkit-slider-runnable-track {
+            height: 4px;
+            background: #475569;
+            border-radius: 2px;
+        }
         
-        #crop-container { position: relative; max-width: 80vw; max-height: 70vh; overflow: auto; background: #333; }
-        #crop-overlay { position: absolute; border: 2px dashed #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); cursor: move; }
-        .crop-handle { position: absolute; width: 12px; height: 12px; background: #3b82f6; border: 1px solid white; }
+        #zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            margin-top: -6px;
+            border: 2px solid white;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        #crop-container {
+            position: relative;
+            max-width: 90vw;
+            max-height: 70vh;
+            overflow: auto;
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        #crop-overlay {
+            position: absolute;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            cursor: move;
+        }
+
+        .crop-handle {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: hsl(var(--primary));
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+
+        #preview-full-img {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: white;
+            /* 針對不同瀏覽器的銳化優化 */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+
+        /* 徹底解決溢出：按鈕改為右上角與右下角分散 */
+        .card-actions {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.2s ease;
+            position: absolute;
+            inset: 8px;
+            pointer-events: none;
+            z-index: 30;
+        }
+
+        .page-card:hover .card-actions {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .action-btn {
+            pointer-events: auto;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .action-btn:hover {
+            background: #f8fafc;
+            border-color: hsl(var(--primary));
+        }
+
+        .action-btn.delete:hover {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        /* 選取狀態 CSS 驅動 */
+        .page-card.is-selected { border-color: rgb(37 99 235); background-color: rgb(239 246 255); }
+        .page-card.is-selected .select-badge { 
+            background-color: rgb(37 99 235); 
+            border-color: rgb(37 99 235); 
+        }
+        .page-card.is-selected .select-badge i,
+        .page-card.is-selected .select-badge svg { 
+            display: block !important; 
+            color: white !important;
+            stroke: white !important; 
+        }
+        .select-badge i, .select-badge svg { display: none; }
+
+        /* 簽名編輯層 */
+        .signature-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none; /* 讓點擊穿透到背景 */
+            z-index: 50;
+        }
+
+        .signature-item {
+            position: absolute;
+            cursor: move;
+            pointer-events: auto; /* 恢復簽名本身的互動 */
+            border: 2px dashed transparent;
+            z-index: 51;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .signature-item:hover, .signature-item:active {
+            border-color: #3b82f6;
+        }
+
+        .signature-item img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none; /* 防止圖片被原生拖曳 */
+        }
+
+        .signature-item .resize-handle {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            width: 16px;
+            height: 16px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: se-resize;
+            display: none;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .signature-item .delete-handle {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 24px;
+            height: 24px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .signature-item:hover .resize-handle,
+        .signature-item:hover .delete-handle {
+            display: flex;
+        }
     </style>
 </head>
+
 <body class="bg-gray-50 min-h-screen font-sans pb-24">
 
     <!-- 全局讀取遮罩 -->
@@ -50,12 +405,15 @@
             <p class="text-gray-600 mb-4 text-sm" id="range-file-info">正在匯入檔案...</p>
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">請輸入要匯入的頁碼：</label>
-                <input type="text" id="import-range-input" class="w-full border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" placeholder="例如: 1, 3-5, 10">
+                <input type="text" id="import-range-input"
+                    class="w-full border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="例如: 1, 3-5, 10">
                 <p class="text-[11px] text-gray-400 mt-1">留空則匯入所有頁面。範圍請使用「-」，多個頁碼請使用「,」分隔。</p>
             </div>
             <div class="flex justify-end gap-3">
                 <button id="range-cancel" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg">取消</button>
-                <button id="range-submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">確認匯入</button>
+                <button id="range-submit"
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">確認匯入</button>
             </div>
         </div>
     </div>
@@ -77,7 +435,8 @@
                 <p class="text-sm text-gray-500">拖動邊角調整區域，拖動中心移動位置</p>
                 <div class="flex gap-3">
                     <button id="crop-cancel" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg">取消</button>
-                    <button id="crop-apply" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">套用裁切</button>
+                    <button id="crop-apply"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">套用裁切</button>
                 </div>
             </div>
         </div>
@@ -90,7 +449,83 @@
             <p class="text-gray-600 mb-6" id="confirm-msg">您確定要執行此操作嗎？</p>
             <div class="flex justify-end gap-3">
                 <button id="confirm-cancel" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg">取消</button>
-                <button id="confirm-ok" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold">確定執行</button>
+                <button id="confirm-ok"
+                    class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold">確定執行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 預覽視窗 -->
+    <div id="preview-modal" onclick="this.style.display='none'">
+        <!-- 獨立的滾動區域 -->
+        <div class="preview-img-container" id="preview-scroll-container">
+            <div class="preview-content-wrapper" id="preview-wrap" style="width: 1000px;" onclick="event.stopPropagation()">
+                <img id="preview-full-img" src="" />
+                <div id="signature-layer" class="signature-layer"></div>
+            </div>
+        </div>
+
+        <!-- 獨立的固定工具列 (移出滾動容器) -->
+        <div class="preview-footer" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+                <p id="preview-info" class="text-xs font-bold truncate max-w-[120px]"></p>
+                <div class="w-px h-4 bg-gray-700"></div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="zoom-out" size="14" class="text-gray-400"></i>
+                    <input type="range" id="zoom-slider" min="50" max="300" value="100">
+                    <i data-lucide="zoom-in" size="14" class="text-gray-400"></i>
+                    <span id="zoom-val" class="text-[10px] font-mono min-w-[30px]">100%</span>
+                </div>
+            </div>
+            <div class="w-px h-6 bg-gray-700"></div>
+            <div class="flex gap-2">
+                <button id="open-sig-mgr" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2">
+                    <i data-lucide="pen-tool" size="14"></i> 簽名
+                </button>
+                <button onclick="document.getElementById('preview-modal').style.display='none'"
+                    class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-colors">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 簽名管理模態視窗 -->
+    <div id="signature-manager-modal">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
+            <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold flex items-center gap-2"><i data-lucide="pen-tool"></i> 簽名管理</h3>
+                <button onclick="closeSignatureManager()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- 左側：上傳與去背控制 -->
+                    <div class="space-y-4">
+                        <div id="sig-drop-zone" class="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 transition-all cursor-pointer bg-gray-50 group">
+                            <i data-lucide="upload-cloud" class="mx-auto mb-2 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+                            <p class="text-xs text-gray-500">點擊上傳或<br><span class="font-bold text-blue-600">直接貼上截圖 (Ctrl+V)</span></p>
+                            <input type="file" id="sig-file-input" class="hidden" accept="image/*">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs font-bold text-gray-600">
+                                <span>去背容差 (白色移除強度)</span>
+                                <span id="tolerance-val">30</span>
+                            </div>
+                            <input type="range" id="sig-tolerance" min="0" max="150" value="30" class="w-full">
+                        </div>
+                        <button id="add-to-library" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none" disabled>新增此簽名</button>
+                    </div>
+                    <!-- 右側：預覽與已儲存簽名 -->
+                    <div class="flex flex-col gap-4">
+                        <p class="text-xs font-bold text-gray-500">當前預覽 (透明背景)</p>
+                        <div class="aspect-video bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-gray-200 rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 p-4">
+                            <img id="sig-preview-img" class="max-w-full max-h-full object-contain hidden">
+                            <p id="sig-preview-placeholder" class="text-xs text-gray-400 text-center">目前無簽名圖片</p>
+                        </div>
+                        <p class="text-xs font-bold text-gray-500 border-t pt-4">我的簽名庫</p>
+                        <div id="sig-library" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-2">
+                            <!-- 簽名清單 -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -107,23 +542,28 @@
         <div class="bg-white p-6 rounded-xl shadow-sm mb-6 border border-gray-100 relative z-10">
             <div class="flex flex-wrap gap-4 items-center justify-between mb-4">
                 <div class="flex flex-wrap gap-2">
-                    <label class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition-colors shadow-sm">
+                    <label
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition-colors shadow-sm">
                         <i data-lucide="file-up" size="20"></i> 新增檔案 (PDF/圖片)
                         <input type="file" id="file-input" class="hidden" multiple accept="application/pdf,image/*">
                     </label>
-                    <button id="select-all" class="text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-2">
+                    <button id="select-all"
+                        class="text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-2">
                         <i data-lucide="check-square" size="20"></i> 全選
                     </button>
-                    <button id="clear-all-btn" class="text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-2">
+                    <button id="clear-all-btn"
+                        class="text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-2">
                         <i data-lucide="trash-2" size="20"></i> 清除全部
                     </button>
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <button id="toggle-advanced" class="text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg flex items-center gap-1 transition-colors">
-                        <i data-lucide="settings-2" size="18"></i> 頁碼進階設定
+                    <button id="toggle-advanced"
+                        class="text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg flex items-center gap-1 transition-colors">
+                        <i data-lucide="settings-2" size="18"></i> 進階設定
                     </button>
-                    <button id="export-pdf" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow-md transition-all flex items-center gap-2 font-semibold">
+                    <button id="export-pdf"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow-md transition-all flex items-center gap-2 font-semibold">
                         <i data-lucide="file-type-2" size="20"></i> 下載合併 PDF
                     </button>
                 </div>
@@ -131,7 +571,7 @@
 
             <!-- 進階設定區域 -->
             <div id="advanced-panel" class="advanced-settings bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">啟用頁碼</label>
                         <select id="pn-enabled" class="w-full border-gray-300 rounded-md shadow-sm py-2 px-2">
@@ -141,11 +581,13 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">起始頁面</label>
-                        <input type="number" id="pn-start-page" value="1" min="1" class="w-full border-gray-300 rounded-md shadow-sm py-2 px-3">
+                        <input type="number" id="pn-start-page" value="1" min="1"
+                            class="w-full border-gray-300 rounded-md shadow-sm py-2 px-3">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">起始數字</label>
-                        <input type="number" id="pn-start-value" value="1" min="0" class="w-full border-gray-300 rounded-md shadow-sm py-2 px-3">
+                        <input type="number" id="pn-start-value" value="1" min="0"
+                            class="w-full border-gray-300 rounded-md shadow-sm py-2 px-3">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">頁碼位置</label>
@@ -155,38 +597,65 @@
                             <option value="right">右下方</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">色彩模式</label>
+                        <select id="export-color" class="w-full border-gray-300 rounded-md shadow-sm py-2 px-2">
+                            <option value="color">彩色 (原始)</option>
+                            <option value="gray">灰階 (省墨專用)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">圖片品質</label>
+                        <select id="export-quality" class="w-full border-gray-300 rounded-md shadow-sm py-2 px-2">
+                            <option value="0.9">高品質 (大檔)</option>
+                            <option value="0.7">平衡 (推薦)</option>
+                            <option value="0.4">壓縮 (小檔)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 顯示區 -->
-        <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-2xl min-h-[400px] p-6 bg-white transition-all relative">
+        <div id="drop-zone"
+            class="border-2 border-dashed border-gray-300 rounded-2xl min-h-[400px] p-6 bg-white transition-all relative">
             <div id="drop-indicator"></div>
             <div id="empty-state" class="flex flex-col items-center justify-center h-full py-20 text-gray-400">
                 <i data-lucide="upload-cloud" size="64" class="mb-4"></i>
                 <p class="text-xl text-center text-gray-500 font-medium">拖放 PDF 或 圖片 到這裡</p>
                 <p class="text-sm mt-2 text-gray-400">點擊分頁左上角勾選，支援 Shift 連續選取</p>
             </div>
-            <div id="pages-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 relative"></div>
+            <div id="pages-container"
+                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 relative">
+            </div>
         </div>
     </div>
 
     <!-- 批次操作浮動列 -->
-    <div id="batch-toolbar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 transition-all transform translate-y-32 opacity-0 z-40">
+    <div id="batch-toolbar"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 transition-all transform translate-y-32 opacity-0 z-40">
         <div class="flex flex-col">
             <span class="text-xs text-gray-400">已選取</span>
             <span class="font-bold text-lg leading-none" id="selected-count">0 頁</span>
         </div>
         <div class="h-8 w-px bg-gray-700"></div>
         <div class="flex gap-2">
-            <button id="batch-delete" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg flex items-center gap-2"><i data-lucide="trash" size="18"></i> 刪除</button>
-            <button id="batch-png" class="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg flex items-center gap-2"><i data-lucide="image" size="18"></i> 轉為 PNG 打包</button>
-            <button id="batch-export" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg flex items-center gap-2"><i data-lucide="file-output" size="18"></i> 僅匯出選取</button>
+            <button id="batch-delete"
+                class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg flex items-center gap-2"><i data-lucide="trash"
+                    size="18"></i> 刪除</button>
+            <button id="batch-png"
+                class="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg flex items-center gap-2"><i
+                    data-lucide="image" size="18"></i> 轉為 PNG 打包</button>
+            <button id="batch-export"
+                class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg flex items-center gap-2"><i
+                    data-lucide="file-output" size="18"></i> 僅匯出選取</button>
             <button id="deselect-all" class="text-gray-300 hover:text-white px-4 py-2">取消</button>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg opacity-0 transition-opacity pointer-events-none z-50">已成功更新</div>
+    <div id="toast"
+        class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg opacity-0 transition-opacity pointer-events-none z-50">
+        已成功更新</div>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -216,7 +685,31 @@
         const rangeSubmit = document.getElementById('range-submit');
         const rangeCancel = document.getElementById('range-cancel');
 
-        let pageList = []; 
+        const previewModal = document.getElementById('preview-modal');
+        const previewFullImg = document.getElementById('preview-full-img');
+        const previewInfo = document.getElementById('preview-info');
+
+        // 簽名相關變數
+        const sigManagerModal = document.getElementById('signature-manager-modal');
+        const sigTolerance = document.getElementById('sig-tolerance');
+        const sigToleranceVal = document.getElementById('tolerance-val');
+        const sigPreviewImg = document.getElementById('sig-preview-img');
+        const sigPreviewPlaceholder = document.getElementById('sig-preview-placeholder');
+        const sigLibraryContainer = document.getElementById('sig-library');
+        const addToLibraryBtn = document.getElementById('add-to-library');
+        const sigLayer = document.getElementById('signature-layer');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomValDisplay = document.getElementById('zoom-val');
+        const previewWrap = document.getElementById('preview-wrap');
+
+        let signatureLibrary = []; // 儲存經過去背的 DataURL
+        let currentSigRaw = null; // 原始尚未去背的圖片對象
+        let activePageSignatures = {}; // 格式：{ pageIndex: [{ sigData, x, y, scale }] }
+        let currentPreviewPageIndex = -1;
+        let currentZoom = 100;
+        let originalPageWidth = 1000; // 基礎寬度固定為 1000px 用於內部映射
+
+        let pageList = [];
         let selectedIds = new Set();
         let lastSelectedIndex = null;
         let calculatedInsertIndex = null;
@@ -224,10 +717,113 @@
 
         lucide.createIcons();
 
+        // 初始化 SortableJS
+        const sortable = Sortable.create(pagesContainer, {
+            animation: 300,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            handle: '.page-card',
+            onEnd: (evt) => {
+                const movedItem = pageList.splice(evt.oldIndex, 1)[0];
+                pageList.splice(evt.newIndex, 0, movedItem);
+                renderAllPages(false); // 不重繪以保持平滑，但更新 UI 上的數字
+                updatePageNumberBadges();
+            }
+        });
+
         // 頁碼面板切換
         toggleAdvanced.addEventListener('click', () => {
-            advancedPanel.classList.toggle('active');
+            const isActive = advancedPanel.classList.toggle('active');
+            toggleAdvanced.classList.toggle('bg-blue-100', isActive);
         });
+
+        // --- 簽名功能邏輯 ---
+
+        document.getElementById('open-sig-mgr').onclick = (e) => {
+            e.stopPropagation();
+            sigManagerModal.style.display = 'flex';
+        };
+
+        function closeSignatureManager() {
+            sigManagerModal.style.display = 'none';
+        }
+
+        // 處理剪貼簿貼上
+        window.addEventListener('paste', async (e) => {
+            if (sigManagerModal.style.display !== 'flex') return;
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    processSignatureFile(blob);
+                    break;
+                }
+            }
+        });
+
+        document.getElementById('sig-drop-zone').onclick = () => document.getElementById('sig-file-input').click();
+        document.getElementById('sig-file-input').onchange = (e) => {
+            if (e.target.files[0]) processSignatureFile(e.target.files[0]);
+        };
+
+        async function processSignatureFile(file) {
+            const dataUrl = await readImageAsDataURL(file);
+            const img = new Image();
+            img.onload = () => {
+                currentSigRaw = img;
+                refreshSignaturePreview();
+            };
+            img.src = dataUrl;
+        }
+
+        sigTolerance.oninput = (e) => {
+            sigToleranceVal.textContent = e.target.value;
+            if (currentSigRaw) refreshSignaturePreview();
+        };
+
+        function refreshSignaturePreview() {
+            if (!currentSigRaw) return;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = currentSigRaw.width;
+            canvas.height = currentSigRaw.height;
+            ctx.drawImage(currentSigRaw, 0, 0);
+
+            const tolerance = parseInt(sigTolerance.value);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            // 自動去背算法：接近白色 (255, 255, 255) 的像素設為透明
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                if (r > 255 - tolerance && g > 255 - tolerance && b > 255 - tolerance) {
+                    data[i + 3] = 0; // Alpha = 0
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+            sigPreviewImg.src = canvas.toDataURL();
+            sigPreviewImg.classList.remove('hidden');
+            sigPreviewPlaceholder.classList.add('hidden');
+            addToLibraryBtn.disabled = false;
+        }
+
+        addToLibraryBtn.onclick = () => {
+            signatureLibrary.push(sigPreviewImg.src);
+            updateSignatureLibraryUI();
+            showToast("簽名已加入選單");
+        };
+
+        function updateSignatureLibraryUI() {
+            sigLibraryContainer.innerHTML = '';
+            signatureLibrary.forEach((sig, idx) => {
+                const div = document.createElement('div');
+                div.className = "p-2 border rounded-lg hover:border-blue-500 cursor-pointer bg-white group relative transition-all";
+                div.innerHTML = `<img src="${sig}" class="max-w-full h-8 object-contain">`;
+                div.onclick = () => applySignatureToPage(sig);
+                sigLibraryContainer.appendChild(div);
+            });
+        }
 
         // --- 核心邏輯：頁碼範圍解析 ---
 
@@ -313,7 +909,7 @@
                 if (file.type === 'application/pdf') {
                     const pdfJsDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
                     const pdfDocLib = await PDFLib.PDFDocument.load(arrayBuffer.slice(0));
-                    
+
                     const pagesToImport = indices || [...Array(pdfDocLib.getPageCount()).keys()];
 
                     for (const i of pagesToImport) {
@@ -358,12 +954,11 @@
             showToast(`成功匯入 ${tempNewPages.length} 頁`);
         }
 
-        async function renderThumbnailFromSource(pdfJsPage, rotation, crop) {
-            const scale = 0.5;
+        async function renderThumbnailFromSource(pdfJsPage, rotation, crop, scale = 0.5) {
             const viewport = pdfJsPage.getViewport({ scale, rotation });
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
+
             if (!crop) {
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
@@ -379,10 +974,10 @@
                 await pdfJsPage.render({ canvasContext: offCtx, viewport }).promise;
                 ctx.drawImage(offscreen, cx, cy, cw, ch, 0, 0, cw, ch);
             }
-            return canvas.toDataURL('image/jpeg', 0.8);
+            return canvas.toDataURL('image/jpeg', 1.0); // Always output highest quality for previews
         }
 
-        async function renderImageThumbnail(arrayBuffer, rotation, crop) {
+        async function renderImageThumbnail(arrayBuffer, rotation, crop, quality = 0.8) {
             const blob = new Blob([arrayBuffer]);
             const url = URL.createObjectURL(blob);
             const img = new Image();
@@ -396,9 +991,9 @@
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = w; tempCanvas.height = h;
             const tCtx = tempCanvas.getContext('2d');
-            tCtx.translate(w/2, h/2);
+            tCtx.translate(w / 2, h / 2);
             tCtx.rotate(rotation * Math.PI / 180);
-            tCtx.drawImage(img, -img.width/2, -img.height/2);
+            tCtx.drawImage(img, -img.width / 2, -img.height / 2);
 
             if (!crop) {
                 canvas.width = w; canvas.height = h;
@@ -410,7 +1005,7 @@
                 ctx.drawImage(tempCanvas, cx, cy, cw, ch, 0, 0, cw, ch);
             }
             URL.revokeObjectURL(url);
-            return canvas.toDataURL('image/jpeg', 0.8);
+            return canvas.toDataURL('image/jpeg', quality);
         }
 
         function readImageAsDataURL(file) {
@@ -423,56 +1018,234 @@
 
         // --- UI 渲染與互動 ---
 
-        function renderAllPages() {
-            pagesContainer.innerHTML = '';
-            pageList.forEach((item, idx) => {
-                const isSelected = selectedIds.has(item.id);
-                const card = document.createElement('div');
-                card.className = `page-card relative group bg-white p-2 border border-gray-200 rounded-lg shadow-sm cursor-pointer transition-all hover:scale-105 ${isSelected ? 'is-selected' : ''}`;
-                card.dataset.id = item.id;
-                
-                card.innerHTML = `
-                    <div class="absolute top-2 left-2 z-20">
-                        <div class="select-checkbox w-6 h-6 border-2 border-gray-300 rounded bg-white flex items-center justify-center transition-all shadow-sm">
-                            <i data-lucide="check" size="16" class="text-white ${isSelected ? '' : 'hidden'}"></i>
+        function renderAllPages(reRender = true) {
+            if (reRender) {
+                pagesContainer.innerHTML = '';
+                pageList.forEach((item, idx) => {
+                    const isSelected = selectedIds.has(item.id);
+                    const card = document.createElement('div');
+                    card.className = `page-card relative group bg-white p-2 border border-gray-200 rounded-lg shadow-sm cursor-pointer transition-all ${isSelected ? 'is-selected' : ''}`;
+                    card.dataset.id = item.id;
+
+                    card.innerHTML = `
+                        <div class="select-badge absolute top-2 left-2 w-6 h-6 border-2 border-gray-300 rounded bg-white flex items-center justify-center transition-all shadow-sm z-30 pointer-events-none">
+                            <i data-lucide="check" size="16"></i>
                         </div>
-                    </div>
-                    <div class="card-actions absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity z-20">
-                        <button class="rotate-btn p-1.5 bg-white/90 hover:bg-white text-blue-600 rounded-full shadow-sm border border-gray-100" title="旋轉">
-                            <i data-lucide="rotate-cw" size="14"></i>
-                        </button>
-                        <button class="crop-btn p-1.5 bg-white/90 hover:bg-white text-green-600 rounded-full shadow-sm border border-gray-100" title="裁切">
-                            <i data-lucide="crop" size="14"></i>
-                        </button>
-                        <button class="delete-btn p-1.5 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-full shadow-sm border border-gray-100" title="刪除">
-                            <i data-lucide="trash-2" size="14"></i>
-                        </button>
-                    </div>
-                    <div class="aspect-[3/4] bg-gray-100 rounded overflow-hidden mb-2 pointer-events-none flex items-center justify-center">
-                        <img src="${item.thumbnail}" class="w-full h-full object-contain" />
-                    </div>
-                    <div class="text-[10px] text-gray-500 truncate text-center pointer-events-none px-4 flex items-center justify-center gap-1">
-                        ${item.type === 'image' ? '<i data-lucide="image" size="10"></i>' : ''} ${item.fileName}
-                    </div>
-                    <div class="absolute bottom-1 right-2 bg-blue-600 text-white text-[10px] px-1.5 rounded-full font-bold page-number-badge">
-                        ${idx + 1}
-                    </div>
+                        <div class="card-actions">
+                            <button class="action-btn view-trigger absolute top-0 right-0" title="檢視"><i data-lucide="eye" size="14"></i></button>
+                            <button class="action-btn rotate-trigger absolute top-8 right-0" title="旋轉"><i data-lucide="rotate-cw" size="14"></i></button>
+                            <button class="action-btn crop-trigger absolute top-16 right-0" title="裁切"><i data-lucide="crop" size="14"></i></button>
+                            <button class="action-btn delete-trigger absolute bottom-0 right-0 text-red-500" title="刪除"><i data-lucide="trash-2" size="14"></i></button>
+                        </div>
+                        <div class="aspect-[3/4] bg-gray-100 rounded overflow-hidden mb-2 pointer-events-none flex items-center justify-center">
+                            <img src="${item.thumbnail}" id="thumb-${item.id}" class="w-full h-full object-contain" />
+                        </div>
+                        <div class="text-[10px] text-gray-500 truncate text-center pointer-events-none px-4 flex items-center justify-center gap-1">
+                            ${item.type === 'image' ? '<i data-lucide="image" size="10"></i>' : ''} ${item.fileName}
+                        </div>
+                        <div class="absolute bottom-1 left-2 bg-blue-600 text-white text-[10px] px-1.5 rounded-full font-bold page-number-badge">
+                            ${idx + 1}
+                        </div>
+                    `;
+
+                    // 使用 click 搭配 stopPropagation 來處理按鈕，其餘透過 event delegation 處理
+                    card.addEventListener('click', (e) => {
+                        const btn = e.target.closest('button');
+                        if (btn) {
+                            e.stopPropagation();
+                            if (btn.classList.contains('view-trigger')) openPreviewModal(item.id);
+                            else if (btn.classList.contains('rotate-trigger')) rotatePage(item.id);
+                            else if (btn.classList.contains('crop-trigger')) openCropModal(item.id);
+                            else if (btn.classList.contains('delete-trigger')) removePage(item.id);
+                            return;
+                        }
+                        // 如果點擊的不是按鈕，則執行選取邏輯
+                        toggleSelect(item.id, idx, e.shiftKey);
+                    });
+
+                    pagesContainer.appendChild(card);
+                });
+                lucide.createIcons();
+            } else {
+                // 局部更新 DOM 提升效能與響應速度
+                pageList.forEach((item, idx) => {
+                    const card = document.querySelector(`.page-card[data-id="${item.id}"]`);
+                    if (card) {
+                        const isSelected = selectedIds.has(item.id);
+                        card.classList.toggle('is-selected', isSelected);
+                        const pageNumberBadge = card.querySelector('.page-number-badge');
+                        if (pageNumberBadge) pageNumberBadge.textContent = idx + 1;
+                    }
+                });
+            }
+            updateBatchToolbar();
+        }
+
+        // 修改選取邏輯：確保屬度最快
+        function toggleSelect(id, index, isShift) {
+            if (isShift && lastSelectedIndex !== null) {
+                const start = Math.min(lastSelectedIndex, index);
+                const end = Math.max(lastSelectedIndex, index);
+                for (let i = start; i <= end; i++) selectedIds.add(pageList[i].id);
+            } else {
+                if (selectedIds.has(id)) selectedIds.delete(id);
+                else {
+                    selectedIds.add(id);
+                    lastSelectedIndex = index;
+                }
+            }
+            renderAllPages(false); // 局部更新
+            updateBatchToolbar();
+        }
+
+        async function openPreviewModal(id) {
+            const item = pageList.find(p => p.id === id);
+            currentPreviewPageIndex = pageList.indexOf(item);
+            showLoading("正在渲染高清原圖...");
+
+            let fullUrl;
+            if (item.type === 'pdf') {
+                const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0) }).promise;
+                const page = await doc.getPage(item.pageIndex + 1);
+                fullUrl = await renderThumbnailFromSource(page, item.rotation, item.crop, 3.0);
+            } else {
+                fullUrl = await renderImageThumbnail(item.sourceImage, item.rotation, item.crop, 1.0);
+            }
+
+            previewFullImg.src = fullUrl;
+            previewInfo.textContent = `${item.fileName} (第 ${currentPreviewPageIndex + 1} 頁)`;
+            
+            // 重置縮放
+            currentZoom = 100;
+            zoomSlider.value = 100;
+            updatePreviewZoom();
+
+            // 載入當前頁面的簽名
+            renderPageSignatures();
+
+            previewModal.style.display = 'block'; /* 確保不使用 flex，避免強制作中 */
+            hideLoading();
+        }
+
+        // 縮放控制邏輯
+        zoomSlider.oninput = (e) => {
+            currentZoom = parseInt(e.target.value);
+            updatePreviewZoom();
+        };
+
+        // 只防止點擊滑桿時觸發背景的關閉事件，不阻擋原生的滑動
+        zoomSlider.onclick = (e) => e.stopPropagation();
+        zoomSlider.onmousedown = (e) => e.stopPropagation();
+
+        function updatePreviewZoom() {
+            const wrap = document.getElementById('preview-wrap');
+            // 只改變寬度，絕不干涉捲軸
+            wrap.style.width = `${(currentZoom / 100) * originalPageWidth}px`;
+            zoomValDisplay.textContent = `${currentZoom}%`;
+        }
+
+        function applySignatureToPage(sigData) {
+            if (currentPreviewPageIndex === -1) return;
+            if (!activePageSignatures[currentPreviewPageIndex]) activePageSignatures[currentPreviewPageIndex] = [];
+
+            activePageSignatures[currentPreviewPageIndex].push({
+                sigData: sigData,
+                x: 30, y: 30, scale: 0.5
+            });
+            renderPageSignatures();
+            closeSignatureManager();
+            showToast("已放置簽名，可拖曳調整位置");
+        }
+
+        function renderPageSignatures() {
+            sigLayer.innerHTML = '';
+            const sigs = activePageSignatures[currentPreviewPageIndex] || [];
+
+            sigs.forEach((sig, idx) => {
+                const container = document.createElement('div');
+                container.className = 'signature-item';
+                container.style.left = `${sig.x}%`;
+                container.style.top = `${sig.y}%`;
+                container.style.width = `${20 * sig.scale}%`;
+
+                container.innerHTML = `
+                    <img src="${sig.sigData}">
+                    <div class="resize-handle"></div>
+                    <div class="delete-handle"><i data-lucide="trash-2" size="14"></i></div>
                 `;
 
-                // 修復：優化點擊邏輯，直接抓取點擊
-                card.onclick = (e) => {
-                    if (e.target.closest('button')) return;
-                    toggleSelect(item.id, idx, e.shiftKey);
+                // 拖曳邏輯重構
+                container.onmousedown = (e) => {
+                    if (e.target.closest('.resize-handle') || e.target.closest('.delete-handle')) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const rect = previewWrap.getBoundingClientRect();
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const initialX = sig.x;
+                    const initialY = sig.y;
+
+                    const move = (me) => {
+                        const dx = ((me.clientX - startX) / rect.width) * 100;
+                        const dy = ((me.clientY - startY) / rect.height) * 100;
+                        sig.x = Math.max(0, Math.min(100, initialX + dx));
+                        sig.y = Math.max(0, Math.min(100, initialY + dy));
+                        container.style.left = `${sig.x}%`;
+                        container.style.top = `${sig.y}%`;
+                    };
+
+                    const stop = () => {
+                        window.removeEventListener('mousemove', move);
+                        window.removeEventListener('mouseup', stop);
+                    };
+
+                    window.addEventListener('mousemove', move);
+                    window.addEventListener('mouseup', stop);
                 };
 
-                card.querySelector('.rotate-btn').onclick = () => rotatePage(item.id);
-                card.querySelector('.crop-btn').onclick = () => openCropModal(item.id);
-                card.querySelector('.delete-btn').onclick = () => removePage(item.id);
+                // 縮放邏輯重構
+                container.querySelector('.resize-handle').onmousedown = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const startX = e.clientX;
+                    const initialScale = sig.scale;
 
-                pagesContainer.appendChild(card);
+                    const move = (me) => {
+                        const dx = (me.clientX - startX) / 200;
+                        sig.scale = Math.max(0.1, Math.min(2.0, initialScale + dx));
+                        container.style.width = `${20 * sig.scale}%`;
+                    };
+
+                    const stop = () => {
+                        window.removeEventListener('mousemove', move);
+                        window.removeEventListener('mouseup', stop);
+                    };
+
+                    window.addEventListener('mousemove', move);
+                    window.addEventListener('mouseup', stop);
+                };
+
+                container.querySelector('.delete-handle').onclick = (e) => {
+                    e.stopPropagation();
+                    activePageSignatures[currentPreviewPageIndex].splice(idx, 1);
+                    renderPageSignatures();
+                };
+
+                sigLayer.appendChild(container);
             });
             lucide.createIcons();
-            updateBatchToolbar();
+        }
+
+        // 修改匯出邏輯：將簽名渲染進最終的 PDF
+        // 此處需要修改 downloadPdf 以遍歷 activePageSignatures 並使用 pdf-lib 插入
+
+        function updatePageNumberBadges() {
+            const badges = document.querySelectorAll('.page-number-badge');
+            badges.forEach((badge, idx) => {
+                badge.textContent = idx + 1;
+            });
         }
 
         async function updateItemThumbnail(id) {
@@ -502,21 +1275,8 @@
             updateEmptyState();
         }
 
-        function toggleSelect(id, index, isShift) {
-            if (isShift && lastSelectedIndex !== null) {
-                const start = Math.min(lastSelectedIndex, index);
-                const end = Math.max(lastSelectedIndex, index);
-                for (let i = start; i <= end; i++) selectedIds.add(pageList[i].id);
-            } else {
-                if (selectedIds.has(id)) selectedIds.delete(id);
-                else selectedIds.add(id);
-                lastSelectedIndex = index;
-            }
-            renderAllPages();
-        }
-
         function updateBatchToolbar() {
-            selectedCountLabel.textContent = `${selectedIds.size} 頁`;
+            selectedCountLabel.textContent = `${selectedIds.size} 頁選取`;
             if (selectedIds.size > 0) batchToolbar.classList.remove('translate-y-32', 'opacity-0');
             else batchToolbar.classList.add('translate-y-32', 'opacity-0');
         }
@@ -611,8 +1371,12 @@
             const selectedItems = pageList.filter(p => selectedIds.has(p.id));
             if (selectedItems.length === 0) return;
 
-            showLoading("正在打包 PNG...");
-            const zip = new JSZip();
+            const isSingle = selectedItems.length === 1;
+            showLoading(isSingle ? "正在匯出 PNG..." : "正在打包 PNG...");
+            
+            const zip = isSingle ? null : new JSZip();
+            let singleCanvas = null;
+            let singleFilename = "";
 
             for (let i = 0; i < selectedItems.length; i++) {
                 const item = selectedItems[i];
@@ -626,8 +1390,8 @@
                         await page.render({ canvasContext: canvas.getContext('2d'), viewport: v }).promise;
                     } else {
                         const fullW = v.width, fullH = v.height;
-                        const cw = (item.crop.w/100)*fullW, ch = (item.crop.h/100)*fullH;
-                        const cx = (item.crop.x/100)*fullW, cy = (item.crop.y/100)*fullH;
+                        const cw = (item.crop.w / 100) * fullW, ch = (item.crop.h / 100) * fullH;
+                        const cx = (item.crop.x / 100) * fullW, cy = (item.crop.y / 100) * fullH;
                         canvas.width = cw; canvas.height = ch;
                         const temp = document.createElement('canvas');
                         temp.width = fullW; temp.height = fullH;
@@ -641,12 +1405,44 @@
                     canvas.width = img.width; canvas.height = img.height;
                     canvas.getContext('2d').drawImage(img, 0, 0);
                 }
-                zip.file(`page_${i + 1}.png`, canvas.toDataURL('image/png').split(',')[1], { base64: true });
+
+                // 處理簽名：將簽名畫上 PNG Canvas
+                const ctx = canvas.getContext('2d');
+                const signaturesOnPage = activePageSignatures[pageList.indexOf(item)] || [];
+                for (const sig of signaturesOnPage) {
+                    const sigImg = new Image();
+                    await new Promise(r => { sigImg.onload = r; sigImg.src = sig.sigData; });
+                    
+                    // 計算縮放與位置 (以寬度為基準)
+                    const sigWidth = canvas.width * (20 * sig.scale / 100);
+                    const sigHeight = sigImg.height * (sigWidth / sigImg.width);
+                    const sigX = canvas.width * (sig.x / 100);
+                    const sigY = canvas.height * (sig.y / 100); // Canvas 是從上到下
+
+                    ctx.drawImage(sigImg, sigX, sigY, sigWidth, sigHeight);
+                }
+
+                // 取出原檔名 (去除副檔名)
+                const baseName = item.fileName.substring(0, item.fileName.lastIndexOf('.')) || item.fileName;
+
+                if (isSingle) {
+                    singleCanvas = canvas;
+                    singleFilename = `${baseName}_edited.png`;
+                } else {
+                    zip.file(`${baseName}_${i + 1}.png`, canvas.toDataURL('image/png').split(',')[1], { base64: true });
+                }
             }
 
-            const content = await zip.generateAsync({ type: "blob" });
-            downloadBlob(content, "exported_images.zip", "application/zip");
-            hideLoading();
+            if (isSingle) {
+                singleCanvas.toBlob((blob) => {
+                    downloadBlob(blob, singleFilename, 'image/png');
+                    hideLoading();
+                }, 'image/png');
+            } else {
+                const content = await zip.generateAsync({ type: "blob" });
+                downloadBlob(content, "exported_images.zip", "application/zip");
+                hideLoading();
+            }
         };
 
         async function exportPdfAction(listToExport) {
@@ -659,11 +1455,14 @@
                 const startFromPage = parseInt(document.getElementById('pn-start-page').value) || 1;
                 const startValue = parseInt(document.getElementById('pn-start-value').value) || 1;
                 const position = document.getElementById('pn-position').value;
+                const colorMode = document.getElementById('export-color').value;
+                const quality = parseFloat(document.getElementById('export-quality').value);
 
                 for (let i = 0; i < listToExport.length; i++) {
                     const item = listToExport[i];
                     let pdfPage;
 
+                    // 處理圖層合併與色彩
                     if (item.type === 'pdf') {
                         const sourceDoc = await PDFLib.PDFDocument.load(item.sourcePdf.slice(0));
                         const [copied] = await mergedPdf.copyPages(sourceDoc, [item.pageIndex]);
@@ -674,11 +1473,47 @@
                         pdfPage.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
                     }
 
-                    if (item.rotation !== 0) {
+                    // 如果是灰階模式，需要特殊處理 (這裡透過 Canvas 重新採樣)
+                    if (colorMode === 'gray') {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        let imgData;
+
+                        if (item.type === 'pdf') {
+                            const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0) }).promise;
+                            const page = await doc.getPage(item.pageIndex + 1);
+                            const v = page.getViewport({ scale: 2, rotation: item.rotation });
+                            canvas.width = v.width; canvas.height = v.height;
+                            await page.render({ canvasContext: ctx, viewport: v }).promise;
+                        } else {
+                            const imgUrl = await renderImageThumbnail(item.sourceImage, item.rotation, item.crop);
+                            const img = new Image();
+                            await new Promise(r => { img.onload = r; img.src = imgUrl; });
+                            canvas.width = img.width; canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+                        }
+
+                        // 轉灰階濾鏡
+                        const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        for (let j = 0; j < data.data.length; j += 4) {
+                            const avg = (data.data[j] + data.data[j + 1] + data.data[j + 2]) / 3;
+                            data.data[j] = avg; data.data[j + 1] = avg; data.data[j + 2] = avg;
+                        }
+                        ctx.putImageData(data, 0, 0);
+
+                        // 重新蓋掉原本的頁面內容 (這是一個簡易實現：新增一頁覆蓋)
+                        const grayImg = await mergedPdf.embedJpg(canvas.toDataURL('image/jpeg', quality));
+                        const newPage = mergedPdf.addPage([grayImg.width, grayImg.height]);
+                        newPage.drawImage(grayImg, { x: 0, y: 0, width: grayImg.width, height: grayImg.height });
+                        mergedPdf.removePage(mergedPdf.getPageCount() - 2); // 移除彩色那頁
+                        pdfPage = newPage;
+                    }
+
+                    if (item.rotation !== 0 && colorMode !== 'gray') {
                         pdfPage.setRotation(PDFLib.degrees(pdfPage.getRotation().angle + item.rotation));
                     }
 
-                    if (item.crop) {
+                    if (item.crop && colorMode !== 'gray') {
                         const { width, height } = pdfPage.getSize();
                         const cx = (item.crop.x / 100) * width;
                         const cy = (item.crop.y / 100) * height;
@@ -694,10 +1529,31 @@
                         if (position === 'left') x = 40; else if (position === 'right') x = width - 60;
                         pdfPage.drawText(displayNum.toString(), { x, y: 20, size: 12 });
                     }
+
+                    // 插入簽名
+                    const signaturesOnPage = activePageSignatures[i] || [];
+                    for (const sig of signaturesOnPage) {
+                        const sigImg = await mergedPdf.embedPng(sig.sigData);
+                        const { width: pageWidth, height: pageHeight } = pdfPage.getSize();
+                        const sigWidth = pageWidth * (20 * sig.scale / 100); // Assuming 20% is base width
+                        const sigHeight = sigImg.height * (sigWidth / sigImg.width);
+
+                        pdfPage.drawImage(sigImg, {
+                            x: pageWidth * (sig.x / 100),
+                            y: pageHeight - (pageHeight * (sig.y / 100)) - sigHeight, // PDFLib Y-axis is from bottom
+                            width: sigWidth,
+                            height: sigHeight,
+                        });
+                    }
                 }
 
+                // 產生檔名：以第一頁的檔名為基礎
+                const firstItem = listToExport[0];
+                const baseName = firstItem.fileName.substring(0, firstItem.fileName.lastIndexOf('.')) || firstItem.fileName;
+                const exportName = `${baseName}_edited.pdf`;
+
                 const pdfBytes = await mergedPdf.save();
-                downloadBlob(pdfBytes, 'final_document.pdf', 'application/pdf');
+                downloadBlob(pdfBytes, exportName, 'application/pdf');
                 showToast("匯出完成");
             } catch (err) {
                 console.error(err);
@@ -763,7 +1619,13 @@
         // 智慧指示線
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            if (pageList.length === 0) return;
+            dropZone.classList.add('dragover');
+
+            if (pageList.length === 0) {
+                calculatedInsertIndex = null;
+                return;
+            }
+
             const mouseX = e.clientX, mouseY = e.clientY;
             const cards = Array.from(document.querySelectorAll('.page-card'));
             let closest = null, offset = Number.POSITIVE_INFINITY, isAfter = false;
@@ -772,7 +1634,12 @@
                 const box = card.getBoundingClientRect();
                 const centerX = box.left + box.width / 2, centerY = box.top + box.height / 2;
                 const distance = Math.hypot(mouseX - centerX, mouseY - centerY);
-                if (distance < offset) { offset = distance; closest = card; calculatedInsertIndex = index; isAfter = mouseX > centerX; }
+                if (distance < offset) {
+                    offset = distance;
+                    closest = card;
+                    calculatedInsertIndex = index;
+                    isAfter = mouseX > centerX;
+                }
             });
 
             if (closest) {
@@ -780,20 +1647,47 @@
                 dropIndicator.style.display = 'block';
                 dropIndicator.style.height = `${box.height}px`;
                 dropIndicator.style.top = `${box.top - containerBox.top}px`;
-                if (isAfter) { dropIndicator.style.left = `${box.right - containerBox.left + 8}px`; calculatedInsertIndex += 1; }
-                else { dropIndicator.style.left = `${box.left - containerBox.left - 12}px`; }
+                if (isAfter) {
+                    dropIndicator.style.left = `${box.right - containerBox.left + 8}px`;
+                    calculatedInsertIndex += 1;
+                } else {
+                    dropIndicator.style.left = `${box.left - containerBox.left - 12}px`;
+                }
             }
         });
-        dropZone.addEventListener('dragleave', (e) => { if (!dropZone.contains(e.relatedTarget)) dropIndicator.style.display = 'none'; });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            if (!dropZone.contains(e.relatedTarget)) {
+                dropZone.classList.remove('dragover');
+                dropIndicator.style.display = 'none';
+            }
+        });
+
         dropZone.addEventListener('drop', (e) => {
-            e.preventDefault(); dropIndicator.style.display = 'none';
-            handleFilesWithConfig(e.dataTransfer.files, calculatedInsertIndex);
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            dropIndicator.style.display = 'none';
+
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleFilesWithConfig(e.dataTransfer.files, calculatedInsertIndex);
+            }
             calculatedInsertIndex = null;
         });
 
         // 初始化
         updateEmptyState();
 
+        // 監聽鍵盤快捷鍵 (Esc 關閉所有視窗)
+        window.onkeydown = (e) => {
+            if (e.key === 'Escape') {
+                previewModal.style.display = 'none';
+                cropModal.style.display = 'none';
+                rangeModal.style.display = 'none';
+                document.getElementById('custom-confirm').style.display = 'none';
+            }
+        };
+
     </script>
 </body>
+
 </html>
