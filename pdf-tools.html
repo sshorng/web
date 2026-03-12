@@ -143,7 +143,8 @@
             inset: 0;
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(8px);
-            z-index: 3000; /* 必須大於 preview-modal 的 1000 和 preview-footer 的 2000 */
+            z-index: 3000;
+            /* 必須大於 preview-modal 的 1000 和 preview-footer 的 2000 */
             align-items: center;
             justify-content: center;
             flex-direction: column;
@@ -166,14 +167,16 @@
             overflow: auto;
             background: rgba(15, 23, 42, 0.98);
             display: block;
-            padding: 40px; /* 留白 */
+            padding: 40px;
+            /* 留白 */
         }
 
         .preview-content-wrapper {
             position: relative;
             display: block;
-            margin: 0 auto; /* 恢復置中，利用 margin auto 特性在小於視窗時置中，大於視窗時靠左不裁切 */
-            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            margin: 0 auto;
+            /* 恢復置中，利用 margin auto 特性在小於視窗時置中，大於視窗時靠左不裁切 */
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.8);
             background: white;
         }
 
@@ -195,8 +198,9 @@
             z-index: 2000;
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            touch-action: none; /* 禁用任何原生捲動手勢 */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            touch-action: none;
+            /* 禁用任何原生捲動手勢 */
         }
 
         #zoom-slider {
@@ -205,13 +209,13 @@
             touch-action: none;
             accent-color: #3b82f6;
         }
-        
+
         #zoom-slider::-webkit-slider-runnable-track {
             height: 4px;
             background: #475569;
             border-radius: 2px;
         }
-        
+
         #zoom-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             height: 16px;
@@ -310,38 +314,50 @@
         }
 
         /* 選取狀態 CSS 驅動 */
-        .page-card.is-selected { border-color: rgb(37 99 235); background-color: rgb(239 246 255); }
-        .page-card.is-selected .select-badge { 
-            background-color: rgb(37 99 235); 
-            border-color: rgb(37 99 235); 
+        .page-card.is-selected {
+            border-color: rgb(37 99 235);
+            background-color: rgb(239 246 255);
         }
+
+        .page-card.is-selected .select-badge {
+            background-color: rgb(37 99 235);
+            border-color: rgb(37 99 235);
+        }
+
         .page-card.is-selected .select-badge i,
-        .page-card.is-selected .select-badge svg { 
-            display: block !important; 
+        .page-card.is-selected .select-badge svg {
+            display: block !important;
             color: white !important;
-            stroke: white !important; 
+            stroke: white !important;
         }
-        .select-badge i, .select-badge svg { display: none; }
+
+        .select-badge i,
+        .select-badge svg {
+            display: none;
+        }
 
         /* 簽名編輯層 */
         .signature-layer {
             position: absolute;
             inset: 0;
-            pointer-events: none; /* 讓點擊穿透到背景 */
+            pointer-events: none;
+            /* 讓點擊穿透到背景 */
             z-index: 50;
         }
 
         .signature-item {
             position: absolute;
             cursor: move;
-            pointer-events: auto; /* 恢復簽名本身的互動 */
+            pointer-events: auto;
+            /* 恢復簽名本身的互動 */
             border: 2px dashed transparent;
             z-index: 51;
             user-select: none;
             touch-action: none;
         }
 
-        .signature-item:hover, .signature-item:active {
+        .signature-item:hover,
+        .signature-item:active {
             border-color: #3b82f6;
         }
 
@@ -349,7 +365,8 @@
             width: 100%;
             height: 100%;
             display: block;
-            pointer-events: none; /* 防止圖片被原生拖曳 */
+            pointer-events: none;
+            /* 防止圖片被原生拖曳 */
         }
 
         .signature-item .resize-handle {
@@ -363,7 +380,7 @@
             cursor: se-resize;
             display: none;
             border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .signature-item .delete-handle {
@@ -379,7 +396,7 @@
             display: none;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .signature-item:hover .resize-handle,
@@ -395,8 +412,11 @@
     <div id="loading" class="loading-overlay opacity-0 pointer-events-none">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-6"></div>
         <p class="text-xl font-bold tracking-wider" id="loading-text">處理中...</p>
-        <div id="loading-progress-container" class="w-64 bg-gray-700 rounded-full h-2 mt-6 overflow-hidden hidden shadow-inner border border-gray-600">
-            <div id="loading-progress" class="bg-blue-500 h-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.8)]" style="width: 0%"></div>
+        <div id="loading-progress-container"
+            class="w-64 bg-gray-700 rounded-full h-2 mt-6 overflow-hidden hidden shadow-inner border border-gray-600">
+            <div id="loading-progress"
+                class="bg-blue-500 h-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+                style="width: 0%"></div>
         </div>
     </div>
 
@@ -448,7 +468,7 @@
 
     <!-- 確認對話框 -->
     <div id="custom-confirm">
-        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-sm w-full mx-4">
             <h3 class="text-xl font-bold text-gray-800 mb-2" id="confirm-title">確認操作</h3>
             <p class="text-gray-600 mb-6" id="confirm-msg">您確定要執行此操作嗎？</p>
             <div class="flex justify-end gap-3">
@@ -459,11 +479,33 @@
         </div>
     </div>
 
+    <!-- 密碼輸入對話框 -->
+    <div id="password-prompt-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 border border-blue-100">
+            <div class="flex items-center gap-3 mb-4 text-blue-600">
+                <i data-lucide="lock" size="24"></i>
+                <h3 class="text-xl font-bold text-gray-800">需要讀取密碼</h3>
+            </div>
+            <p id="password-prompt-msg" class="text-gray-600 mb-4 text-sm">此 PDF 檔案受保護，請輸入密碼：</p>
+            <input type="password" id="password-prompt-input"
+                class="w-full border-gray-300 rounded-xl shadow-sm py-3 px-4 mb-6 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                placeholder="密碼" autofocus>
+            <div class="flex justify-end gap-3">
+                <button id="password-prompt-cancel"
+                    class="px-5 py-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">取消</button>
+                <button id="password-prompt-ok"
+                    class="px-8 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold transition-all shadow-lg shadow-blue-200">確定</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 預覽視窗 -->
     <div id="preview-modal" onclick="this.style.display='none'">
         <!-- 獨立的滾動區域 -->
         <div class="preview-img-container" id="preview-scroll-container">
-            <div class="preview-content-wrapper" id="preview-wrap" style="width: 1000px;" onclick="event.stopPropagation()">
+            <div class="preview-content-wrapper" id="preview-wrap" style="width: 1000px;"
+                onclick="event.stopPropagation()">
                 <img id="preview-full-img" src="" />
                 <div id="signature-layer" class="signature-layer"></div>
             </div>
@@ -483,10 +525,12 @@
             </div>
             <div class="w-px h-6 bg-gray-700"></div>
             <div class="flex gap-2">
-                <button id="add-text-btn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2">
+                <button id="add-text-btn"
+                    class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2">
                     <i data-lucide="type" size="14"></i> 文字
                 </button>
-                <button id="open-sig-mgr" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2">
+                <button id="open-sig-mgr"
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2">
                     <i data-lucide="pen-tool" size="14"></i> 簽名庫
                 </button>
                 <button onclick="document.getElementById('preview-modal').style.display='none'"
@@ -497,18 +541,23 @@
 
     <!-- 簽名管理模態視窗 -->
     <div id="signature-manager-modal">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            onclick="event.stopPropagation()">
             <div class="p-6 border-b flex justify-between items-center bg-gray-50">
                 <h3 class="text-xl font-bold flex items-center gap-2"><i data-lucide="pen-tool"></i> 簽名管理</h3>
-                <button onclick="closeSignatureManager()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+                <button onclick="closeSignatureManager()" class="text-gray-400 hover:text-gray-600"><i
+                        data-lucide="x"></i></button>
             </div>
             <div class="p-6 overflow-y-auto flex-1">
                 <div class="grid grid-cols-2 gap-6">
                     <!-- 左側：上傳與去背控制 -->
                     <div class="space-y-4">
-                        <div id="sig-drop-zone" class="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 transition-all cursor-pointer bg-gray-50 group">
-                            <i data-lucide="upload-cloud" class="mx-auto mb-2 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
-                            <p class="text-xs text-gray-500">點擊上傳或<br><span class="font-bold text-blue-600">直接貼上截圖 (Ctrl+V)</span></p>
+                        <div id="sig-drop-zone"
+                            class="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 transition-all cursor-pointer bg-gray-50 group">
+                            <i data-lucide="upload-cloud"
+                                class="mx-auto mb-2 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+                            <p class="text-xs text-gray-500">點擊上傳或<br><span class="font-bold text-blue-600">直接貼上截圖
+                                    (Ctrl+V)</span></p>
                             <input type="file" id="sig-file-input" class="hidden" accept="image/*">
                         </div>
                         <div class="space-y-2">
@@ -518,12 +567,15 @@
                             </div>
                             <input type="range" id="sig-tolerance" min="0" max="150" value="30" class="w-full">
                         </div>
-                        <button id="add-to-library" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none" disabled>新增此簽名</button>
+                        <button id="add-to-library"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
+                            disabled>新增此簽名</button>
                     </div>
                     <!-- 右側：預覽與已儲存簽名 -->
                     <div class="flex flex-col gap-4">
                         <p class="text-xs font-bold text-gray-500">當前預覽 (透明背景)</p>
-                        <div class="aspect-video bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-gray-200 rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 p-4">
+                        <div
+                            class="aspect-video bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-gray-200 rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 p-4">
                             <img id="sig-preview-img" class="max-w-full max-h-full object-contain hidden">
                             <p id="sig-preview-placeholder" class="text-xs text-gray-400 text-center">目前無簽名圖片</p>
                         </div>
@@ -605,19 +657,9 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">色彩模式</label>
-                        <select id="export-color" class="w-full border-gray-300 rounded-md shadow-sm py-2 px-2">
-                            <option value="color">彩色 (原始)</option>
-                            <option value="gray">灰階 (省墨專用)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">圖片品質</label>
-                        <select id="export-quality" class="w-full border-gray-300 rounded-md shadow-sm py-2 px-2">
-                            <option value="0.9">高品質 (大檔)</option>
-                            <option value="0.7">平衡 (推薦)</option>
-                            <option value="0.4">壓縮 (小檔)</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">匯出加密 (密碼)</label>
+                        <input type="password" id="export-password" placeholder="留空不加密"
+                            class="w-full border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
                     </div>
                 </div>
             </div>
@@ -915,58 +957,113 @@
         fileInput.addEventListener('change', (e) => handleFilesWithConfig(e.target.files));
 
         async function handleFilesWithConfig(files, insertIndex = null) {
-            const validFiles = Array.from(files);
-            if (validFiles.length === 0) return;
+            try {
+                const validFiles = Array.from(files);
+                if (validFiles.length === 0) return;
 
-            for (const file of validFiles) {
-                if (file.type === 'application/pdf') {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdfDocLib = await PDFLib.PDFDocument.load(arrayBuffer.slice(0));
-                    const pageCount = pdfDocLib.getPageCount();
+                for (const file of validFiles) {
+                    if (file.type === 'application/pdf') {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const uint8Array = new Uint8Array(arrayBuffer);
 
-                    // 顯示頁數選取視窗
-                    rangeFileInfo.innerHTML = `檔案：<strong>${file.name}</strong><br>總共頁數：${pageCount} 頁`;
-                    rangeInput.value = "";
-                    rangeModal.style.display = 'flex';
+                        // 使用統一驗證門衛
+                        const result = await verifyAndLoadPDF(uint8Array, file.name);
+                        if (!result) continue; // 使用者取消
 
-                    const userChoice = await new Promise(resolve => {
-                        const handleOk = () => {
-                            const indices = parseRange(rangeInput.value, pageCount);
-                            rangeSubmit.removeEventListener('click', handleOk);
-                            rangeCancel.removeEventListener('click', handleCancel);
-                            rangeModal.style.display = 'none';
-                            resolve(indices);
-                        };
-                        const handleCancel = () => {
-                            rangeSubmit.removeEventListener('click', handleOk);
-                            rangeCancel.removeEventListener('click', handleCancel);
-                            rangeModal.style.display = 'none';
-                            resolve(null);
-                        };
-                        rangeSubmit.addEventListener('click', handleOk);
-                        rangeCancel.addEventListener('click', handleCancel);
-                    });
+                        const { pdfDocLib, password } = result;
+                        const pageCount = pdfDocLib.getPageCount();
 
-                    if (userChoice !== null) {
-                        await processSingleFile(file, arrayBuffer, insertIndex, userChoice);
+                        // 顯示頁數選取視窗
+                        rangeFileInfo.innerHTML = `檔案：<strong>${file.name}</strong><br>總共頁數：${pageCount} 頁`;
+                        rangeInput.value = "";
+                        rangeModal.style.display = 'flex';
+
+                        const userChoice = await new Promise(resolve => {
+                            const handleOk = () => {
+                                const indices = parseRange(rangeInput.value, pageCount);
+                                cleanup(); resolve(indices);
+                            };
+                            const handleCancel = () => {
+                                cleanup(); resolve(null);
+                            };
+                            const cleanup = () => {
+                                rangeSubmit.removeEventListener('click', handleOk);
+                                rangeCancel.removeEventListener('click', handleCancel);
+                                rangeModal.style.display = 'none';
+                            };
+                            rangeSubmit.addEventListener('click', handleOk);
+                            rangeCancel.addEventListener('click', handleCancel);
+                        });
+
+                        if (userChoice !== null) {
+                            await processSingleFile(file, uint8Array, insertIndex, userChoice, password);
+                        }
+                    } else if (file.type.startsWith('image/')) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        await processSingleFile(file, arrayBuffer, insertIndex);
                     }
-                } else if (file.type.startsWith('image/')) {
-                    const arrayBuffer = await file.arrayBuffer();
-                    await processSingleFile(file, arrayBuffer, insertIndex);
                 }
+            } catch (fatal) {
+                console.error("處理流程中斷:", fatal);
+                alert(`系統執行出錯：${fatal.message}\n如持續發生，請嘗試更換瀏覽器。`);
+                hideLoading();
+            } finally {
+                fileInput.value = "";
             }
-            fileInput.value = ""; // 清空 input 以便下次選擇同檔案
         }
 
-        async function processSingleFile(file, arrayBuffer, insertIndex, indices = null) {
+        // 統一門衛：確保兩個引擎都能通過密碼
+        async function verifyAndLoadPDF(uint8Array, fileName) {
+            let password = undefined;
+            while (true) {
+                let pdfJsDoc;
+                try {
+                    // pdf.js 是我們的「密碼真理來源」
+                    pdfJsDoc = await pdfjsLib.getDocument({ data: uint8Array.slice(0), password }).promise;
+                } catch (err) {
+                    const errMsg = err.message.toLowerCase();
+                    if (err.name === 'PasswordException' || errMsg.includes('password') || errMsg.includes('auth') || errMsg.includes('incorrect') || errMsg.includes('encrypted')) {
+                        const userPassword = await showPasswordPrompt(fileName);
+                        if (userPassword === null) return null;
+                        password = userPassword;
+                        continue; // 拿到新密碼，重新嘗試 pdf.js 驗證
+                    }
+                    throw err; // 其他致命錯誤
+                }
+
+                // 到這裡代表 pdf.js 驗證通過（密碼正確）
+                try {
+                    let pdfDocLib;
+                    try {
+                        pdfDocLib = await PDFLib.PDFDocument.load(uint8Array.slice(0), { password });
+                    } catch (libErr) {
+                        console.warn("pdf-lib 無法以密碼載入，改用忽略模式讀取結構", libErr);
+                        pdfDocLib = await PDFLib.PDFDocument.load(uint8Array.slice(0), { ignoreEncryption: true });
+                    }
+                    return { pdfDocLib, password };
+                } catch (fatal) {
+                    console.error("PDF 結構完全無法讀取:", fatal);
+                    throw new Error("此 PDF 檔案結構毀損，即使解鎖後也無法處理。");
+                }
+            }
+        }
+
+        async function processSingleFile(file, arrayBuffer, insertIndex, indices = null, verifiedPassword = undefined) {
             showLoading(`正在匯入 ${file.name}...`);
+            const uint8Array = (arrayBuffer instanceof Uint8Array) ? arrayBuffer : new Uint8Array(arrayBuffer);
             let tempNewPages = [];
 
             try {
                 if (file.type === 'application/pdf') {
-                    const pdfJsDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
-                    const pdfDocLib = await PDFLib.PDFDocument.load(arrayBuffer.slice(0));
-
+                    // 建立一個此檔案專用的共享副本，避免每頁重複 slice 導致體積膨脹且快取失效
+                    const sharedBuffer = uint8Array.slice(0);
+                    const pdfJsDoc = await pdfjsLib.getDocument({ data: sharedBuffer.slice(0), password: verifiedPassword }).promise;
+                    let pdfDocLib;
+                    try {
+                        pdfDocLib = await PDFLib.PDFDocument.load(sharedBuffer.slice(0), { password: verifiedPassword });
+                    } catch (e) {
+                        pdfDocLib = await PDFLib.PDFDocument.load(sharedBuffer.slice(0), { ignoreEncryption: true });
+                    }
                     const pagesToImport = indices || [...Array(pdfDocLib.getPageCount()).keys()];
 
                     for (const i of pagesToImport) {
@@ -975,40 +1072,46 @@
                         tempNewPages.push({
                             id: Math.random().toString(36).substr(2, 9),
                             type: 'pdf',
-                            sourcePdf: arrayBuffer,
+                            sourcePdf: sharedBuffer, // 關鍵：共用同一個緩衝區引用
                             pageIndex: i,
                             thumbnail: thumbnail,
                             fileName: file.name,
                             rotation: 0,
-                            crop: null
+                            crop: null,
+                            loadPassword: verifiedPassword
                         });
                     }
                 } else {
+                    const sharedImgBuffer = uint8Array.slice(0);
                     const thumbnail = await readImageAsDataURL(file);
                     tempNewPages.push({
                         id: Math.random().toString(36).substr(2, 9),
                         type: 'image',
-                        sourceImage: arrayBuffer,
+                        sourceImage: sharedImgBuffer,
                         thumbnail: thumbnail,
                         fileName: file.name,
                         rotation: 0,
                         crop: null
                     });
                 }
+                if (insertIndex !== null) {
+                    pageList.splice(insertIndex, 0, ...tempNewPages);
+                } else {
+                    pageList = pageList.concat(tempNewPages);
+                }
+
+                renderAllPages();
+                updateEmptyState();
+                hideLoading();
+                showToast(`成功匯入 ${tempNewPages.length} 頁`);
             } catch (err) {
-                console.error("處理出錯:", err);
+                console.error("匯入過程出錯:", err);
+                let msg = err.message;
+                if (msg.includes("AES-256")) msg = "該檔案加密等級過高 (AES-256)，目前瀏覽器無法直接解析。";
+                alert(`匯入失敗：${msg}`);
+                hideLoading();
+                return;
             }
-
-            if (insertIndex !== null) {
-                pageList.splice(insertIndex, 0, ...tempNewPages);
-            } else {
-                pageList = pageList.concat(tempNewPages);
-            }
-
-            renderAllPages();
-            updateEmptyState();
-            hideLoading();
-            showToast(`成功匯入 ${tempNewPages.length} 頁`);
         }
 
         async function renderThumbnailFromSource(pdfJsPage, rotation, crop, scale = 0.5) {
@@ -1171,7 +1274,7 @@
 
             previewFullImg.src = fullUrl;
             previewInfo.textContent = `${item.fileName} (第 ${currentPreviewPageIndex + 1} 頁)`;
-            
+
             // 重置縮放
             currentZoom = 100;
             zoomSlider.value = 100;
@@ -1249,7 +1352,7 @@
                         <div class="resize-handle"></div>
                         <div class="delete-handle"><i data-lucide="trash-2" size="14"></i></div>
                     `;
-                    
+
                     const textEl = container.querySelector('.text-content');
                     textEl.ondblclick = (e) => {
                         e.stopPropagation();
@@ -1276,7 +1379,7 @@
                     if (e.target.closest('.resize-handle') || e.target.closest('.delete-handle')) return;
                     e.preventDefault();
                     e.stopPropagation();
-                    
+
                     const rect = previewWrap.getBoundingClientRect();
                     const startX = e.clientX;
                     const startY = e.clientY;
@@ -1305,7 +1408,7 @@
                 container.querySelector('.resize-handle').onmousedown = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    
+
                     const startX = e.clientX;
                     const initialScale = sig.scale;
 
@@ -1350,12 +1453,56 @@
             });
         }
 
+        // --- 密碼提示邏輯 ---
+        function showPasswordPrompt(fileName) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('password-prompt-modal');
+                const input = document.getElementById('password-prompt-input');
+                const okBtn = document.getElementById('password-prompt-ok');
+                const cancelBtn = document.getElementById('password-prompt-cancel');
+                const msg = document.getElementById('password-prompt-msg');
+
+                msg.textContent = `檔案「${fileName}」受密碼保護，請輸入密碼以解鎖：`;
+                input.value = '';
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                input.focus();
+
+                const handleOk = () => {
+                    const val = input.value;
+                    cleanup();
+                    resolve(val);
+                };
+                const handleCancel = () => {
+                    cleanup();
+                    resolve(null);
+                };
+                const handleKey = (e) => {
+                    if (e.key === 'Enter') handleOk();
+                    if (e.key === 'Escape') handleCancel();
+                };
+
+                const cleanup = () => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    window.removeEventListener('keydown', handleKey);
+                };
+
+                okBtn.addEventListener('click', handleOk);
+                cancelBtn.addEventListener('click', handleCancel);
+                window.addEventListener('keydown', handleKey);
+            });
+        }
+
         async function updateItemThumbnail(id) {
             const item = pageList.find(p => p.id === id);
             if (!item) return;
 
             if (item.type === 'pdf') {
-                const pdfJsDoc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0) }).promise;
+                const password = item.loadPassword;
+                const pdfJsDoc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
                 const page = await pdfJsDoc.getPage(item.pageIndex + 1);
                 item.thumbnail = await renderThumbnailFromSource(page, item.rotation, item.crop);
             } else {
@@ -1394,7 +1541,8 @@
 
             let previewUrl;
             if (item.type === 'pdf') {
-                const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0) }).promise;
+                const password = item.loadPassword;
+                const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
                 const page = await doc.getPage(item.pageIndex + 1);
                 previewUrl = await renderThumbnailFromSource(page, item.rotation, null);
             } else {
@@ -1475,18 +1623,19 @@
 
             const isSingle = selectedItems.length === 1;
             showLoading(isSingle ? "正在匯出 PNG..." : "準備打包 PNG...", !isSingle);
-            
+
             const zip = isSingle ? null : new JSZip();
             let singleCanvas = null;
             let singleFilename = "";
 
             for (let i = 0; i < selectedItems.length; i++) {
                 if (!isSingle) updateProgress(i + 1, selectedItems.length, "PNG 打包壓縮中");
-                
+
                 const item = selectedItems[i];
                 const canvas = document.createElement('canvas');
                 if (item.type === 'pdf') {
-                    const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0) }).promise;
+                    const password = item.loadPassword;
+                    const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
                     const page = await doc.getPage(item.pageIndex + 1);
                     const v = page.getViewport({ scale: 2, rotation: item.rotation });
                     if (!item.crop) {
@@ -1517,7 +1666,7 @@
                     if (sig.type === 'image' || !sig.type) {
                         const sigImg = new Image();
                         await new Promise(r => { sigImg.onload = r; sigImg.src = sig.sigData; });
-                        
+
                         const sigWidth = canvas.width * (20 * sig.scale / 100);
                         const sigHeight = sigImg.height * (sigWidth / sigImg.width);
                         const sigX = canvas.width * (sig.x / 100);
@@ -1529,7 +1678,7 @@
                         const sigX = canvas.width * (sig.x / 100);
                         const sigY = canvas.height * (sig.y / 100);
                         const fontSize = (canvas.width / 1000) * 24 * sig.scale; // 依照預先比例校正
-                        
+
                         ctx.font = `bold ${fontSize}px sans-serif`;
                         ctx.fillStyle = "#000000";
                         ctx.textBaseline = "top";
@@ -1570,67 +1719,41 @@
                 const startFromPage = parseInt(document.getElementById('pn-start-page').value) || 1;
                 const startValue = parseInt(document.getElementById('pn-start-value').value) || 1;
                 const position = document.getElementById('pn-position').value;
-                const colorMode = document.getElementById('export-color').value;
-                const quality = parseFloat(document.getElementById('export-quality').value);
+                const sourceCache = new Map(); // 快取已載入的來源 PDF，避免重複讀取導致體積膨脹
 
+                // 優化：建立一個全域的對應表，用來追蹤已經拷貝過的資源
+                // pdf-lib 在 copyPages 時，如果傳入同一個來源文件的多個頁面，通常會嘗試去重
+                // 但如果我們在循環中多次載入同一個文件到不同實例，就會失效
                 for (let i = 0; i < listToExport.length; i++) {
                     updateProgress(i + 1, listToExport.length, "PDF 頁面渲染中");
-                    
+
                     const item = listToExport[i];
                     let pdfPage;
 
-                    // 處理圖層合併與色彩
+                    // 處理圖層合併
                     if (item.type === 'pdf') {
-                        const sourceDoc = await PDFLib.PDFDocument.load(item.sourcePdf.slice(0));
+                        let sourceDoc = sourceCache.get(item.sourcePdf);
+                        if (!sourceDoc) {
+                            sourceDoc = await PDFLib.PDFDocument.load(item.sourcePdf, {
+                                password: item.loadPassword,
+                                ignoreEncryption: true // 確保即使解鎖後也能正常拷貝資源
+                            });
+                            sourceCache.set(item.sourcePdf, sourceDoc);
+                        }
                         const [copied] = await mergedPdf.copyPages(sourceDoc, [item.pageIndex]);
                         pdfPage = mergedPdf.addPage(copied);
                     } else {
+                        // 優化圖片嵌入：如果是同一張圖片，pdf-lib 會自動處理，但我們確保緩衝區一致
                         const img = await mergedPdf.embedJpg(item.sourceImage);
                         pdfPage = mergedPdf.addPage([img.width, img.height]);
                         pdfPage.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
                     }
 
-                    // 如果是灰階模式，需要特殊處理 (這裡透過 Canvas 重新採樣)
-                    if (colorMode === 'gray') {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        let imgData;
-
-                        if (item.type === 'pdf') {
-                            const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0) }).promise;
-                            const page = await doc.getPage(item.pageIndex + 1);
-                            const v = page.getViewport({ scale: 2, rotation: item.rotation });
-                            canvas.width = v.width; canvas.height = v.height;
-                            await page.render({ canvasContext: ctx, viewport: v }).promise;
-                        } else {
-                            const imgUrl = await renderImageThumbnail(item.sourceImage, item.rotation, item.crop);
-                            const img = new Image();
-                            await new Promise(r => { img.onload = r; img.src = imgUrl; });
-                            canvas.width = img.width; canvas.height = img.height;
-                            ctx.drawImage(img, 0, 0);
-                        }
-
-                        // 轉灰階濾鏡
-                        const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        for (let j = 0; j < data.data.length; j += 4) {
-                            const avg = (data.data[j] + data.data[j + 1] + data.data[j + 2]) / 3;
-                            data.data[j] = avg; data.data[j + 1] = avg; data.data[j + 2] = avg;
-                        }
-                        ctx.putImageData(data, 0, 0);
-
-                        // 重新蓋掉原本的頁面內容 (這是一個簡易實現：新增一頁覆蓋)
-                        const grayImg = await mergedPdf.embedJpg(canvas.toDataURL('image/jpeg', quality));
-                        const newPage = mergedPdf.addPage([grayImg.width, grayImg.height]);
-                        newPage.drawImage(grayImg, { x: 0, y: 0, width: grayImg.width, height: grayImg.height });
-                        mergedPdf.removePage(mergedPdf.getPageCount() - 2); // 移除彩色那頁
-                        pdfPage = newPage;
-                    }
-
-                    if (item.rotation !== 0 && colorMode !== 'gray') {
+                    if (item.rotation !== 0) {
                         pdfPage.setRotation(PDFLib.degrees(pdfPage.getRotation().angle + item.rotation));
                     }
 
-                    if (item.crop && colorMode !== 'gray') {
+                    if (item.crop) {
                         const { width, height } = pdfPage.getSize();
                         const cx = (item.crop.x / 100) * width;
                         const cy = (item.crop.y / 100) * height;
@@ -1651,7 +1774,7 @@
                     const signaturesOnPage = activePageSignatures[i] || [];
                     for (const sig of signaturesOnPage) {
                         const { width: pageWidth, height: pageHeight } = pdfPage.getSize();
-                        
+
                         if (sig.type === 'image' || !sig.type) {
                             const sigImg = await mergedPdf.embedPng(sig.sigData);
                             const sigWidth = pageWidth * (20 * sig.scale / 100);
@@ -1673,7 +1796,7 @@
                             const metrics = tempCtx.measureText(sig.text);
                             const textWidth = metrics.width;
                             const textHeight = fontSize * 1.5; // 預估高度
-                            
+
                             tempCanvas.width = textWidth + 10;
                             tempCanvas.height = textHeight;
                             tempCtx.font = `bold ${fontSize}px sans-serif`; // 調整大小後需重設
@@ -1682,7 +1805,7 @@
                             tempCtx.fillText(sig.text, 5, 5);
 
                             const textImg = await mergedPdf.embedPng(tempCanvas.toDataURL('image/png'));
-                            
+
                             // 依照前端顯示比例回推到 PDF
                             const targetFontSize = (pageWidth / 1000) * 24 * sig.scale;
                             const finalWidth = textWidth * (targetFontSize / fontSize);
@@ -1703,12 +1826,45 @@
                 const baseName = firstItem.fileName.substring(0, firstItem.fileName.lastIndexOf('.')) || firstItem.fileName;
                 const exportName = `${baseName}_edited.pdf`;
 
-                const pdfBytes = await mergedPdf.save();
-                downloadBlob(pdfBytes, exportName, 'application/pdf');
-                showToast("匯出完成");
+                const pdfBytes = await mergedPdf.save({
+                    useObjectStreams: true, // 啟用物件串流以大幅縮小體積
+                    addDefaultPage: false
+                });
+
+                // --- 執行加密保護 (pdf-encrypt-lite 動態載入) ---
+                let finalBytes = pdfBytes;
+                const exportPassword = document.getElementById('export-password').value;
+                if (exportPassword) {
+                    updateProgress(100, 100, "正在下載安全組件...");
+                    try {
+                        let module;
+                        try {
+                            // 嘗試第一個 CDN: esm.sh
+                            module = await import('https://esm.sh/@pdfsmaller/pdf-encrypt-lite@1.0.2');
+                        } catch (e) {
+                            console.warn("esm.sh 載入失敗，嘗試 Skypack...", e);
+                            // 嘗試第二個 CDN: skypack (備援)
+                            module = await import('https://cdn.skypack.dev/@pdfsmaller/pdf-encrypt-lite@1.0.2');
+                        }
+
+                        const { encryptPDF } = module;
+                        if (typeof encryptPDF !== 'function') {
+                            throw new Error("模組內找不到加密函式，請聯繫開發者進行維修。");
+                        }
+                        updateProgress(100, 100, "正在應用安全加密...");
+                        const encryptedBytes = await encryptPDF(pdfBytes, exportPassword, exportPassword);
+                        finalBytes = encryptedBytes;
+                    } catch (secErr) {
+                        console.error("加密失敗:", secErr);
+                        alert("PDF 加密失敗，將輸出無加密版本。原因: " + secErr.message);
+                    }
+                }
+
+                downloadBlob(finalBytes, exportName, 'application/pdf');
+                showToast(exportPassword ? "PDF 加密匯出成功" : "PDF 匯出成功");
             } catch (err) {
                 console.error(err);
-                alert("匯出錯誤");
+                alert("匯出錯誤: " + err.message);
             } finally {
                 hideLoading();
             }
@@ -1736,7 +1892,7 @@
             loading.offsetHeight;
             loading.classList.remove('opacity-0');
             loading.classList.remove('pointer-events-none');
-            
+
             const progressContainer = document.getElementById('loading-progress-container');
             const progressFill = document.getElementById('loading-progress');
             if (showProgress) {
@@ -1754,7 +1910,7 @@
             loadingText.textContent = `${prefixText}... ${current} / ${total}`;
         }
 
-        function hideLoading() { 
+        function hideLoading() {
             loading.classList.add('opacity-0');
             loading.classList.add('pointer-events-none');
             setTimeout(() => {
