@@ -403,6 +403,19 @@
         .signature-item:hover .delete-handle {
             display: flex;
         }
+
+        /* 拖放指示線樣式 */
+        #drop-indicator {
+            display: none;
+            position: absolute;
+            width: 4px;
+            background-color: hsl(var(--primary));
+            border-radius: 2px;
+            z-index: 100;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            transition: all 0.1s ease;
+        }
     </style>
 </head>
 
@@ -709,6 +722,69 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+        // --- IndexedDB 輔助類別 ---
+        class PDFToolDB {
+            constructor() {
+                this.dbName = 'PDFToolsDB';
+                this.version = 1;
+                this.db = null;
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('state')) {
+                            db.createObjectStore('state', { keyPath: 'id' });
+                        }
+                    };
+                    request.onsuccess = (e) => {
+                        this.db = e.target.result;
+                        resolve(this.db);
+                    };
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async saveState(pageList, signatureLibrary, activePageSignatures) {
+                if (!this.db) await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['state'], 'readwrite');
+                    const store = transaction.objectStore('state');
+                    const data = {
+                        id: 'current_work',
+                        pageList,
+                        signatureLibrary,
+                        activePageSignatures,
+                        timestamp: Date.now()
+                    };
+                    const request = store.put(data);
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async loadState() {
+                if (!this.db) await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['state'], 'readonly');
+                    const store = transaction.objectStore('state');
+                    const request = store.get('current_work');
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async clearState() {
+                if (!this.db) await this.init();
+                const transaction = this.db.transaction(['state'], 'readwrite');
+                transaction.objectStore('state').delete('current_work');
+            }
+        }
+
+        const dbHelper = new PDFToolDB();
+
         const fileInput = document.getElementById('file-input');
         const dropZone = document.getElementById('drop-zone');
         const pagesContainer = document.getElementById('pages-container');
@@ -776,6 +852,14 @@
             onEnd: (evt) => {
                 const movedItem = pageList.splice(evt.oldIndex, 1)[0];
                 pageList.splice(evt.newIndex, 0, movedItem);
+
+                // 處理簽名索引位移
+                const oldSigs = activePageSignatures[evt.oldIndex];
+                delete activePageSignatures[evt.oldIndex];
+                // 這裡需要重新整理所有索引，或者改用 ID 關聯
+                // 為了簡單起見，我們先觸發存檔並重讀頁碼
+                autoSaveState();
+
                 renderAllPages(false); // 不重繪以保持平滑，但更新 UI 上的數字
                 updatePageNumberBadges();
             }
@@ -808,9 +892,10 @@
                     alert('找不到當前預覽頁面');
                     return;
                 }
-                if (!activePageSignatures[currentPreviewPageIndex]) activePageSignatures[currentPreviewPageIndex] = [];
+                const pageId = pageList[currentPreviewPageIndex].id;
+                if (!activePageSignatures[pageId]) activePageSignatures[pageId] = [];
 
-                activePageSignatures[currentPreviewPageIndex].push({
+                activePageSignatures[pageId].push({
                     type: type, // 'image', 'text', 'date'
                     text: defaultText,
                     x: 10, y: 10, scale: 1.0
@@ -996,11 +1081,13 @@
                         });
 
                         if (userChoice !== null) {
-                            await processSingleFile(file, uint8Array, insertIndex, userChoice, password);
+                            const insertedCount = await processSingleFile(file, uint8Array, insertIndex, userChoice, password);
+                            if (insertIndex !== null && insertedCount) insertIndex += insertedCount;
                         }
                     } else if (file.type.startsWith('image/')) {
                         const arrayBuffer = await file.arrayBuffer();
-                        await processSingleFile(file, arrayBuffer, insertIndex);
+                        const insertedCount = await processSingleFile(file, arrayBuffer, insertIndex);
+                        if (insertIndex !== null && insertedCount) insertIndex += insertedCount;
                     }
                 }
             } catch (fatal) {
@@ -1055,16 +1142,10 @@
 
             try {
                 if (file.type === 'application/pdf') {
-                    // 建立一個此檔案專用的共享副本，避免每頁重複 slice 導致體積膨脹且快取失效
                     const sharedBuffer = uint8Array.slice(0);
                     const pdfJsDoc = await pdfjsLib.getDocument({ data: sharedBuffer.slice(0), password: verifiedPassword }).promise;
-                    let pdfDocLib;
-                    try {
-                        pdfDocLib = await PDFLib.PDFDocument.load(sharedBuffer.slice(0), { password: verifiedPassword });
-                    } catch (e) {
-                        pdfDocLib = await PDFLib.PDFDocument.load(sharedBuffer.slice(0), { ignoreEncryption: true });
-                    }
-                    const pagesToImport = indices || [...Array(pdfDocLib.getPageCount()).keys()];
+                    const pageCount = pdfJsDoc.numPages;
+                    const pagesToImport = indices || [...Array(pageCount).keys()];
 
                     for (const i of pagesToImport) {
                         const page = await pdfJsDoc.getPage(i + 1);
@@ -1072,7 +1153,7 @@
                         tempNewPages.push({
                             id: Math.random().toString(36).substr(2, 9),
                             type: 'pdf',
-                            sourcePdf: sharedBuffer, // 關鍵：共用同一個緩衝區引用
+                            sourcePdf: sharedBuffer, // 共用同一個緩衝區引用
                             pageIndex: i,
                             thumbnail: thumbnail,
                             fileName: file.name,
@@ -1104,13 +1185,14 @@
                 updateEmptyState();
                 hideLoading();
                 showToast(`成功匯入 ${tempNewPages.length} 頁`);
+                return tempNewPages.length; // 返回插入的頁數
             } catch (err) {
                 console.error("匯入過程出錯:", err);
                 let msg = err.message;
                 if (msg.includes("AES-256")) msg = "該檔案加密等級過高 (AES-256)，目前瀏覽器無法直接解析。";
                 alert(`匯入失敗：${msg}`);
                 hideLoading();
-                return;
+                return 0;
             }
         }
 
@@ -1265,7 +1347,22 @@
 
             let fullUrl;
             if (item.type === 'pdf') {
-                const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0) }).promise;
+                let password = item.loadPassword;
+                let doc;
+                try {
+                    doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
+                } catch (e) {
+                    if (e.name === 'PasswordException' || e.message.includes('password')) {
+                        const newPass = await showPasswordPrompt(item.fileName);
+                        if (newPass !== null) {
+                            item.loadPassword = newPass;
+                            password = newPass;
+                            doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
+                        } else {
+                            hideLoading(); return;
+                        }
+                    } else { throw e; }
+                }
                 const page = await doc.getPage(item.pageIndex + 1);
                 fullUrl = await renderThumbnailFromSource(page, item.rotation, item.crop, 3.0);
             } else {
@@ -1310,9 +1407,10 @@
                     alert('找不到當前預覽頁面');
                     return;
                 }
-                if (!activePageSignatures[currentPreviewPageIndex]) activePageSignatures[currentPreviewPageIndex] = [];
+                const pageId = pageList[currentPreviewPageIndex].id;
+                if (!activePageSignatures[pageId]) activePageSignatures[pageId] = [];
 
-                activePageSignatures[currentPreviewPageIndex].push({
+                activePageSignatures[pageId].push({
                     type: 'image',
                     sigData: sigData,
                     x: 30, y: 30, scale: lastSignatureScale
@@ -1328,7 +1426,9 @@
 
         function renderPageSignatures() {
             sigLayer.innerHTML = '';
-            const sigs = activePageSignatures[currentPreviewPageIndex] || [];
+            const pageId = pageList[currentPreviewPageIndex]?.id;
+            if (!pageId) return;
+            const sigs = activePageSignatures[pageId] || [];
 
             sigs.forEach((sig, idx) => {
                 const container = document.createElement('div');
@@ -1434,7 +1534,8 @@
 
                 container.querySelector('.delete-handle').onclick = (e) => {
                     e.stopPropagation();
-                    activePageSignatures[currentPreviewPageIndex].splice(idx, 1);
+                    const pageId = pageList[currentPreviewPageIndex].id;
+                    activePageSignatures[pageId].splice(idx, 1);
                     renderPageSignatures();
                 };
 
@@ -1541,8 +1642,22 @@
 
             let previewUrl;
             if (item.type === 'pdf') {
-                const password = item.loadPassword;
-                const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
+                let password = item.loadPassword;
+                let doc;
+                try {
+                    doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
+                } catch (e) {
+                    if (e.name === 'PasswordException' || e.message.includes('password')) {
+                        const newPass = await showPasswordPrompt(item.fileName);
+                        if (newPass !== null) {
+                            item.loadPassword = newPass;
+                            password = newPass;
+                            doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
+                        } else {
+                            hideLoading(); return;
+                        }
+                    } else { throw e; }
+                }
                 const page = await doc.getPage(item.pageIndex + 1);
                 previewUrl = await renderThumbnailFromSource(page, item.rotation, null);
             } else {
@@ -1711,161 +1826,268 @@
 
         async function exportPdfAction(listToExport) {
             if (listToExport.length === 0) return;
-            showLoading("準備匯出 PDF...", true);
+            showLoading("正在啟動背景處理引擎...", true);
 
             try {
-                const mergedPdf = await PDFLib.PDFDocument.create();
-                const pnEnabled = document.getElementById('pn-enabled').value === 'yes';
-                const startFromPage = parseInt(document.getElementById('pn-start-page').value) || 1;
-                const startValue = parseInt(document.getElementById('pn-start-value').value) || 1;
-                const position = document.getElementById('pn-position').value;
-                const sourceCache = new Map(); // 快取已載入的來源 PDF，避免重複讀取導致體積膨脹
+                const pnSettings = {
+                    enabled: document.getElementById('pn-enabled').value === 'yes',
+                    startPage: parseInt(document.getElementById('pn-start-page').value) || 1,
+                    startValue: parseInt(document.getElementById('pn-start-value').value) || 1,
+                    position: document.getElementById('pn-position').value
+                };
 
-                // 優化：建立一個全域的對應表，用來追蹤已經拷貝過的資源
-                // pdf-lib 在 copyPages 時，如果傳入同一個來源文件的多個頁面，通常會嘗試去重
-                // 但如果我們在循環中多次載入同一個文件到不同實例，就會失效
-                for (let i = 0; i < listToExport.length; i++) {
-                    updateProgress(i + 1, listToExport.length, "PDF 頁面渲染中");
+                // 將 Worker 程式碼定義為字串，實現單一 HTML 封裝
+                const workerCode = `
+                    importScripts('https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js');
 
-                    const item = listToExport[i];
-                    let pdfPage;
+                    self.onmessage = async (e) => {
+                        const { action, data } = e.data;
+                        try {
+                            if (action === 'merge-pdf') {
+                                const { listToExport, pnSettings } = data;
+                                const mergedPdf = await PDFLib.PDFDocument.create();
+                                const sourceDocCache = new Map(); // 檔案快取，避免重複載入導致空白或效能問題
+                                
+                                for (let i = 0; i < listToExport.length; i++) {
+                                    const item = listToExport[i];
+                                    self.postMessage({ action: 'progress', data: { current: i + 1, total: listToExport.length, text: '內容解密中' } });
+                                    let pdfPage;
+                                    if (item.type === 'pdf') {
+                                        const uint8 = new Uint8Array(item.sourcePdf);
+                                        let sourceDoc;
+                                        try {
+                                            // 關鍵修正：如果有密碼，不可與 ignoreEncryption 同時使用，否則內容流會變空白
+                                            if (item.loadPassword) {
+                                                sourceDoc = await PDFLib.PDFDocument.load(uint8, { password: item.loadPassword });
+                                            } else {
+                                                sourceDoc = await PDFLib.PDFDocument.load(uint8, { ignoreEncryption: true });
+                                            }
+                                        } catch (loadErr) {
+                                            console.warn("Worker Load Standard Failed, using ignore mode", loadErr);
+                                            sourceDoc = await PDFLib.PDFDocument.load(uint8, { ignoreEncryption: true });
+                                        }
 
-                    // 處理圖層合併
-                    if (item.type === 'pdf') {
-                        let sourceDoc = sourceCache.get(item.sourcePdf);
-                        if (!sourceDoc) {
-                            sourceDoc = await PDFLib.PDFDocument.load(item.sourcePdf, {
-                                password: item.loadPassword,
-                                ignoreEncryption: true // 確保即使解鎖後也能正常拷貝資源
-                            });
-                            sourceCache.set(item.sourcePdf, sourceDoc);
+                                        const [copiedPage] = await mergedPdf.copyPages(sourceDoc, [item.pageIndex]);
+                                        pdfPage = mergedPdf.addPage(copiedPage);
+                                    } else {
+                                        const bytes = new Uint8Array(item.sourceImage);
+                                        if (bytes.length > 0) {
+                                            const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
+                                            const img = isPng ? await mergedPdf.embedPng(bytes) : await mergedPdf.embedJpg(bytes);
+                                            
+                                            // 關鍵修正：若無原始尺寸（一般圖片匯入），預設以 0.72 倍縮放以求平衡
+                                            const pw = item.targetWidth || (img.width * 0.72);
+                                            const ph = item.targetHeight || (img.height * 0.72);
+                                            pdfPage = mergedPdf.addPage([pw, ph]);
+                                            pdfPage.drawImage(img, { x: 0, y: 0, width: pw, height: ph });
+                                        } else {
+                                            continue; 
+                                        }
+                                    }
+
+                                    if (item.rotation !== 0) {
+                                        const currentRot = pdfPage.getRotation()?.angle || 0;
+                                        pdfPage.setRotation(PDFLib.degrees((currentRot + item.rotation) % 360));
+                                    }
+
+                                    if (item.crop) {
+                                        const { width, height } = pdfPage.getSize();
+                                        const cx = (item.crop.x / 100) * width;
+                                        const cy = (item.crop.y / 100) * height;
+                                        const cw = (item.crop.w / 100) * width;
+                                        const ch = (item.crop.h / 100) * height;
+                                        pdfPage.setCropBox(cx, height - cy - ch, cw, ch);
+                                    }
+
+                                    // 確保簽名有繪製上去
+                                    const sigs = item.signatures || [];
+                                    for (const sig of sigs) {
+                                        const { width: pageWidth, height: pageHeight } = pdfPage.getSize();
+                                        const sigImg = await mergedPdf.embedPng(sig.sigData);
+                                        const sigWidth = pageWidth * (20 * sig.scale / 100);
+                                        const sigHeight = sigImg.height * (sigWidth / sigImg.width);
+
+                                        pdfPage.drawImage(sigImg, {
+                                            x: pageWidth * (sig.x / 100),
+                                            y: pageHeight - (pageHeight * (sig.y / 100)) - sigHeight,
+                                            width: sigWidth,
+                                            height: sigHeight,
+                                        });
+                                    }
+
+                                    if (pnSettings.enabled && (i + 1) >= pnSettings.startPage) {
+                                        const { width } = pdfPage.getSize();
+                                        const displayNum = pnSettings.startValue + (i + 1 - pnSettings.startPage);
+                                        let x = width / 2;
+                                        if (pnSettings.position === 'left') x = 40; else if (pnSettings.position === 'right') x = width - 60;
+                                        
+                                        // 簡單繪製避免字體載入問題
+                                        try {
+                                            pdfPage.drawText(displayNum.toString(), { x, y: 20, size: 12 });
+                                        } catch(e) {}
+                                    }
+                                }
+
+                                // 暫時關閉 useObjectStreams 以確保相容性，防止加密內容變空白
+                                const pdfBytes = await mergedPdf.save({ useObjectStreams: false });
+                                self.postMessage({ action: 'success', data: pdfBytes }, [pdfBytes.buffer]);
+                            }
+                        } catch (err) {
+                            console.error("Worker 內部錯誤:", err);
+                            self.postMessage({ action: 'error', data: err.toString() });
                         }
-                        const [copied] = await mergedPdf.copyPages(sourceDoc, [item.pageIndex]);
-                        pdfPage = mergedPdf.addPage(copied);
-                    } else {
-                        // 優化圖片嵌入：如果是同一張圖片，pdf-lib 會自動處理，但我們確保緩衝區一致
-                        const img = await mergedPdf.embedJpg(item.sourceImage);
-                        pdfPage = mergedPdf.addPage([img.width, img.height]);
-                        pdfPage.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+                    };
+                `;
+
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                const workerUrl = URL.createObjectURL(blob);
+                const worker = new Worker(workerUrl);
+
+                worker.onmessage = async (e) => {
+                    const { action, data } = e.data;
+                    if (action === 'progress') {
+                        updateProgress(data.current, data.total, data.text);
+                    } else if (action === 'success') {
+                        const pdfBytes = data;
+                        const exportPassword = document.getElementById('export-password').value;
+                        let finalBytes = pdfBytes;
+
+                        if (exportPassword) {
+                            updateProgress(100, 100, "正在應用安全加密...");
+                            try {
+                                const module = await import('https://esm.sh/@pdfsmaller/pdf-encrypt-lite@1.0.2');
+                                const { encryptPDF } = module;
+                                finalBytes = await encryptPDF(pdfBytes, exportPassword, exportPassword);
+                            } catch (secErr) {
+                                console.error("加密失敗:", secErr);
+                                alert("加密失敗，匯出無加密版本。");
+                            }
+                        }
+
+                        const firstItem = listToExport[0];
+                        const baseName = firstItem.fileName.substring(0, firstItem.fileName.lastIndexOf('.')) || firstItem.fileName;
+                        downloadBlob(finalBytes, `${baseName}_edited.pdf`, 'application/pdf');
+                        showToast("PDF 匯出成功");
+                        hideLoading();
+                        worker.terminate();
+                        URL.revokeObjectURL(workerUrl);
+                    } else if (action === 'error') {
+                        alert("背景執行出錯: " + data);
+                        hideLoading();
+                        worker.terminate();
+                        URL.revokeObjectURL(workerUrl);
                     }
+                };
 
-                    if (item.rotation !== 0) {
-                        pdfPage.setRotation(PDFLib.degrees(pdfPage.getRotation().angle + item.rotation));
-                    }
+                // 將資料傳遞給 Worker (預處理簽名 + 加密 PDF 預渲染)
+                showLoading("正在準備頁面資料...", true);
+                const preparedList = [];
+                for (let pi = 0; pi < listToExport.length; pi++) {
+                    const item = listToExport[pi];
+                    updateProgress(pi + 1, listToExport.length, "頁面預處理中");
 
-                    if (item.crop) {
-                        const { width, height } = pdfPage.getSize();
-                        const cx = (item.crop.x / 100) * width;
-                        const cy = (item.crop.y / 100) * height;
-                        const cw = (item.crop.w / 100) * width;
-                        const ch = (item.crop.h / 100) * height;
-                        pdfPage.setCropBox(cx, height - cy - ch, cw, ch);
-                    }
+                    // 關鍵修正：簽名現在通過 ID 關聯
+                    const rawSigs = activePageSignatures[item.id] || [];
 
-                    if (pnEnabled && (i + 1) >= startFromPage) {
-                        const { width, height } = pdfPage.getSize();
-                        const displayNum = startValue + (i + 1 - startFromPage);
-                        let x = width / 2;
-                        if (position === 'left') x = 40; else if (position === 'right') x = width - 60;
-                        pdfPage.drawText(displayNum.toString(), { x, y: 20, size: 12 });
-                    }
+                    const processedSigs = await Promise.all(rawSigs.map(async (sig) => {
+                        if (sig.type === 'image' || !sig.type) return sig;
 
-                    // 插入簽名
-                    const signaturesOnPage = activePageSignatures[i] || [];
-                    for (const sig of signaturesOnPage) {
-                        const { width: pageWidth, height: pageHeight } = pdfPage.getSize();
+                        // 文字轉 PNG
+                        const tempCanvas = document.createElement('canvas');
+                        const tempCtx = tempCanvas.getContext('2d');
+                        const fontSize = 48;
+                        tempCtx.font = `bold ${fontSize}px sans-serif`;
+                        const metrics = tempCtx.measureText(sig.text);
+                        const textWidth = metrics.width;
+                        const textHeight = fontSize * 1.5;
 
-                        if (sig.type === 'image' || !sig.type) {
-                            const sigImg = await mergedPdf.embedPng(sig.sigData);
-                            const sigWidth = pageWidth * (20 * sig.scale / 100);
-                            const sigHeight = sigImg.height * (sigWidth / sigImg.width);
+                        tempCanvas.width = textWidth + 10;
+                        tempCanvas.height = textHeight;
+                        tempCtx.font = `bold ${fontSize}px sans-serif`;
+                        tempCtx.fillStyle = "#000000";
+                        tempCtx.textBaseline = "top";
+                        tempCtx.fillText(sig.text, 5, 5);
 
-                            pdfPage.drawImage(sigImg, {
-                                x: pageWidth * (sig.x / 100),
-                                y: pageHeight - (pageHeight * (sig.y / 100)) - sigHeight,
-                                width: sigWidth,
-                                height: sigHeight,
-                            });
+                        return {
+                            ...sig,
+                            type: 'image',
+                            sigData: tempCanvas.toDataURL('image/png')
+                        };
+                    }));
+
+                    // 加密 PDF 用 pdf.js 預渲染成圖片（pdf-lib 無法解密內容串流）
+                    if (item.type === 'pdf' && item.loadPassword) {
+                        const password = item.loadPassword;
+                        const doc = await pdfjsLib.getDocument({ data: item.sourcePdf.slice(0), password }).promise;
+                        const page = await doc.getPage(item.pageIndex + 1);
+
+                        // 1. 獲取原始尺寸 (Points)
+                        const originalViewport = page.getViewport({ scale: 1.0, rotation: item.rotation });
+                        const targetWidth = originalViewport.width;
+                        const targetHeight = originalViewport.height;
+
+                        // 2. 高解析度渲染 (Pixels) - 使用 4.0x 並改用 PNG 以保證最高列印品質
+                        const scale = 4.0;
+                        const renderViewport = page.getViewport({ scale, rotation: item.rotation });
+                        const canvas = document.createElement('canvas');
+
+                        if (!item.crop) {
+                            canvas.width = renderViewport.width;
+                            canvas.height = renderViewport.height;
+                            await page.render({ canvasContext: canvas.getContext('2d'), viewport: renderViewport }).promise;
                         } else {
-                            // 處理文字與日期 PDF 渲染
-                            // PDFLib 預設支援標準字體，為了解決中文支援問題，我們在此將文字透過 Canvas 轉為透明 PNG 再貼上
-                            const tempCanvas = document.createElement('canvas');
-                            const tempCtx = tempCanvas.getContext('2d');
-                            const fontSize = 48; // 高解析度渲染
-                            tempCtx.font = `bold ${fontSize}px sans-serif`;
-                            const metrics = tempCtx.measureText(sig.text);
-                            const textWidth = metrics.width;
-                            const textHeight = fontSize * 1.5; // 預估高度
-
-                            tempCanvas.width = textWidth + 10;
-                            tempCanvas.height = textHeight;
-                            tempCtx.font = `bold ${fontSize}px sans-serif`; // 調整大小後需重設
-                            tempCtx.fillStyle = "#000000";
-                            tempCtx.textBaseline = "top";
-                            tempCtx.fillText(sig.text, 5, 5);
-
-                            const textImg = await mergedPdf.embedPng(tempCanvas.toDataURL('image/png'));
-
-                            // 依照前端顯示比例回推到 PDF
-                            const targetFontSize = (pageWidth / 1000) * 24 * sig.scale;
-                            const finalWidth = textWidth * (targetFontSize / fontSize);
-                            const finalHeight = textHeight * (targetFontSize / fontSize);
-
-                            pdfPage.drawImage(textImg, {
-                                x: pageWidth * (sig.x / 100),
-                                y: pageHeight - (pageHeight * (sig.y / 100)) - finalHeight,
-                                width: finalWidth,
-                                height: finalHeight,
-                            });
+                            const fullW = renderViewport.width, fullH = renderViewport.height;
+                            const offscreen = document.createElement('canvas');
+                            offscreen.width = fullW; offscreen.height = fullH;
+                            await page.render({ canvasContext: offscreen.getContext('2d'), viewport: renderViewport }).promise;
+                            const cw = (item.crop.w / 100) * fullW, ch = (item.crop.h / 100) * fullH;
+                            const cx = (item.crop.x / 100) * fullW, cy = (item.crop.y / 100) * fullH;
+                            canvas.width = cw; canvas.height = ch;
+                            canvas.getContext('2d').drawImage(offscreen, cx, cy, cw, ch, 0, 0, cw, ch);
                         }
+
+                        // 改用 PNG 保證不失真，雖然檔案較大但品質優先
+                        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                        const imgBuffer = await blob.arrayBuffer();
+
+                        preparedList.push({
+                            type: 'image',
+                            sourcePdf: null,
+                            sourceImage: imgBuffer,
+                            pageIndex: 0,
+                            loadPassword: null,
+                            rotation: 0,
+                            crop: null,
+                            signatures: processedSigs,
+                            targetWidth,
+                            targetHeight
+                        });
+                    } else {
+                        preparedList.push({
+                            type: item.type,
+                            sourcePdf: item.sourcePdf ? item.sourcePdf.slice(0) : null,
+                            sourceImage: item.sourceImage ? item.sourceImage.slice(0) : null,
+                            pageIndex: item.pageIndex,
+                            loadPassword: item.loadPassword,
+                            rotation: item.rotation,
+                            crop: item.crop,
+                            signatures: processedSigs
+                        });
                     }
                 }
 
-                // 產生檔名：以第一頁的檔名為基礎
-                const firstItem = listToExport[0];
-                const baseName = firstItem.fileName.substring(0, firstItem.fileName.lastIndexOf('.')) || firstItem.fileName;
-                const exportName = `${baseName}_edited.pdf`;
-
-                const pdfBytes = await mergedPdf.save({
-                    useObjectStreams: true, // 啟用物件串流以大幅縮小體積
-                    addDefaultPage: false
+                // 為了解決 Transferable 可能導致的資料遺失問題，我們先使用結構化拷貝傳遞
+                worker.postMessage({
+                    action: 'merge-pdf',
+                    data: {
+                        listToExport: preparedList,
+                        pnSettings
+                    }
                 });
 
-                // --- 執行加密保護 (pdf-encrypt-lite 動態載入) ---
-                let finalBytes = pdfBytes;
-                const exportPassword = document.getElementById('export-password').value;
-                if (exportPassword) {
-                    updateProgress(100, 100, "正在下載安全組件...");
-                    try {
-                        let module;
-                        try {
-                            // 嘗試第一個 CDN: esm.sh
-                            module = await import('https://esm.sh/@pdfsmaller/pdf-encrypt-lite@1.0.2');
-                        } catch (e) {
-                            console.warn("esm.sh 載入失敗，嘗試 Skypack...", e);
-                            // 嘗試第二個 CDN: skypack (備援)
-                            module = await import('https://cdn.skypack.dev/@pdfsmaller/pdf-encrypt-lite@1.0.2');
-                        }
-
-                        const { encryptPDF } = module;
-                        if (typeof encryptPDF !== 'function') {
-                            throw new Error("模組內找不到加密函式，請聯繫開發者進行維修。");
-                        }
-                        updateProgress(100, 100, "正在應用安全加密...");
-                        const encryptedBytes = await encryptPDF(pdfBytes, exportPassword, exportPassword);
-                        finalBytes = encryptedBytes;
-                    } catch (secErr) {
-                        console.error("加密失敗:", secErr);
-                        alert("PDF 加密失敗，將輸出無加密版本。原因: " + secErr.message);
-                    }
-                }
-
-                downloadBlob(finalBytes, exportName, 'application/pdf');
-                showToast(exportPassword ? "PDF 加密匯出成功" : "PDF 匯出成功");
             } catch (err) {
                 console.error(err);
-                alert("匯出錯誤: " + err.message);
-            } finally {
+                alert("啟動背景處理失敗: " + err.message);
                 hideLoading();
             }
         }
@@ -2009,6 +2231,42 @@
 
         // 初始化
         updateEmptyState();
+        checkAndRecoverState();
+
+        async function autoSaveState() {
+            try {
+                await dbHelper.saveState(pageList, signatureLibrary, activePageSignatures);
+            } catch (e) {
+                console.warn("自動存檔失敗:", e);
+            }
+        }
+
+        async function checkAndRecoverState() {
+            try {
+                const state = await dbHelper.loadState();
+                if (state && state.pageList && state.pageList.length > 0) {
+                    if (confirm(`偵測到上次的編輯進度 (${new Date(state.timestamp).toLocaleString()})，是否要恢復？`)) {
+                        pageList = state.pageList;
+                        signatureLibrary = state.signatureLibrary || [];
+                        activePageSignatures = state.activePageSignatures || {};
+                        renderAllPages();
+                        updateSignatureLibraryUI();
+                        updateEmptyState();
+                        showToast("已恢復上次進度");
+                    }
+                }
+            } catch (e) {
+                console.error("恢復存檔失敗:", e);
+            }
+        }
+
+        // 修改現有操作以觸發存檔
+        const originalRenderAllPages = renderAllPages;
+        renderAllPages = function (...args) {
+            originalRenderAllPages.apply(this, args);
+            // 包裝一層自動存檔，但不干擾主要渲染
+            setTimeout(autoSaveState, 500);
+        };
 
         // 監聽鍵盤快捷鍵 (Esc 關閉所有視窗)
         window.onkeydown = (e) => {
