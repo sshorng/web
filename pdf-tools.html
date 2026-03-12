@@ -112,13 +112,14 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(4px);
-            z-index: 100;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 5000;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
             color: white;
+            transition: opacity 0.3s;
         }
 
         #custom-confirm,
@@ -390,10 +391,13 @@
 
 <body class="bg-gray-50 min-h-screen font-sans pb-24">
 
-    <!-- 全局讀取遮罩 -->
-    <div id="loading" class="loading-overlay">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
-        <p class="text-lg font-semibold" id="loading-text">處理中...</p>
+    <!-- 全局讀取遮罩 (包含進度條) -->
+    <div id="loading" class="loading-overlay opacity-0 pointer-events-none">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-6"></div>
+        <p class="text-xl font-bold tracking-wider" id="loading-text">處理中...</p>
+        <div id="loading-progress-container" class="w-64 bg-gray-700 rounded-full h-2 mt-6 overflow-hidden hidden shadow-inner border border-gray-600">
+            <div id="loading-progress" class="bg-blue-500 h-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.8)]" style="width: 0%"></div>
+        </div>
     </div>
 
     <!-- 頁數選取匯入視窗 -->
@@ -479,8 +483,11 @@
             </div>
             <div class="w-px h-6 bg-gray-700"></div>
             <div class="flex gap-2">
+                <button id="add-text-btn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2">
+                    <i data-lucide="type" size="14"></i> 文字
+                </button>
                 <button id="open-sig-mgr" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2">
-                    <i data-lucide="pen-tool" size="14"></i> 簽名
+                    <i data-lucide="pen-tool" size="14"></i> 簽名庫
                 </button>
                 <button onclick="document.getElementById('preview-modal').style.display='none'"
                     class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-colors">關閉</button>
@@ -702,9 +709,10 @@
         const zoomValDisplay = document.getElementById('zoom-val');
         const previewWrap = document.getElementById('preview-wrap');
 
-        let signatureLibrary = []; // 儲存經過去背的 DataURL
+        let signatureLibrary = JSON.parse(localStorage.getItem('pdfToolsSignatures')) || []; // 儲存經過去背的 DataURL
         let currentSigRaw = null; // 原始尚未去背的圖片對象
         let activePageSignatures = {}; // 格式：{ pageIndex: [{ sigData, x, y, scale }] }
+        let lastSignatureScale = 0.5; // 記憶最後一次設定的簽名大小
         let currentPreviewPageIndex = -1;
         let currentZoom = 100;
         let originalPageWidth = 1000; // 基礎寬度固定為 1000px 用於內部映射
@@ -743,6 +751,35 @@
             e.stopPropagation();
             sigManagerModal.style.display = 'flex';
         };
+
+        const addTextBtn = document.getElementById('add-text-btn');
+        if (addTextBtn) {
+            addTextBtn.onclick = (e) => {
+                e.stopPropagation();
+                addTextOrDateToPage('text', '點此輸入文字');
+            };
+        }
+
+        function addTextOrDateToPage(type, defaultText) {
+            try {
+                if (currentPreviewPageIndex === -1) {
+                    alert('找不到當前預覽頁面');
+                    return;
+                }
+                if (!activePageSignatures[currentPreviewPageIndex]) activePageSignatures[currentPreviewPageIndex] = [];
+
+                activePageSignatures[currentPreviewPageIndex].push({
+                    type: type, // 'image', 'text', 'date'
+                    text: defaultText,
+                    x: 10, y: 10, scale: 1.0
+                });
+                renderPageSignatures();
+                showToast("已加入畫布，可拖曳與修改內容");
+            } catch (err) {
+                console.error("插入文字發生錯誤: ", err);
+                alert("插入文字發生錯誤: " + err.message);
+            }
+        }
 
         function closeSignatureManager() {
             sigManagerModal.style.display = 'none';
@@ -819,10 +856,30 @@
             signatureLibrary.forEach((sig, idx) => {
                 const div = document.createElement('div');
                 div.className = "p-2 border rounded-lg hover:border-blue-500 cursor-pointer bg-white group relative transition-all";
-                div.innerHTML = `<img src="${sig}" class="max-w-full h-8 object-contain">`;
+                div.innerHTML = `
+                    <img src="${sig}" class="max-w-full h-8 object-contain">
+                    <div class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow hidden group-hover:flex hover:bg-red-600 transition-colors" title="刪除此簽名">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </div>
+                `;
+                // 確保點擊圖片或外框都能觸發加入簽名，並阻止氣泡干擾
+                div.querySelector('img').onclick = (e) => {
+                    e.stopPropagation();
+                    applySignatureToPage(sig);
+                };
                 div.onclick = () => applySignatureToPage(sig);
+
+                // 點擊叉叉刪除簽名
+                div.querySelector('.bg-red-500').onclick = (e) => {
+                    e.stopPropagation(); // 阻止氣泡傳導，避免觸發上面 div.onclick 的插入簽名
+                    signatureLibrary.splice(idx, 1);
+                    localStorage.setItem('pdfToolsSignatures', JSON.stringify(signatureLibrary));
+                    updateSignatureLibraryUI();
+                    showToast("簽名已刪除");
+                };
                 sigLibraryContainer.appendChild(div);
             });
+            lucide.createIcons();
         }
 
         // --- 核心邏輯：頁碼範圍解析 ---
@@ -1145,16 +1202,25 @@
         }
 
         function applySignatureToPage(sigData) {
-            if (currentPreviewPageIndex === -1) return;
-            if (!activePageSignatures[currentPreviewPageIndex]) activePageSignatures[currentPreviewPageIndex] = [];
+            try {
+                if (currentPreviewPageIndex === -1) {
+                    alert('找不到當前預覽頁面');
+                    return;
+                }
+                if (!activePageSignatures[currentPreviewPageIndex]) activePageSignatures[currentPreviewPageIndex] = [];
 
-            activePageSignatures[currentPreviewPageIndex].push({
-                sigData: sigData,
-                x: 30, y: 30, scale: 0.5
-            });
-            renderPageSignatures();
-            closeSignatureManager();
-            showToast("已放置簽名，可拖曳調整位置");
+                activePageSignatures[currentPreviewPageIndex].push({
+                    type: 'image',
+                    sigData: sigData,
+                    x: 30, y: 30, scale: lastSignatureScale
+                });
+                renderPageSignatures();
+                closeSignatureManager();
+                showToast("已放置簽名，可拖曳與縮放");
+            } catch (err) {
+                console.error("插入簽名發生錯誤: ", err);
+                alert("插入簽名發生錯誤: " + err.message);
+            }
         }
 
         function renderPageSignatures() {
@@ -1168,11 +1234,42 @@
                 container.style.top = `${sig.y}%`;
                 container.style.width = `${20 * sig.scale}%`;
 
-                container.innerHTML = `
-                    <img src="${sig.sigData}">
-                    <div class="resize-handle"></div>
-                    <div class="delete-handle"><i data-lucide="trash-2" size="14"></i></div>
-                `;
+                if (sig.type === 'image' || !sig.type) {
+                    container.style.width = `${20 * sig.scale}%`;
+                    container.innerHTML = `
+                        <img src="${sig.sigData}">
+                        <div class="resize-handle"></div>
+                        <div class="delete-handle"><i data-lucide="trash-2" size="14"></i></div>
+                    `;
+                } else {
+                    // 文字或日期方塊：單擊拖曳，雙擊編輯
+                    container.style.width = 'auto';
+                    container.innerHTML = `
+                        <div class="text-content" contenteditable="false" spellcheck="false" style="font-size: ${24 * sig.scale}px; color: #000; min-width: 50px; border-bottom: 1px dashed transparent; outline: none; padding: 2px;">${sig.text}</div>
+                        <div class="resize-handle"></div>
+                        <div class="delete-handle"><i data-lucide="trash-2" size="14"></i></div>
+                    `;
+                    
+                    const textEl = container.querySelector('.text-content');
+                    textEl.ondblclick = (e) => {
+                        e.stopPropagation();
+                        textEl.contentEditable = "true";
+                        textEl.style.borderBottom = '1px dashed #3b82f6';
+                        textEl.style.cursor = 'text';
+                        textEl.focus();
+                    };
+                    textEl.onblur = () => {
+                        textEl.contentEditable = "false";
+                        textEl.style.borderBottom = '1px dashed transparent';
+                        textEl.style.cursor = 'inherit';
+                        sig.text = textEl.innerText;
+                    };
+                    textEl.onmousedown = (e) => {
+                        if (textEl.contentEditable === "true") {
+                            e.stopPropagation(); // 編輯中允許選取文字而不觸發外框拖曳
+                        }
+                    };
+                }
 
                 // 拖曳邏輯重構
                 container.onmousedown = (e) => {
@@ -1215,7 +1312,12 @@
                     const move = (me) => {
                         const dx = (me.clientX - startX) / 200;
                         sig.scale = Math.max(0.1, Math.min(2.0, initialScale + dx));
-                        container.style.width = `${20 * sig.scale}%`;
+                        if (sig.type === 'image' || !sig.type) {
+                            container.style.width = `${20 * sig.scale}%`;
+                        } else {
+                            const textEl = container.querySelector('.text-content');
+                            textEl.style.fontSize = `${24 * sig.scale}px`;
+                        }
                     };
 
                     const stop = () => {
@@ -1372,13 +1474,15 @@
             if (selectedItems.length === 0) return;
 
             const isSingle = selectedItems.length === 1;
-            showLoading(isSingle ? "正在匯出 PNG..." : "正在打包 PNG...");
+            showLoading(isSingle ? "正在匯出 PNG..." : "準備打包 PNG...", !isSingle);
             
             const zip = isSingle ? null : new JSZip();
             let singleCanvas = null;
             let singleFilename = "";
 
             for (let i = 0; i < selectedItems.length; i++) {
+                if (!isSingle) updateProgress(i + 1, selectedItems.length, "PNG 打包壓縮中");
+                
                 const item = selectedItems[i];
                 const canvas = document.createElement('canvas');
                 if (item.type === 'pdf') {
@@ -1410,16 +1514,27 @@
                 const ctx = canvas.getContext('2d');
                 const signaturesOnPage = activePageSignatures[pageList.indexOf(item)] || [];
                 for (const sig of signaturesOnPage) {
-                    const sigImg = new Image();
-                    await new Promise(r => { sigImg.onload = r; sigImg.src = sig.sigData; });
-                    
-                    // 計算縮放與位置 (以寬度為基準)
-                    const sigWidth = canvas.width * (20 * sig.scale / 100);
-                    const sigHeight = sigImg.height * (sigWidth / sigImg.width);
-                    const sigX = canvas.width * (sig.x / 100);
-                    const sigY = canvas.height * (sig.y / 100); // Canvas 是從上到下
+                    if (sig.type === 'image' || !sig.type) {
+                        const sigImg = new Image();
+                        await new Promise(r => { sigImg.onload = r; sigImg.src = sig.sigData; });
+                        
+                        const sigWidth = canvas.width * (20 * sig.scale / 100);
+                        const sigHeight = sigImg.height * (sigWidth / sigImg.width);
+                        const sigX = canvas.width * (sig.x / 100);
+                        const sigY = canvas.height * (sig.y / 100);
 
-                    ctx.drawImage(sigImg, sigX, sigY, sigWidth, sigHeight);
+                        ctx.drawImage(sigImg, sigX, sigY, sigWidth, sigHeight);
+                    } else {
+                        // 處理文字與日期 PNG 渲染
+                        const sigX = canvas.width * (sig.x / 100);
+                        const sigY = canvas.height * (sig.y / 100);
+                        const fontSize = (canvas.width / 1000) * 24 * sig.scale; // 依照預先比例校正
+                        
+                        ctx.font = `bold ${fontSize}px sans-serif`;
+                        ctx.fillStyle = "#000000";
+                        ctx.textBaseline = "top";
+                        ctx.fillText(sig.text, sigX + 2, sigY + 2);
+                    }
                 }
 
                 // 取出原檔名 (去除副檔名)
@@ -1447,7 +1562,7 @@
 
         async function exportPdfAction(listToExport) {
             if (listToExport.length === 0) return;
-            showLoading("產出 PDF 中...");
+            showLoading("準備匯出 PDF...", true);
 
             try {
                 const mergedPdf = await PDFLib.PDFDocument.create();
@@ -1459,6 +1574,8 @@
                 const quality = parseFloat(document.getElementById('export-quality').value);
 
                 for (let i = 0; i < listToExport.length; i++) {
+                    updateProgress(i + 1, listToExport.length, "PDF 頁面渲染中");
+                    
                     const item = listToExport[i];
                     let pdfPage;
 
@@ -1533,17 +1650,51 @@
                     // 插入簽名
                     const signaturesOnPage = activePageSignatures[i] || [];
                     for (const sig of signaturesOnPage) {
-                        const sigImg = await mergedPdf.embedPng(sig.sigData);
                         const { width: pageWidth, height: pageHeight } = pdfPage.getSize();
-                        const sigWidth = pageWidth * (20 * sig.scale / 100); // Assuming 20% is base width
-                        const sigHeight = sigImg.height * (sigWidth / sigImg.width);
+                        
+                        if (sig.type === 'image' || !sig.type) {
+                            const sigImg = await mergedPdf.embedPng(sig.sigData);
+                            const sigWidth = pageWidth * (20 * sig.scale / 100);
+                            const sigHeight = sigImg.height * (sigWidth / sigImg.width);
 
-                        pdfPage.drawImage(sigImg, {
-                            x: pageWidth * (sig.x / 100),
-                            y: pageHeight - (pageHeight * (sig.y / 100)) - sigHeight, // PDFLib Y-axis is from bottom
-                            width: sigWidth,
-                            height: sigHeight,
-                        });
+                            pdfPage.drawImage(sigImg, {
+                                x: pageWidth * (sig.x / 100),
+                                y: pageHeight - (pageHeight * (sig.y / 100)) - sigHeight,
+                                width: sigWidth,
+                                height: sigHeight,
+                            });
+                        } else {
+                            // 處理文字與日期 PDF 渲染
+                            // PDFLib 預設支援標準字體，為了解決中文支援問題，我們在此將文字透過 Canvas 轉為透明 PNG 再貼上
+                            const tempCanvas = document.createElement('canvas');
+                            const tempCtx = tempCanvas.getContext('2d');
+                            const fontSize = 48; // 高解析度渲染
+                            tempCtx.font = `bold ${fontSize}px sans-serif`;
+                            const metrics = tempCtx.measureText(sig.text);
+                            const textWidth = metrics.width;
+                            const textHeight = fontSize * 1.5; // 預估高度
+                            
+                            tempCanvas.width = textWidth + 10;
+                            tempCanvas.height = textHeight;
+                            tempCtx.font = `bold ${fontSize}px sans-serif`; // 調整大小後需重設
+                            tempCtx.fillStyle = "#000000";
+                            tempCtx.textBaseline = "top";
+                            tempCtx.fillText(sig.text, 5, 5);
+
+                            const textImg = await mergedPdf.embedPng(tempCanvas.toDataURL('image/png'));
+                            
+                            // 依照前端顯示比例回推到 PDF
+                            const targetFontSize = (pageWidth / 1000) * 24 * sig.scale;
+                            const finalWidth = textWidth * (targetFontSize / fontSize);
+                            const finalHeight = textHeight * (targetFontSize / fontSize);
+
+                            pdfPage.drawImage(textImg, {
+                                x: pageWidth * (sig.x / 100),
+                                y: pageHeight - (pageHeight * (sig.y / 100)) - finalHeight,
+                                width: finalWidth,
+                                height: finalHeight,
+                            });
+                        }
                     }
                 }
 
@@ -1578,12 +1729,38 @@
             window.URL.revokeObjectURL(url);
         }
 
-        function showLoading(text) {
+        function showLoading(text, showProgress = false) {
             loadingText.textContent = text;
             loading.style.display = 'flex';
+            // 強制重繪以觸發 opacity 動畫
+            loading.offsetHeight;
+            loading.classList.remove('opacity-0');
+            loading.classList.remove('pointer-events-none');
+            
+            const progressContainer = document.getElementById('loading-progress-container');
+            const progressFill = document.getElementById('loading-progress');
+            if (showProgress) {
+                progressContainer.classList.remove('hidden');
+                progressFill.style.width = '0%';
+            } else {
+                progressContainer.classList.add('hidden');
+            }
         }
 
-        function hideLoading() { loading.style.display = 'none'; }
+        function updateProgress(current, total, prefixText) {
+            const progressFill = document.getElementById('loading-progress');
+            const percent = (current / total) * 100;
+            progressFill.style.width = `${percent}%`;
+            loadingText.textContent = `${prefixText}... ${current} / ${total}`;
+        }
+
+        function hideLoading() { 
+            loading.classList.add('opacity-0');
+            loading.classList.add('pointer-events-none');
+            setTimeout(() => {
+                loading.style.display = 'none';
+            }, 300);
+        }
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
