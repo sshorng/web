@@ -205,8 +205,34 @@
             border: 1px solid var(--primary);
         }
 
-        .chevron {
-            transition: transform 0.3s;
+        /* 待命區大按鈕樣式 */
+        .btn-waitlist {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--primary);
+            color: white;
+            border-radius: 8px;
+            padding: 0;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-waitlist:active {
+            filter: brightness(1.5);
+            transform: scale(0.9);
+        }
+
+        .waitlist-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .collapsed .chevron {
@@ -257,11 +283,11 @@
                 <div class="player-list">
                     <!-- 針對「未報到」特殊處理 -->
                     <div v-if="zone.id === '1F 報到'"
-                        style="margin-bottom:15px; background:rgba(255,255,255,0.02); padding:10px; border-radius:8px;">
-                        <strong style="font-size:0.75rem; color:rgba(255,255,255,0.4)">待命區 (點擊即報到至 5F):</strong>
-                        <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:5px;">
+                        style="margin-bottom:15px; background:rgba(255,255,255,0.02); padding:12px; border-radius:10px; border: 1px solid rgba(139, 92, 246, 0.2);">
+                        <strong style="font-size:0.85rem; color:var(--primary); display:block; margin-bottom:10px;">快速報到 (點擊直達 5F):</strong>
+                        <div class="waitlist-container">
                             <button v-for="p in playersIn('未報到')" :key="p['選手編號']" @click="move(p, '5F 休息區')"
-                                style="background:none; border:1px solid var(--primary); color:white; border-radius:4px; padding:2px 5px; font-size:0.75rem; cursor:pointer;">
+                                class="btn-waitlist">
                                 {{ p['選手編號'] }}
                             </button>
                         </div>
