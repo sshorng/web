@@ -343,11 +343,11 @@
 
                 const zones = [
                     { id: '1F 報到', title: '1F 報到區', next: '5F 休息區', nextShort: '至 5F 休息區' },
-                    { id: '5F 休息區', title: '5F 休息區', prev: '1F 報到', next: '3F 預備 3', nextShort: '進 預備 3' },
-                    { id: '3F 預備 3', title: '3F 預備 3', prev: '5F 休息區', next: '3F 預備 2', nextShort: '進 預備 2', max: 3 },
-                    { id: '3F 預備 2', title: '3F 預備 2', prev: '3F 預備 3', next: '3F 預備 1', nextShort: '進 預備 1', max: 2 },
-                    { id: '3F 預備 1', title: '3F 預備 1', prev: '3F 預備 2', next: '比賽中', nextShort: '前往舞台', max: 1 },
-                    { id: '比賽中', title: '比賽中', prev: '3F 預備 1' },
+                    { id: '5F 休息區', title: '5F 休息區', prev: '1F 報到', next: '3F 預備 3', nextShort: '進 3F 預備 3' },
+                    { id: '3F 預備 3', title: '3F 預備 3', prev: '5F 休息區', next: '預備 2', nextShort: '進 預備 2', max: 3 },
+                    { id: '預備 2', title: '預備 2', prev: '3F 預備 3', next: '預備 1', nextShort: '進 預備 1', max: 2 },
+                    { id: '預備 1', title: '預備 1', prev: '預備 2', next: '比賽中', nextShort: '前往舞台', max: 1 },
+                    { id: '比賽中', title: '比賽中', prev: '預備 1' },
                     { id: '已完賽', title: '已完賽區' }
                 ];
 
@@ -425,8 +425,8 @@
 
                 const smartAlerts = computed(() => {
                     const m = [];
-                    const p1 = playersIn('3F 預備 1');
-                    const p2 = playersIn('3F 預備 2');
+                    const p1 = playersIn('預備 1');
+                    const p2 = playersIn('預備 2');
                     const p3 = playersIn('3F 預備 3');
                     const rest = playersIn('5F 休息區');
 
@@ -443,7 +443,7 @@
                     if (p3.length < 3) {
                         const needed = 3 - p3.length;
                         const nextOnes = rest.slice(0, needed).map(p => p['選手編號']).join(', ');
-                        m.push(`【預備 3 缺人】請從 5F 叫 ${nextOnes ? nextOnes + ' 號進預備 3' : '下一波入座'}`);
+                        m.push(`【3F 預備 3 缺人】請從 5F 叫 ${nextOnes ? nextOnes + ' 號進 3F 預備 3' : '下一波入座'}`);
                     }
                     return m;
                 });
