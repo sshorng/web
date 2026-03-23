@@ -347,8 +347,8 @@
                     { id: '3F 預備 3', title: '3F 預備 3', prev: '5F 休息區', next: '3F 預備 2', nextShort: '進 預備 2', max: 3 },
                     { id: '3F 預備 2', title: '3F 預備 2', prev: '3F 預備 3', next: '3F 預備 1', nextShort: '進 預備 1', max: 2 },
                     { id: '3F 預備 1', title: '3F 預備 1', prev: '3F 預備 2', next: '比賽中', nextShort: '前往舞台', max: 1 },
-                    { id: '比賽中', title: '比賽中', prev: '3F 預備 1', next: '已完賽', nextShort: '已完賽' },
-                    { id: '已完賽', title: '已完賽區', prev: '比賽中' }
+                    { id: '比賽中', title: '比賽中', prev: '3F 預備 1' },
+                    { id: '已完賽', title: '已完賽區' }
                 ];
 
                 const toggleCollapse = (id) => {
@@ -384,6 +384,17 @@
                 const move = async (player, toZone) => {
                     loading.value = true;
                     try {
+                        // 特殊邏輯：如果要進入「比賽中」，先將原本在「比賽中」的人移到「已完賽」
+                        if (toZone === '比賽中') {
+                            const currentStagePlayers = playersIn('比賽中');
+                            for (const p of currentStagePlayers) {
+                                await fetch(DEFAULT_GAS_URL, {
+                                    method: 'POST',
+                                    body: JSON.stringify({ action: 'updateLocation', id: p['選手編號'], toZone: '已完賽' })
+                                });
+                            }
+                        }
+
                         const res = await fetch(DEFAULT_GAS_URL, {
                             method: 'POST',
                             body: JSON.stringify({ action: 'updateLocation', id: player['選手編號'], toZone })
@@ -408,7 +419,9 @@
                     loading.value = false;
                 };
 
-                const playersIn = (id) => players.value.filter(p => p['目前位置'] === id).sort((a, b) => new Date(a['更新時間']) - new Date(b['更新時間']));
+                const playersIn = (id) => players.value
+                    .filter(p => p['目前位置'] === id)
+                    .sort((a, b) => parseInt(a['選手編號']) - parseInt(b['選手編號']));
 
                 const smartAlerts = computed(() => {
                     const m = [];
@@ -418,16 +431,19 @@
                     const rest = playersIn('5F 休息區');
 
                     if (p1.length < 1) {
-                        const next = p2[0];
-                        m.push(`【預備 1 缺人】請${next ? '將 ' + next['選手編號'] + ' 號進預備 1' : '補位'}`);
+                        const needed = 1 - p1.length;
+                        const nextOnes = p2.slice(0, needed).map(p => p['選手編號']).join(', ');
+                        m.push(`【預備 1 缺人】請${nextOnes ? '將 ' + nextOnes + ' 號進預備 1' : '補位'}`);
                     }
                     if (p2.length < 2) {
-                        const next = p3[0];
-                        m.push(`【預備 2 缺人】請${next ? '將 ' + next['選手編號'] + ' 號進預備 2' : '補位'}`);
+                        const needed = 2 - p2.length;
+                        const nextOnes = p3.slice(0, needed).map(p => p['選手編號']).join(', ');
+                        m.push(`【預備 2 缺人】請${nextOnes ? '將 ' + nextOnes + ' 號進預備 2' : '補位'}`);
                     }
                     if (p3.length < 3) {
-                        const next = rest[0];
-                        m.push(`【預備 3 缺人】請從 5F 叫 ${next ? next['選手編號'] + ' 號進預備 3' : '下一位入座'}`);
+                        const needed = 3 - p3.length;
+                        const nextOnes = rest.slice(0, needed).map(p => p['選手編號']).join(', ');
+                        m.push(`【預備 3 缺人】請從 5F 叫 ${nextOnes ? nextOnes + ' 號進預備 3' : '下一波入座'}`);
                     }
                     return m;
                 });
