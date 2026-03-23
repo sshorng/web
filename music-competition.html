@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,290 +21,281 @@
             background: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 20px;
+            padding: 10px;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .grid-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
         }
 
         .column {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 1.2rem;
-            min-height: 400px;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.2s;
-        }
-
-        .column.dragging-over {
-            background: rgba(139, 92, 246, 0.2);
-            border: 2px dashed var(--primary);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .column-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.2rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid rgba(255,255,255,0.05);
+            padding: 1rem;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            user-select: none;
         }
 
         .column-title {
             font-weight: bold;
             color: var(--primary);
-            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .player-list {
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .player-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
+            padding: 10px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            cursor: grab;
-            transition: transform 0.1s;
         }
 
-        .player-card:active { cursor: grabbing; }
-        .player-card:hover { border-color: var(--primary); transform: translateX(4px); }
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-        .player-info { display: flex; align-items: center; gap: 12px; }
         .player-num {
             background: var(--primary);
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            font-size: 0.9rem;
         }
 
-        .btn-move {
-            background: var(--primary);
-            border: none;
-            color: white;
-            padding: 6px 12px;
+        .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-action {
+            padding: 6px 10px;
             border-radius: 6px;
+            border: none;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-next {
+            background: var(--primary);
+        }
+
+        .btn-prev {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .alert-bar {
             background: #450a0a;
             border: 1px solid #991b1b;
             color: #fecaca;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
         }
 
         .badge {
-            background: rgba(255,255,255,0.1);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75rem;
         }
 
         .status-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 8px;
+            margin-right: 5px;
         }
-        .status-online { background: #10b981; box-shadow: 0 0 10px #10b981; }
-        .status-offline { background: #f43f5e; box-shadow: 0 0 10px #f43f5e; }
-        .status-loading { animation: pulse 1s infinite; }
+
+        .status-online {
+            background: #10b981;
+        }
+
+        .status-offline {
+            background: #f43f5e;
+        }
+
+        .status-loading {
+            animation: pulse 1s infinite;
+        }
 
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
 
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
         }
+
         .modal {
-            background: var(--card-bg); padding: 2rem; border-radius: 12px; width: 400px;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
             border: 1px solid var(--primary);
+        }
+
+        .chevron {
+            transition: transform 0.3s;
+        }
+
+        .collapsed .chevron {
+            transform: rotate(-90deg);
+        }
+
+        .collapsed .player-list {
+            display: none;
         }
     </style>
 </head>
+
 <body>
     <div id="app">
         <header class="header">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <i data-lucide="music" style="color:var(--primary)"></i>
+            <div style="display: flex; align-items: center; gap: 10px;">
                 <div>
-                    <h1 style="margin:0; font-size: 1.5rem;">音樂比賽控場系統</h1>
-                    <div style="font-size: 0.85rem; color: var(--primary); font-weight: bold; background: rgba(139, 92, 246, 0.1); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 4px;">
-                        📅 比賽日期：{{ currentDate }}
+                    <h1 style="margin:0; font-size: 1.2rem;">音樂比賽控場系統</h1>
+                    <div
+                        style="font-size: 0.75rem; color: var(--primary); font-weight: bold; background: rgba(139, 92, 246, 0.1); padding: 1px 6px; border-radius: 4px; display: inline-block;">
+                        📅 {{ currentDate }}
                     </div>
                 </div>
-                <div style="margin-left: 10px; display: flex; align-items:center; font-size: 0.9rem; color: rgba(255,255,255,0.4)">
-                    <span :class="['status-dot', isOnline ? 'status-online' : 'status-offline', loading ? 'status-loading' : '']"></span>
-                    {{ isOnline ? '系統在線' : '連線中斷' }}
+                <div style="display: flex; align-items:center; font-size: 0.75rem; color: rgba(255,255,255,0.4)">
+                    <span
+                        :class="['status-dot', isOnline ? 'status-online' : 'status-offline', loading ? 'status-loading' : '']"></span>
                 </div>
             </div>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-                <span v-if="loading" class="badge">讀取中...</span>
-                <button @click="showResetModal = true"
-                    style="background:var(--accent); border:none; color:white; padding: 6px 12px; border-radius: 6px; cursor:pointer; font-weight: bold; display: flex; align-items:center; gap: 6px;">
-                    <i data-lucide="rotate-ccw" style="width:16px;"></i>
-                    重設比賽
-                </button>
-            </div>
+            <button @click="showResetModal = true"
+                style="background:var(--accent); border:none; color:white; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; cursor:pointer;">重設</button>
         </header>
 
-        <!-- 多重提示橫幅 -->
         <div v-if="smartAlerts.length > 0" class="alert-bar">
-            <div v-for="(alert, index) in smartAlerts" :key="index" style="display: flex; align-items: center; gap: 10px;">
-                <i data-lucide="alert-triangle" style="width:18px;"></i>
-                <strong>{{ alert }}</strong>
-            </div>
+            <div v-for="(alert, index) in smartAlerts" :key="index" style="margin-bottom:4px;">⚠️ {{ alert }}</div>
         </div>
 
         <main class="grid-container">
-            <!-- 1F Check-in -->
-            <div class="column" @dragover.prevent @drop="handleDrop($event, '1F 報到')" @dragenter="onDragEnter" @dragleave="onDragLeave">
-                <div class="column-header">
-                    <span class="column-title">1F 報到區</span>
-                    <span class="badge">{{ playersIn('1F 報到').length }}</span>
+            <!-- 每一區套用摺疊 -->
+            <div v-for="zone in zones" :key="zone.id" class="column" :class="{ collapsed: isCollapsed(zone.id) }">
+                <div class="column-header" @click="toggleCollapse(zone.id)">
+                    <span class="column-title">
+                        <i data-lucide="chevron-down" class="chevron" style="width:16px;"></i>
+                        {{ zone.title }}
+                    </span>
+                    <span class="badge">{{ playersIn(zone.id).length }}{{ zone.max ? ' / ' + zone.max : '' }}</span>
                 </div>
-                <div class="player-list">
-                    <div v-for="p in playersIn('1F 報到')" :key="p['選手編號']" class="player-card" draggable="true" @dragstart="handleDragStart($event, p)">
-                        <div class="player-info">
-                            <div class="player-num">{{ p['選手編號'] }}</div>
-                            <span>選手</span>
-                        </div>
-                        <button class="btn-move" @click="move(p, '5F 休息區')">至 5F</button>
-                    </div>
-                    <div v-if="!playersIn('1F 報到').length" style="color:rgba(255,255,255,0.2); text-align:center; padding:2rem;">目前無人</div>
-                </div>
-                
-                <div style="margin-top:auto; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1)" @dragover.prevent @drop="handleDrop($event, '未報到')" @dragenter="onDragEnter" @dragleave="onDragLeave">
-                    <strong style="font-size:0.8rem; color:rgba(255,255,255,0.5)">未報到 (待命):</strong>
-                    <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;">
-                        <button v-for="p in playersIn('未報到')" :key="p['選手編號']" @click="move(p, '1F 報到')"
-                            draggable="true" @dragstart="handleDragStart($event, p)"
-                            style="background:rgba(255,255,255,0.05); border:1px solid var(--primary); color:white; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:0.8rem;">
-                            {{ p['選手編號'] }}
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <!-- 5F Rest Area -->
-            <div class="column" @dragover.prevent @drop="handleDrop($event, '5F 休息區')" @dragenter="onDragEnter" @dragleave="onDragLeave">
-                <div class="column-header">
-                    <span class="column-title">5F 休息區</span>
-                    <span class="badge">{{ playersIn('5F 休息區').length }}</span>
-                </div>
                 <div class="player-list">
-                    <div v-for="p in playersIn('5F 休息區')" :key="p['選手編號']" class="player-card" draggable="true" @dragstart="handleDragStart($event, p)">
-                        <div class="player-info">
-                            <div class="player-num">{{ p['選手編號'] }}</div>
-                            <span>選手</span>
-                        </div>
-                        <button class="btn-move" @click="move(p, '3F 預備 3')">至 3F</button>
-                    </div>
-                    <div v-if="!playersIn('5F 休息區').length" style="color:rgba(255,255,255,0.2); text-align:center; padding:2rem;">休息區空閒</div>
-                </div>
-            </div>
-
-            <!-- 3F Ready Zones -->
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div v-for="zone in ['3F 預備 3', '3F 預備 2', '3F 預備 1']" :key="zone" class="column" style="min-height:120px;"
-                     @dragover.prevent @drop="handleDrop($event, zone)" @dragenter="onDragEnter" @dragleave="onDragLeave">
-                    <div class="column-header">
-                        <span class="column-title">{{ zone }}</span>
-                        <span class="badge">{{ playersIn(zone).length }} / {{ zone.includes('3') ? 3 : zone.includes('2') ? 2 : 1 }}</span>
-                    </div>
-                    <div class="player-list" style="display:flex; flex-wrap:wrap; gap:10px;">
-                        <div v-for="p in playersIn(zone)" :key="p['選手編號']" class="player-card" 
-                             draggable="true" @dragstart="handleDragStart($event, p)"
-                             style="margin:0; flex:1; min-width:100px;">
-                            <div class="player-num" style="width:28px; height:28px; font-size:0.8rem;">{{ p['選手編號'] }}</div>
-                            <button class="btn-move" style="padding:2px 8px; font-size:0.7rem;" 
-                                @click="move(p, zone === '3F 預備 1' ? '比賽中' : zone === '3F 預備 2' ? '3F 預備 1' : '3F 預備 2')">
-                                →
+                    <!-- 針對「未報到」特殊處理 -->
+                    <div v-if="zone.id === '1F 報到'"
+                        style="margin-bottom:15px; background:rgba(255,255,255,0.02); padding:10px; border-radius:8px;">
+                        <strong style="font-size:0.75rem; color:rgba(255,255,255,0.4)">待命區 (點擊即報到至 5F):</strong>
+                        <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:5px;">
+                            <button v-for="p in playersIn('未報到')" :key="p['選手編號']" @click="move(p, '5F 休息區')"
+                                style="background:none; border:1px solid var(--primary); color:white; border-radius:4px; padding:2px 5px; font-size:0.75rem; cursor:pointer;">
+                                {{ p['選手編號'] }}
                             </button>
                         </div>
-                        <div v-if="!playersIn(zone).length" style="color:rgba(255,255,255,0.2); font-size:0.8rem;">缺人...</div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Stage & Finished -->
-            <div class="column" @dragover.prevent @drop="handleDrop($event, '比賽中')" @dragenter="onDragEnter" @dragleave="onDragLeave">
-                <div class="column-header">
-                    <span class="column-title" style="color:var(--accent)">比賽中</span>
-                    <i data-lucide="mic" style="color:var(--accent)"></i>
-                </div>
-                <div class="player-list">
-                    <div v-for="p in playersIn('比賽中')" :key="p['選手編號']" class="player-card" 
-                         draggable="true" @dragstart="handleDragStart($event, p)"
-                         style="border-color:var(--accent); background:rgba(244,63,94,0.05)">
+                    <div v-for="p in playersIn(zone.id)" :key="p['選手編號']" class="player-card">
                         <div class="player-info">
-                            <div class="player-num" style="background:var(--accent)">{{ p['選手編號'] }}</div>
-                            <strong>上台演出</strong>
+                            <div class="player-num">{{ p['選手編號'] }}</div>
                         </div>
-                        <button class="btn-move" @click="move(p, '已完賽')" style="background:var(--accent)">完賽</button>
+                        <div class="btn-group">
+                            <button v-if="zone.prev" class="btn-action btn-prev" @click="move(p, zone.prev)">
+                                <i data-lucide="arrow-left" style="width:12px;"></i>回
+                            </button>
+                            <button v-if="zone.next" class="btn-action btn-next" @click="move(p, zone.next)">
+                                {{ zone.nextShort }}<i data-lucide="arrow-right" style="width:12px;"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div class="column-header" style="margin-top:2rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:1rem;">
-                    <span class="column-title" style="color:#94a3b8">已完賽</span>
-                    <span class="badge">{{ playersIn('已完賽').length }}</span>
-                </div>
-                <div class="player-list" @dragover.prevent @drop="handleDrop($event, '已完賽')" @dragenter="onDragEnter" @dragleave="onDragLeave" style="display:flex; flex-wrap:wrap; gap:5px;">
-                    <div v-for="p in playersIn('已完賽')" :key="p['選手編號']" 
-                         draggable="true" @dragstart="handleDragStart($event, p)"
-                         style="font-size:0.75rem; color:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; cursor:grab;">
-                        {{ p['選手編號'] }}
+                    <div v-if="!playersIn(zone.id).length"
+                        style="color:rgba(255,255,255,0.1); text-align:center; font-size:0.8rem; padding:10px;">(空)
                     </div>
                 </div>
             </div>
         </main>
 
-        <!-- 重設比賽 Modal -->
         <div v-if="showResetModal" class="modal-overlay" @click.self="showResetModal = false">
             <div class="modal">
-                <h3 style="margin-top:0">重設比賽資料</h3>
-                <div style="margin-bottom:1rem">
-                    <label style="display:block; margin-bottom:5px">比賽日期</label>
-                    <input type="date" v-model="resetDate" style="width:100%; padding:8px; border-radius:4px; border:1px solid #444; background:#111; color:white;">
-                </div>
-                <div style="margin-bottom:1rem">
-                    <label style="display:block; margin-bottom:5px">選手總數 (1-100)</label>
-                    <input type="number" v-model="resetCount" min="1" max="100" style="width:100%; padding:8px; border-radius:4px; border:1px solid #444; background:#111; color:white;">
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 2rem;">
-                    <button @click="confirmInitialDay" style="flex:1; background:var(--accent); border:none; color:white; padding:10px; border-radius:6px; cursor:pointer;">執行重建</button>
-                    <button @click="showResetModal = false" style="flex:1; background:rgba(255,255,255,0.1); border:none; color:white; padding:10px; border-radius:6px; cursor:pointer;">取消</button>
-                </div>
+                <h3 style="margin-top:0">重設比賽</h3>
+                <input type="date" v-model="resetDate"
+                    style="width:100%; padding:10px; margin-bottom:10px; background:#111; color:white; border:1px solid #333;">
+                <input type="number" v-model="resetCount"
+                    style="width:100%; padding:10px; margin-bottom:20px; background:#111; color:white; border:1px solid #333;">
+                <button @click="confirmInitialDay"
+                    style="width:100%; background:var(--accent); color:white; padding:10px; border:none; border-radius:6px;">確認重建</button>
             </div>
         </div>
     </div>
@@ -318,27 +310,39 @@
                 const currentDate = ref("載入中...");
                 const loading = ref(false);
                 const showResetModal = ref(false);
+                const isOnline = ref(true);
                 const resetDate = ref(new Date().toISOString().split('T')[0]);
                 const resetCount = ref(35);
-                const isOnline = ref(true);
-                const gasUrl = ref(DEFAULT_GAS_URL);
-                const draggedPlayer = ref(null);
+                const collapsedStates = ref(JSON.parse(localStorage.getItem('accordion_states') || '{}'));
+
+                const zones = [
+                    { id: '1F 報到', title: '1F 報到區', next: '5F 休息區', nextShort: '至 5F 休息區' },
+                    { id: '5F 休息區', title: '5F 休息區', prev: '1F 報到', next: '3F 預備 3', nextShort: '進 預備 3' },
+                    { id: '3F 預備 3', title: '3F 預備 3', prev: '5F 休息區', next: '3F 預備 2', nextShort: '進 預備 2', max: 3 },
+                    { id: '3F 預備 2', title: '3F 預備 2', prev: '3F 預備 3', next: '3F 預備 1', nextShort: '進 預備 1', max: 2 },
+                    { id: '3F 預備 1', title: '3F 預備 1', prev: '3F 預備 2', next: '比賽中', nextShort: '前往舞台', max: 1 },
+                    { id: '比賽中', title: '比賽中', prev: '3F 預備 1', next: '已完賽', nextShort: '已完賽' },
+                    { id: '已完賽', title: '已完賽區', prev: '比賽中' }
+                ];
+
+                const toggleCollapse = (id) => {
+                    collapsedStates.value[id] = !collapsedStates.value[id];
+                    localStorage.setItem('accordion_states', JSON.stringify(collapsedStates.value));
+                    setTimeout(() => lucide.createIcons(), 0);
+                };
+                const isCollapsed = (id) => !!collapsedStates.value[id];
 
                 const fetchPlayers = async () => {
                     loading.value = true;
                     try {
-                        const res = await fetch(`${gasUrl.value}?action=getData`);
+                        const res = await fetch(`${DEFAULT_GAS_URL}?action=getData`);
                         const result = await res.json();
-                        if (result && result.success && result.data) {
-                            // 解析日期資訊 (從任何一個選手對應的欄位取得)
-                            const firstPlayer = result.data[0];
-                            if (firstPlayer) {
-                                const dateKey = Object.keys(firstPlayer).find(k => k.includes("比賽日期"));
-                                if (dateKey) {
-                                    currentDate.value = dateKey.split('：')[1] || dateKey.split(':')[1] || dateKey;
-                                }
+                        if (result && result.success) {
+                            const first = result.data[0];
+                            if (first) {
+                                const k = Object.keys(first).find(x => x.includes("比賽日期"));
+                                if (k) currentDate.value = k.split('：')[1] || k.split(':')[1] || k;
                             }
-
                             players.value = result.data.map(p => ({
                                 '選手編號': p['選手編號'] || p['選手編號 '],
                                 '目前位置': p['目前位置'] || p['目前位置 '],
@@ -346,85 +350,75 @@
                                 ...p
                             })).filter(p => p['選手編號']);
                             isOnline.value = true;
-                        } else {
-                            isOnline.value = false;
-                        }
-                    } catch (e) {
-                        console.error("連線異常:", e);
-                        isOnline.value = false;
-                    }
+                        } else isOnline.value = false;
+                    } catch (e) { isOnline.value = false; }
                     loading.value = false;
                 };
 
                 const move = async (player, toZone) => {
                     loading.value = true;
                     try {
-                        const res = await fetch(gasUrl.value, {
+                        const res = await fetch(DEFAULT_GAS_URL, {
                             method: 'POST',
-                            body: JSON.stringify({ 
-                                action: 'updateLocation', 
-                                id: player['選手編號'], 
-                                toZone 
-                            })
+                            body: JSON.stringify({ action: 'updateLocation', id: player['選手編號'], toZone })
                         });
                         const result = await res.json();
                         if (result.success) await fetchPlayers();
                         else alert(result.message);
-                    } catch (e) { console.error(e); }
+                    } catch (e) { alert("移動失敗"); }
                     loading.value = false;
                 };
 
-                const handleDragStart = (e, player) => { draggedPlayer.value = player; };
-                const onDragEnter = (e) => { e.currentTarget.classList.add('dragging-over'); };
-                const onDragLeave = (e) => { e.currentTarget.classList.remove('dragging-over'); };
-
-                const handleDrop = async (e, zone) => {
-                    e.currentTarget.classList.remove('dragging-over');
-                    if (draggedPlayer.value) {
-                        await move(draggedPlayer.value, zone);
-                        draggedPlayer.value = null;
-                    }
-                };
-
                 const confirmInitialDay = async () => {
-                    if (!confirm(`確定要重建 ${resetDate.value} 的資料嗎？`)) return;
+                    if (!confirm("確定重建嗎？")) return;
                     loading.value = true;
                     try {
-                        const res = await fetch(`${gasUrl.value}?action=initializeDay&date=${resetDate.value}&totalCount=${resetCount.value}`);
+                        const res = await fetch(`${DEFAULT_GAS_URL}?action=initializeDay&date=${resetDate.value}&totalCount=${resetCount.value}`);
                         const result = await res.json();
                         alert(result.message);
                         showResetModal.value = false;
                         await fetchPlayers();
-                    } catch (e) { alert("初始化失敗"); }
+                    } catch (e) { alert("重建失敗"); }
                     loading.value = false;
                 };
 
-                const playersIn = (zone) => {
-                    return players.value.filter(p => p['目前位置'] === zone)
-                        .sort((a, b) => new Date(a['更新時間']) - new Date(b['更新時間']));
-                };
+                const playersIn = (id) => players.value.filter(p => p['目前位置'] === id).sort((a, b) => new Date(a['更新時間']) - new Date(b['更新時間']));
 
                 const smartAlerts = computed(() => {
-                    const messages = [];
-                    if (playersIn('3F 預備 1').length < 1) messages.push("【預備 1】缺人！請安排 3F 預備 2 遞補上場。");
-                    if (playersIn('3F 預備 2').length < 2) messages.push("【預備 2】缺人！請安排 3F 預備 3 遞補進入預備。");
-                    if (playersIn('3F 預備 3').length < 3) messages.push("【預備 3】缺人！請盡快從 5F 休息區叫號進入預備。");
-                    return messages;
+                    const m = [];
+                    const p1 = playersIn('3F 預備 1');
+                    const p2 = playersIn('3F 預備 2');
+                    const p3 = playersIn('3F 預備 3');
+                    const rest = playersIn('5F 休息區');
+
+                    if (p1.length < 1) {
+                        const next = p2[0];
+                        m.push(`【預備 1 缺人】請${next ? '將 ' + next['選手編號'] + ' 號進預備 1' : '補位'}`);
+                    }
+                    if (p2.length < 2) {
+                        const next = p3[0];
+                        m.push(`【預備 2 缺人】請${next ? '將 ' + next['選手編號'] + ' 號進預備 2' : '補位'}`);
+                    }
+                    if (p3.length < 3) {
+                        const next = rest[0];
+                        m.push(`【預備 3 缺人】請從 5F 叫 ${next ? next['選手編號'] + ' 號進預備 3' : '下一位入座'}`);
+                    }
+                    return m;
                 });
 
                 onMounted(() => {
                     fetchPlayers();
                     setInterval(fetchPlayers, 10000);
-                    lucide.createIcons();
+                    setTimeout(() => lucide.createIcons(), 500);
                 });
 
                 return {
-                    players, currentDate, loading, showResetModal, resetDate, resetCount, isOnline,
-                    playersIn, move, smartAlerts, confirmInitialDay,
-                    handleDragStart, handleDrop, onDragEnter, onDragLeave
+                    players, currentDate, loading, showResetModal, isOnline, resetDate, resetCount,
+                    zones, toggleCollapse, isCollapsed, playersIn, move, confirmInitialDay, smartAlerts
                 };
             }
         }).mount('#app');
     </script>
 </body>
+
 </html>
