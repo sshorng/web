@@ -1016,7 +1016,6 @@
             font-weight: 600;
             text-align: center;
             cursor: pointer;
-            user-select: none;
             transition: all .3s;
             line-height: 1.3;
             word-break: break-word
@@ -1657,7 +1656,7 @@
 ## Profile
 - Role: 國文導師
 - Language: 繁體中文
-- Description: 你的引導順序有層次：優先確立 L1 文本結構，接著是 L2 意義段。面對複雜的意義段，再引導出 L3 次標題，最後才收束於最底層的原文證據。
+- Description: 你的引導順序有層次：優先確立 L1 文本結構，接著是 L2 意義段。若 L2 已具備具體內涵，可直接連結 L4 原文證據；僅在 L2 較為複雜時才細分 L3 次標題。最後才收束於原文證據。
 
 ## 📂 內部底蘊 (Hidden Baseline)
 1. 參照「目標參考圖」預判寫作手法、意義段核心與次標題層次。
@@ -1669,8 +1668,8 @@
    - 根節點：📦 [課名]
    - 第一層：├── 🔖 [L1 文本結構]
    - 第二層：│   ├── 🔹 [L2 意義段大意]
-   - 第三層：│   │   ├── 🔸 [L3 次標題]
-   - 第四層：│   │   │   ├── 💬 [L4 原文短句/關鍵詞]
+   - 第三層 (選擇性)：│   │   ├── 🔸 [L3 次標題]
+   - 最底層：│   │   │   ├── 💬 [L4 原文短句/關鍵詞] (若無 L3 則接續在 L2 下)
 
 ## 🛑 核心禁止令與引導原則
 1. **絕不劇透解答標題**：嚴禁主動喊出目標圖標題名稱。引導學生說出口，或是認可學生提出的同義詞。
@@ -1690,8 +1689,8 @@
 
         const GENERATE_MAP_PROMPT = `你是國文教學與心智圖專家。請分析以下課文，產生一份具備教學層次感、發散性且結構均衡的心智圖結構（JSON格式）。
 
-## 核心設計邏輯 (L1-L4 層次)
-你的分析必須嚴格遵守以下四層架構，這與後續的 AI 學生引導對話完全對接：
+## 核心設計邏輯 (彈性層次架構)
+你的分析應視內容深度靈活調整層次（建議 2-4 層），這與後續的 AI 學生引導對話完全對接：
 
 1. **第一層：L1 文本結構 (標籤格式: 🔖 [名稱])**
    - 數量：建議 **2-5 個分支**。
@@ -1703,10 +1702,9 @@
    - 重點：針對 L1 內容的進一步摘要，描述該段落的核心意義或情節重心。
    - 字數：12 字以內。
 
-3. **第三層：L3 次標題 (標籤格式: 🔸 [名稱])**
-   - 數量：每個 L2 節點下，**建議**分析具備發散性的細節/手法；若邏輯垂直則可單支出去。
-   - 重點：剖析寫作手法（譬喻、對比）、情感轉折點或更細緻的邏輯拆解。
-   - 字數：15 字以內。
+3. **第三層：L3 次標題 (標籤格式: 🔸 [名稱]) - 【選擇性】**
+   - 重點：僅在 L2 意義段內容廣泛或具備多重細節時使用。可用於剖析細部手法或邏輯拆解。
+   - 字數：15 字以內。若內容可合併至 L2 或直接連結至原文，則可跳過此層。
 
 4. **第四層：L4 原文證據 (標籤格式: 💬 [內容])**
    - 重點：直接擷取課文中的精華關鍵字、短句或證據。
@@ -2075,7 +2073,7 @@
             });
         };
 
-        window.editNodeInline = function (e, id) {
+        window.editNodeInline = function (e, id, isTeacher = false) {
             e.stopPropagation();
             const el = e.currentTarget;
             if (el.querySelector('input')) return;
@@ -2089,11 +2087,18 @@
 
             const finishEdit = () => {
                 const newVal = inp.value.trim() || '未命名';
-                const res = findNodeAndParent(id);
+                const root = isTeacher ? currentLesson.targetMap : studentState.mindMap;
+                const res = findNodeAndParent(id, root);
                 if (res) {
                     res.node.label = newVal;
-                    saveStudentState();
-                    renderMindMap();
+                    if (isTeacher) {
+                        const area = document.getElementById('tPreviewTree');
+                        if (area) area.value = serializeTree(currentLesson.targetMap);
+                        renderTeacherPreviewMap();
+                    } else {
+                        saveStudentState();
+                        renderMindMap();
+                    }
                 }
             };
 
@@ -2761,7 +2766,7 @@ function deleteLesson(id) {
                 nodesHTML += `
                     <div class="${cls}" style="left:${item.pos.x}px; top:${item.pos.y}px; z-index:${zIndex};">
                         <div class="mm-node-inner" style="${style}">
-                            <div class="mm-node-text">${item.level >= 2 && cleanLabel.length > 8 ? '<small>' + cleanLabel + '</small>' : cleanLabel}</div>
+                            <div class="mm-node-text" ondblclick="editNodeInline(event, '${item.node.id}', true)" title="雙擊可編輯">${item.level >= 2 && cleanLabel.length > 8 ? '<small>' + cleanLabel + '</small>' : cleanLabel}</div>
                         </div>
                     </div>`;
             });
@@ -2998,7 +3003,7 @@ function deleteLesson(id) {
 
                 let hintText = '';
                 if (direction.includes('結構')) {
-                    hintText = '例如：總分總、議論文的引/本/結，或是小說的開端/發展/結局？';
+                    hintText = '例如：總分總、議論文的引/本/結，或是小說的開端/發展/高潮/結局？';
                 } else {
                     hintText = '例如：依據時間的發展、地點的轉換，或是事件的起點/過程/結果來劃分？';
                 }
