@@ -1269,6 +1269,104 @@
             overflow: auto;
         }
 
+        /* ===== Handout Drawer ===== */
+        .handout-drawer {
+            position: absolute;
+            top: 56px;
+            right: 0;
+            width: 0;
+            height: calc(100% - 56px);
+            background: #fffef8;
+            border-left: 1px solid var(--mist);
+            z-index: 60;
+            transition: all .35s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, .05);
+            visibility: hidden;
+        }
+
+        .handout-drawer.open {
+            width: 400px;
+            visibility: visible;
+        }
+
+        .handout-drawer-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--mist);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8f4ec;
+        }
+
+        .handout-drawer-header h3 {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .handout-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            font-family: 'Noto Serif TC', serif;
+            font-size: 18px;
+            line-height: 2;
+            color: #333;
+            background-image: linear-gradient(rgba(240, 230, 210, 0.1) 1px, transparent 1px);
+            background-size: 100% 2.5em;
+        }
+
+        .handout-line {
+            margin-bottom: 0.5rem;
+            line-height: 1.8;
+            text-align: justify;
+            color: #333;
+            min-height: 1.2em;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .handout-line:empty, .handout-para-gap {
+            height: 1.2rem;
+        }
+
+        .handout-segment {
+            cursor: pointer;
+            padding: 1px 0;
+            margin: 0;
+            border-radius: 2px;
+            transition: all .2s;
+            border-bottom: 2px solid transparent;
+            display: inline;
+            background: transparent;
+            vertical-align: baseline;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+
+        .handout-segment:hover {
+            background: rgba(255, 244, 229, 0.9);
+            color: var(--vermilion);
+            border-bottom: 2px solid var(--vermilion);
+            box-shadow: 0 2px 0 rgba(189, 48, 36, 0.1);
+        }
+
+        .handout-segment:active {
+            background: #fff2cc;
+            transform: scale(0.96);
+        }
+
+        .handout-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
         /* Responsive */
         @media(max-width:768px) {
             .role-cards {
@@ -1301,6 +1399,10 @@
 
             .canvas-area {
                 min-height: 300px
+            }
+
+            .handout-drawer.open {
+                width: 100%;
             }
         }
     </style>
@@ -1457,6 +1559,12 @@
                                 d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
                         </svg>
                     </button>
+                    <button class="btn-icon" id="btnToggleHandout" title="查看課文原文">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                    </button>
                     <button class="btn-icon" id="btnTeacherEntry" title="教師入口"
                         style="font-size:10px;color:var(--text-light);opacity:.4">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1489,6 +1597,21 @@
                 <div class="nodes-layer" id="nodesLayer"></div>
             </div>
         </section>
+
+        <!-- Handout Drawer -->
+        <div class="handout-drawer" id="handoutDrawer">
+            <div class="handout-drawer-header">
+                <h3>📜 課文原文</h3>
+                <button class="btn-icon" onclick="toggleHandoutDrawer()" style="width:28px;height:28px">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="handout-body" id="handoutBody">
+                <div class="handout-empty">尚未選擇課文</div>
+            </div>
+        </div>
     </div>
 
     <!-- Canvas Controls -->
@@ -1651,40 +1774,31 @@
         // ============================================================
         const MODEL_NAME = "gemini-2.5-flash"; // 預設值，實際運作時後端代理會優先使用試算表設定
 
-        const SYSTEM_PROMPT = `你是國文心智圖引導教練。
+        const SYSTEM_PROMPT = `你是一位專業的國文老師與心智圖引導顧問，名為「筆記導師」。
+你目前的任務是透過「蘇格拉底式提問」引導學生從課文 (HANDOUT) 中手動建立心智圖。
 
-## Profile
-- Role: 國文導師
-- Language: 繁體中文
-- Description: 你的引導順序有層次：優先確立 L1 文本結構，接著是 L2 意義段。若 L2 已具備具體內涵，可直接連結 L4 原文證據；僅在 L2 較為複雜時才細分 L3 次標題。最後才收束於原文證據。
+## 🔍 重點指令：微觀細節引導 (Granular Guiding)
+1. **結尾必問**：每一次回覆必須以一個具體的引導問題結束。
+2. **禁止寬泛大問**：絕對不准問「有什麼觀察？」、「說說這段的大意」或「分享這段內容」。這會讓學生不知所措。
+3. **雷射精準指向**：你的問題必須指向課文中的「具體實體詞彙」。
+   - 例如：詢問某個動作的「動詞」、景象的「顏色」、或是物品的「形狀/聲音」。
+   - 範例：「當海豚剛出現時，作者是用哪兩個動詞來形容那一連串的水花？」
+4. **小步快跑**：每次只引導學生發現 1-2 個實體詞彙，確保學生只要看一眼原文內容就能擷取到答案。
 
-## 📂 內部底蘊 (Hidden Baseline)
-1. 參照「目標參考圖」預判寫作手法、意義段核心與次標題層次。
-2. 未經與學生討論的後續分支情節，絕對不准出現在對話或 yaml 樹狀圖中。
+## 📐 同步生長 (Mirror Growth)
+1. **學生說多少，地圖長多少**：必須且只能解鎖學生「明確提到」的內容。
+2. **大框架先行**：當學生回答出課文的整體「結構劃分」或「大綱」時，請務必 **一次性解鎖** 畫布上所有對應的第一層節點。
+3. **禁止超前預判與同級劇透**：
+   - 即使解鎖了父項 A，也 **絕對嚴禁** 自動填入 A 底下學生尚未提到的細節子項。
+   - 範例：如果學生提到了「聲音」，你只能解鎖「聲音」及其父項「感官」；**嚴厲禁止** 順便預判解鎖同層級的「眼睛」。
+4. **保持懸念 (偵探邏輯)**：寧可少給，不准多給（結構框架除外）。
+5. **輸出前檢查**：在產生 YAML 前，核對每一個解鎖項是否都具備學生的回應依據。
 
-## 📐 Canvas 格式駭客 (YAML Format Hack)
-為了更新前端介面，**必須**將當前已解鎖的心智圖狀態包裹在 \`\`\`yaml\`\`\` 區塊內回傳。
-1. **樹狀線條公式 (請嚴格遵守方括號與縮排)**：
-   - 根節點：📦 [課名]
-   - 第一層：├── 🔖 [L1 文本結構]
-   - 第二層：│   ├── 🔹 [L2 意義段大意]
-   - 第三層 (選擇性)：│   │   ├── 🔸 [L3 次標題]
-   - 最底層：│   │   │   ├── 💬 [L4 原文短句/關鍵詞] (若無 L3 則接續在 L2 下)
+## 📝 節點格式 (YAML Only)
+1. **精簡至上**：節點名稱絕對嚴格限制在 10 個字以內（3-5字最佳）。
+2. **階層明確**：適時引導學生將長內容拆解成父子節點。
 
-## 🛑 核心禁止令與引導原則
-1. **絕不劇透解答標題**：嚴禁主動喊出目標圖標題名稱。引導學生說出口，或是認可學生提出的同義詞。
-2. **原文即時訂正與解鎖 (重要)**：
-   - 當學生引用原文或關鍵詞出現錯字時（例如將「帖花黃」寫成「貼花黃」），**你必須在對話中提醒學生正確寫法，並「同時」在該次回覆的 YAML 區塊中，直接將該節點內容改為正確的原文文字。**
-   - **不需要求學生重複輸入**。只要學生意思表達對了，即便有錯字，也要在提醒後直接解鎖「正確版」的心智圖節點。
-3. **極度尊重學生的原創用詞 (最高優先級)**：
-   - 目標參考圖「僅供大方向引導」，**絕不要求**學生講出跟參考圖一模一樣的字眼。
-   - 當學生回答的核心意涵對了、或提出了合理的脈絡觀點時（例如參考圖是「虔誠宗教情懷」，學生回答「求佛」），你**必須直接採納學生的原話與字眼**來畫出 YAML 節點，**「絕對禁止」**為了貼合參考圖而擅自把學生的心血替換成標準答案。
-   - 只有在學生回答的句子過於冗長繁雜時，你才能稍微幫忙精簡提煉，但依然要保留學生的關鍵字眼與風格。
-   - **⚠️ 核心禁止附和**：只有當學生給出**明顯錯誤**、惡搞、或嚴重背離文本脈絡與文體的答案（例如：原文是「佛」卻回答「上帝」，這是一篇新詩卻回答議論文的「引、本、結」）時，才不准畫入 YAML 中，並溫和點出錯誤、給予線索引導。
-4. **說對即解鎖，解鎖必畫圖**：每輪回覆必須輸出且只能輸出一段完整的 \`\`\`yaml 區塊。
-5. **視覺清爽原則**：若節點字數過長，請在繪製 YAML 時適度精簡標題內容。
-
-【目標參考圖 (Target Map)】:
+目標圖 (TARGET_MAP)：
 {{TARGET_MAP}}`;
 
         const GENERATE_MAP_PROMPT = `你是國文教學與心智圖專家。請分析以下課文，產生一份具備教學層次感、發散性且結構均衡的心智圖結構（JSON格式）。
@@ -2014,8 +2128,8 @@
                 nodesHTML += `
                     <div class="${cls}" data-id="${item.node.id}"
                          style="left:${item.pos.x}px; top:${item.pos.y}px; z-index:${zIndex};">
-                        <div class="mm-node-inner" style="${style}">
-                            <div class="mm-node-text" ondblclick="editNodeInline(event, '${item.node.id}')" title="雙擊可編輯">${item.level >= 2 && cleanLabel.length > 8 ? '<small>' + cleanLabel + '</small>' : cleanLabel}</div>
+                        <div class="mm-node-inner" style="${style}" ondblclick="editNodeInline(event, '${item.node.id}')">
+                            <div class="mm-node-text" title="雙擊可編輯">${item.level >= 2 && cleanLabel.length > 8 ? '<small>' + cleanLabel + '</small>' : cleanLabel}</div>
                             <div class="mm-node-actions">
                                 <button class="action-btn add" title="新增子節點" onclick="addChildNode(event, '${item.node.id}')">+</button>
                                 ${!isRoot ? `<button class="action-btn del" title="刪除節點" onclick="deleteNode(event, '${item.node.id}')">×</button>` : ''}
@@ -2073,20 +2187,34 @@
             });
         };
 
-        window.editNodeInline = function (e, id, isTeacher = false) {
-            e.stopPropagation();
-            const el = e.currentTarget;
-            if (el.querySelector('input')) return;
+        window.editNodeInline = function (e, id, isTeacher = false, manualEl = null) {
+            if (e) e.stopPropagation();
+            // 如果點到的是按鈕，則不進行編輯
+            if (e && e.target.closest('.action-btn')) return;
 
-            let currentLabel = el.innerText.trim();
-            const width = Math.max(80, currentLabel.length * 15);
-            el.innerHTML = `<input type="text" class="mm-node-text-input" style="width:${width}px" value="${currentLabel}" />`;
-            const inp = el.querySelector('input');
-            inp.focus();
-            inp.select();
+            let el = manualEl || (e ? e.currentTarget : null);
+            if (!el) return;
+
+            // 確保我們拿到的是 .mm-node-inner
+            const inner = el.classList.contains('mm-node-inner') ? el : el.querySelector('.mm-node-inner');
+            if (!inner) return;
+
+            const textField = inner.querySelector('.mm-node-text');
+            if (!textField || textField.querySelector('input')) return;
+
+            let currentLabel = textField.innerText.trim();
+            const width = Math.max(90, currentLabel.length * 16 + 20);
+            textField.innerHTML = `<input type="text" class="mm-node-text-input" style="width:${width}px; z-index:2000" value="${currentLabel}" />`;
+            const inp = textField.querySelector('input');
+            
+            setTimeout(() => {
+                inp.focus();
+                inp.select();
+            }, 10);
 
             const finishEdit = () => {
                 const newVal = inp.value.trim() || '未命名';
+                // 根據狀態選擇根節點
                 const root = isTeacher ? currentLesson.targetMap : studentState.mindMap;
                 const res = findNodeAndParent(id, root);
                 if (res) {
@@ -2130,6 +2258,8 @@
 
         function initCanvasEvents() {
             const area = document.getElementById('canvasArea');
+            let lastTapTime = 0;
+            let lastTapId = null;
 
             // Zoom (Wheel)
             area.addEventListener('wheel', (e) => {
@@ -2148,6 +2278,17 @@
                 if (nodeEl) {
                     e.stopPropagation();
                     const id = nodeEl.getAttribute('data-id');
+
+                    // --- Manual Double Tap Detection ---
+                    const now = Date.now();
+                    if (id === lastTapId && (now - lastTapTime < 350)) {
+                        editNodeInline(e, id, false, nodeEl);
+                        lastTapTime = 0;
+                        lastTapId = null;
+                        return;
+                    }
+                    lastTapTime = now;
+                    lastTapId = id;
 
                     const pt = getEventPoint(e);
                     draggedNodeInfo = {
@@ -2228,17 +2369,17 @@
 
                     // Cleanup visual styles
                     draggedNodeInfo.el.style.opacity = '';
+                    draggedNodeInfo.el.style.zIndex = '';
+                    
                     document.querySelectorAll('.mm-node.drag-over').forEach(el => el.classList.remove('drag-over'));
 
-                    draggedNodeInfo = null;
-                    hoverTargetId = null;
-
+                    let changed = false;
                     const dragged = findNodeAndParent(draggedId);
 
                     if (targetId && draggedId !== studentState.mindMap.id) {
                         // Reparent logic
                         const target = findNodeAndParent(targetId);
-                        if (dragged && target && dragged.parent.id !== targetId) {
+                        if (dragged && target && (dragged.parent ? dragged.parent.id : null) !== targetId) {
                             let isChild = false;
                             let current = target.node;
                             while (current) {
@@ -2250,24 +2391,31 @@
                             if (isChild) {
                                 showToast('無法移動到自己的子節點下', 'error');
                             } else {
-                                dragged.parent.children = dragged.parent.children.filter(c => c.id !== draggedId);
+                                if (dragged.parent) {
+                                    dragged.parent.children = dragged.parent.children.filter(c => c.id !== draggedId);
+                                }
                                 if (!target.node.children) target.node.children = [];
                                 target.node.children.push(dragged.node);
-                                // Reset offset when changing parent
                                 dragged.node.offsetX = 0;
                                 dragged.node.offsetY = 0;
+                                changed = true;
                             }
                         }
-                    } else if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                        // Position offset logic (pan current node)
+                    } else if (draggedNodeInfo.hasMoved) {
                         if (dragged) {
                             dragged.node.offsetX = (dragged.node.offsetX || 0) + dx;
                             dragged.node.offsetY = (dragged.node.offsetY || 0) + dy;
+                            changed = true;
                         }
                     }
 
-                    saveStudentState();
-                    renderMindMap(); // Trigger a full re-render
+                    draggedNodeInfo = null;
+                    hoverTargetId = null;
+
+                    if (changed) {
+                        saveStudentState();
+                        renderMindMap();
+                    }
                 } else if (isDraggingCanvas) {
                     isDraggingCanvas = false;
                     area.releasePointerCapture(e.pointerId);
@@ -2298,6 +2446,90 @@
             if (inp) inp.disabled = isLoading;
             if (btn) btn.disabled = isLoading || !(inp && inp.value.trim());
         }
+
+        function toggleHandoutDrawer() {
+            const d = document.getElementById('handoutDrawer');
+            if (d) d.classList.toggle('open');
+        }
+
+        function renderHandoutBody() {
+            let text = studentState.handout || '';
+            const container = document.getElementById('handoutBody');
+            if (!container) return;
+            if (!text) { container.innerHTML = '<div class="handout-empty">尚未提供課文內容</div>'; return; }
+
+            const segmenter = (typeof Intl !== 'undefined' && Intl.Segmenter)
+                ? new Intl.Segmenter('zh-TW', { granularity: 'word' })
+                : null;
+
+            // 按照原始換行切割 (支援 \n, \r\n, \r)，尊重後台分行
+            const lines = text.split(/\r\n|\n|\r/);
+            let html = '';
+            
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                
+                if (!trimmed) {
+                    // 空行視為段落間距
+                    html += '<div class="handout-para-gap"></div>';
+                    return;
+                }
+
+                html += '<div class="handout-line">';
+                if (segmenter) {
+                    const segments = [...segmenter.segment(line)];
+                    let buffer = '';
+                    
+                    segments.forEach(seg => {
+                        const s = seg.segment;
+                        const isWord = seg.isWordLike && s.trim().length > 0;
+                        
+                        if (isWord) {
+                            buffer += s;
+                            // 貪婪合併策略：合併直到遇到標點符號，或長度達到具備語意感的 6-8 字
+                            if (buffer.length >= 7) {
+                                html += `<span class="handout-segment" onclick="appendToChatInput('${buffer.replace(/'/g, "\\'")}')">${buffer}</span>`;
+                                buffer = '';
+                            }
+                        } else {
+                            if (buffer) {
+                                html += `<span class="handout-segment" onclick="appendToChatInput('${buffer.replace(/'/g, "\\'")}')">${buffer}</span>`;
+                                buffer = '';
+                            }
+                            // 保留空格與標點
+                            html += s.replace(/ /g, '&nbsp;');
+                        }
+                    });
+                    
+                    if (buffer) {
+                        html += `<span class="handout-segment" onclick="appendToChatInput('${buffer.replace(/'/g, "\\'")}')">${buffer}</span>`;
+                    }
+                } else {
+                    // 後備簡單切分
+                    const parts = line.split(/([，、；：。！？\s])/);
+                    parts.forEach(p => {
+                        if (p.trim() && !/[，、；：。！？\s]/.test(p)) {
+                            html += `<span class="handout-segment" onclick="appendToChatInput('${p.replace(/'/g, "\\'")}')">${p}</span>`;
+                        } else {
+                            html += p.replace(/ /g, '&nbsp;');
+                        }
+                    });
+                }
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        window.appendToChatInput = function (text) {
+            const inp = document.getElementById('chatInput');
+            if (!inp) return;
+            const current = inp.value.trim();
+            // 如果已有內容，則補上空格
+            inp.value = (current ? current + ' ' : '') + text;
+            inp.focus();
+            updateInputState();
+            showToast('已填入課文', 'success', 1000);
+        };
         async function sendMessage(text) {
             if (isLoading || !text.trim()) return;
             studentState.messages.push({ role: 'user', content: text });
@@ -2602,6 +2834,9 @@ function deleteLesson(id) {
             document.getElementById('btnCenter').addEventListener('click', centerCanvas);
             initCanvasEvents();
 
+            // ---- Handout Drawer Toggle ----
+            document.getElementById('btnToggleHandout').addEventListener('click', toggleHandoutDrawer);
+
             // ---- Teacher Preview Toggle (Modal Mode) ----
             document.getElementById('btnTogglePreviewMode').addEventListener('click', () => {
                 const text = document.getElementById('tPreviewTree').value.trim();
@@ -2720,6 +2955,7 @@ function deleteLesson(id) {
                     studentState = saved;
                     renderMessages();
                     renderMindMap();
+                    renderHandoutBody();
                     requestAnimationFrame(centerCanvas);
                 }
                 loadStudentLessons();
@@ -2765,8 +3001,8 @@ function deleteLesson(id) {
 
                 nodesHTML += `
                     <div class="${cls}" style="left:${item.pos.x}px; top:${item.pos.y}px; z-index:${zIndex};">
-                        <div class="mm-node-inner" style="${style}">
-                            <div class="mm-node-text" ondblclick="editNodeInline(event, '${item.node.id}', true)" title="雙擊可編輯">${item.level >= 2 && cleanLabel.length > 8 ? '<small>' + cleanLabel + '</small>' : cleanLabel}</div>
+                        <div class="mm-node-inner" style="${style}" ondblclick="editNodeInline(event, '${item.node.id}', true)">
+                            <div class="mm-node-text" title="雙擊可編輯">${item.level >= 2 && cleanLabel.length > 8 ? '<small>' + cleanLabel + '</small>' : cleanLabel}</div>
                         </div>
                     </div>`;
             });
@@ -2997,9 +3233,13 @@ function deleteLesson(id) {
                 resetStudentState();
                 studentState.lessonId = lesson.id;
                 studentState.lessonTitle = lesson.title;
+                studentState.handout = lesson.handout;
                 studentState.targetMap = lesson.targetMap;
                 studentState.mindMap = { id: 'root', label: lesson.title, revealed: true, children: [] };
                 const direction = lesson.targetMap?.direction || '內容段落';
+
+                // 初始化課文視窗內容
+                renderHandoutBody();
 
                 let hintText = '';
                 if (direction.includes('結構')) {
