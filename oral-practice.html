@@ -1,0 +1,2158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 口語表達歷程系統</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* 典雅中國風 (Classic Chinese Elegance) */
+            --bg-body: #F5F3EC;
+            /* 遠山白 / 仿古宣紙 */
+            --bg-card: #FCFAF5;
+            /* 雪白紙面，微暖 */
+            --paper: #FCFAF5;
+
+            --ink: #3B3632;
+            /* 黛黑 (墨色微偏暖灰) */
+            --primary: #6B7B71;
+            /* 蟹殼青 / 雅致灰綠 */
+            --accent: #B5935C;
+            /* 銅綠金 / 秋色金 */
+            --vermilion: #A64036;
+            /* 胭脂 / 硃砂印泥 */
+
+            --text-main: #4A4641;
+            /* 秋葉褐 (主要文字) */
+            --text-muted: #8E8A85;
+            /* 淡灰褐 */
+            --border: #DCD6CD;
+            /* 石板灰 / 極淺灰竭 */
+
+            /* 相容變數 */
+            --heritage-red: var(--vermilion);
+            --scholar-blue: var(--primary);
+            --success: #5D7052;
+            --gold: var(--accent);
+
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+            /* 更圓潤的卡片邊角 */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased
+        }
+
+        /* — 導航 — */
+        nav {
+            background: rgba(252, 250, 245, 0.95);
+            backdrop-filter: blur(10px);
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000
+        }
+
+        .nav-brand {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 900;
+            font-size: 1.25rem;
+            color: var(--ink);
+            letter-spacing: 1px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 16px;
+            height: 100%;
+            align-items: flex-end;
+            padding-bottom: 12px;
+        }
+
+        .nav-links button {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 4px 8px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .2s;
+            color: var(--text-muted);
+            font-family: 'Noto Serif TC', serif;
+            border-radius: 0
+        }
+
+        .nav-links button:hover {
+            color: var(--ink)
+        }
+
+        .nav-links button.active {
+            color: var(--vermilion);
+            border-bottom: 2px solid var(--vermilion)
+        }
+
+        /* — 佈局 — */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-top: 20px
+        }
+
+        @media(min-width:1024px) {
+            .main-layout {
+                grid-template-columns: 400px 1fr
+            }
+        }
+
+        /* — 卡片 — */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            transition: .25s
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow)
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 40px
+        }
+
+        h3 {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 900;
+            margin: 0 0 12px 0;
+            color: var(--ink);
+            font-size: 1.15rem;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .section-divider {
+            height: 2px;
+            width: 30px;
+            background: var(--vermilion);
+            border-radius: 1px;
+            margin-bottom: 20px
+        }
+
+        /* — 表單 — */
+        label {
+            display: block;
+            font-size: .85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            letter-spacing: .05em
+        }
+
+        select,
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-card);
+            transition: .2s;
+            color: var(--text-main);
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: .95rem
+        }
+
+        select:focus,
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(166, 124, 46, .1)
+        }
+
+        /* — 按鈕 (印章與拓碑風格) — */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid var(--ink);
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .3s ease;
+            font-size: .95rem;
+            width: 100%;
+            box-shadow: var(--shadow-sm);
+            font-family: 'Noto Serif TC', serif;
+            letter-spacing: 2px
+        }
+
+        .btn:hover {
+            background: rgba(59, 54, 50, 0.05);
+            border-color: var(--ink);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            color: var(--ink);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+            background: rgba(59, 54, 50, 0.1);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: .85rem;
+            border-radius: 4px;
+            letter-spacing: 1px
+        }
+
+        .btn.recording {
+            background: var(--bg-card);
+            color: var(--vermilion);
+            border-color: var(--vermilion);
+            animation: pulse-rec 1.5s ease-in-out infinite
+        }
+
+        @keyframes pulse-rec {
+
+            0%,
+            100% {
+                background: rgba(166, 64, 54, 0.1)
+            }
+
+            50% {
+                background: rgba(166, 64, 54, 0.02)
+            }
+        }
+
+        /* — 問題卡片 — */
+        .question-card {
+            padding: 16px 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #fff;
+            transition: .2s;
+            margin-bottom: 8px
+        }
+
+        .q-what {
+            border-top: 2px solid var(--scholar-blue)
+        }
+
+        .q-how {
+            border-top: 2px solid var(--success)
+        }
+
+        .q-why {
+            border-top: 2px solid var(--heritage-red)
+        }
+
+        /* — 錄音 — */
+        #recordTime {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--vermilion);
+            text-align: center;
+            margin: 16px 0;
+            letter-spacing: 2px
+        }
+
+        #recordingWave {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            align-items: center;
+            height: 40px
+        }
+
+        .wave-bar {
+            width: 3px;
+            height: 12px;
+            background: var(--gold);
+            border-radius: 1px;
+            animation: wave .8s ease-in-out infinite
+        }
+
+        @keyframes wave {
+
+            0%,
+            100% {
+                height: 8px
+            }
+
+            50% {
+                height: 28px
+            }
+        }
+
+        /* — 教師管理 — */
+        .admin-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px
+        }
+
+        @media(min-width:1024px) {
+            .admin-layout {
+                flex-direction: row;
+                height: 700px
+            }
+
+            .admin-sidebar {
+                width: 300px;
+                flex-shrink: 0
+            }
+        }
+
+        .admin-sidebar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            overflow-y: auto
+        }
+
+        .admin-editor {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            overflow-y: auto
+        }
+
+        .lesson-item {
+            padding: 10px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            margin-bottom: 6px;
+            transition: .2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .lesson-item:hover {
+            background: var(--bg-body);
+            border-color: var(--border)
+        }
+
+        .lesson-item.active {
+            background: rgba(181, 147, 92, 0.08);
+            color: var(--ink);
+            border-color: var(--accent)
+        }
+
+        .lesson-item.active .lesson-status {
+            color: var(--accent)
+        }
+
+        .lesson-status {
+            font-size: .72rem;
+            color: var(--text-muted);
+            font-weight: 600
+        }
+
+        .lesson-status.published {
+            color: var(--success)
+        }
+
+        /* — 統計 — */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px
+        }
+
+        .stat-card {
+            background: transparent;
+            color: var(--ink);
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center
+        }
+
+        .stat-num {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2rem;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--accent)
+        }
+
+        /* — 表格 — */
+        .table-responsive {
+            overflow-x: auto
+        }
+
+        table,
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .9rem
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: .8rem;
+            letter-spacing: .05em
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(216, 204, 184, .5)
+        }
+
+        tr:hover td {
+            background: rgba(166, 124, 46, .03)
+        }
+
+        /* — 身分 Banner — */
+        .id-banner {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: .88rem
+        }
+
+        .chip {
+            display: inline-flex;
+            padding: 2px 10px;
+            border-radius: 3px;
+            font-size: .72rem;
+            font-weight: 700;
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            color: var(--text-muted)
+        }
+
+        /* — 彈窗 — */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 20, 16, .55);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px
+        }
+
+        .modal-content {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 32px;
+            position: relative;
+            box-shadow: 0 20px 60px rgb(26 20 16 / .3)
+        }
+
+        /* — 歷史記錄卡 — */
+        .history-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all .25s ease;
+            background: var(--bg-card)
+        }
+
+        .history-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .05);
+            transform: translateY(-2px)
+        }
+
+        /* — 成績晶片 — */
+        .score-chip {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin: 2px 3px;
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            transition: .15s
+        }
+
+        .score-chip:hover {
+            border-color: var(--accent);
+            background: #fff
+        }
+
+        .score-chip.best {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        .status-none {
+            font-size: .78rem;
+            color: var(--text-muted);
+            font-style: italic
+        }
+
+        /* — 分析區塊 — */
+        .analysis-section {
+            background: var(--bg-body);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: .95rem;
+            line-height: 1.8;
+            border: 1px solid var(--border)
+        }
+
+        .gold-line {
+            height: 2px;
+            width: 48px;
+            background: var(--accent);
+            margin: 0 auto;
+            border-radius: 2px
+        }
+
+        /* — 遮罩 — */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            pointer-events: none
+        }
+
+        #loadingOverlay[style*="display: flex"] {
+            pointer-events: auto
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--ink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* — 問答卡片 (古典風格) — */
+        .question-card {
+            background: var(--bg-card);
+            padding: 18px 20px;
+            border-radius: var(--radius);
+            border-left: 5px solid var(--border);
+            transition: 0.2s ease-in-out;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.015);
+            border-right: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .question-card:hover {
+            transform: translateX(3px);
+            background: #faf9f6;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .q-what {
+            border-left-color: var(--ink);
+        }
+
+        .q-how {
+            border-left-color: var(--primary);
+        }
+
+        .q-why {
+            border-left-color: var(--accent);
+        }
+
+        .q-label {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 900;
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            display: block;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 6px;
+        }
+
+        .q-content {
+            font-weight: 500;
+            font-size: 1rem;
+            color: var(--text-main);
+            line-height: 1.8;
+        }
+
+        /* — 動畫 — */
+        .fade-in {
+            animation: fadeIn .35s ease-out
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* — 登入頁 — */
+        #authPage .panel {
+            border: 1px solid var(--border)
+        }
+
+        #authPage .card {
+            max-width: 400px;
+            width: 90%;
+            margin: auto
+        }
+
+        /* — 手機適配 — */
+        @media(max-width:768px) {
+            nav {
+                padding: 0 14px;
+                height: 50px
+            }
+
+            .nav-brand {
+                font-size: 1rem
+            }
+
+            .container {
+                padding: 14px
+            }
+
+            .card,
+            .panel {
+                padding: 18px
+            }
+
+            .modal-content {
+                padding: 20px
+            }
+
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p id="loadingText"
+            style="margin-top:15px; font-weight:700; color:var(--gold); font-family:'Noto Serif TC', serif;">墨跡研磨中...
+        </p>
+    </div>
+
+    <!-- 門戶登錄頁 (Auth Page) -->
+    <div id="authPage"
+        style="display:flex;align-items:center;justify-content:center;background:var(--bg-body);z-index:100;position:fixed;inset:0;">
+        <div class="panel" style="width:400px;text-align:center;padding:40px;">
+            <div id="authLogo"
+                style="font-size:2.5rem; margin-bottom:20px; font-family:'Noto Serif TC',serif; color:var(--ink); opacity:0.6;">
+                <span
+                    style="border:1px solid var(--border); border-radius:50%; width:70px; height:70px; display:inline-flex; align-items:center; justify-content:center;">墨</span>
+            </div>
+            <h2 id="authTitle" style="font-family:'Noto Serif TC',serif;color:var(--ink);letter-spacing:4px;">墨韻 · 口語教練
+            </h2>
+
+            <div id="stuAuthForm">
+                <p style="font-size:0.85rem; color:#888; margin-bottom:20px;">請選取身分並輸入練習口令</p>
+                <select id="loginClassSel" onchange="onLoginClassChange()"
+                    style="width:100%; height:45px; margin-bottom:10px;"></select>
+                <select id="loginStuSel" style="width:100%; height:45px; margin-bottom:10px;"></select>
+                <input type="password" id="loginPassInput" placeholder="個人練習口令"
+                    style="width:100%; height:45px; box-sizing:border-box;">
+                <div id="loginError" style="color:var(--vermilion); font-size:0.8rem; margin:10px 0; display:none;">
+                    驗證失敗，請檢查身分或密碼</div>
+                <button class="btn" id="stuLoginBtn" onclick="portalVerify()"
+                    style="width:100%; border-color:var(--ink); margin-bottom:15px; height:48px;">開啟練習空間</button>
+                <a href="#" id="toTeaAuthLink" onclick="toggleAuthRole('tea'); return false;"
+                    style="font-size:0.85rem; color:var(--text-muted); text-decoration:none; border-bottom:1px solid #ddd; padding-bottom:2px;">
+                    教師管理入口</a>
+            </div>
+
+            <div id="teaAuthForm" style="display:none;">
+                <p style="font-size:0.85rem; color:#888; margin-bottom:20px;">管理者認證</p>
+                <input type="password" id="teaPassInput" placeholder="教師管理密碼"
+                    style="width:100%; height:45px; margin-bottom:15px; box-sizing:border-box;">
+                <button class="btn" id="teaLoginBtn" onclick="verifyAdminPortal()"
+                    style="width:100%;background:linear-gradient(135deg,var(--ink),#3d3428);margin-bottom:15px;height:48px;">進入管理後台</button>
+                <a href="#" id="backToStuLink" onclick="toggleAuthRole('stu'); return false;"
+                    style="font-size:0.85rem; color:var(--text-muted); text-decoration:none; border-bottom:1px solid #ddd; padding:0 2px 2px 2px;">🏠
+                    返回學生登錄</a>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContainer" style="display:none;">
+        <nav>
+            <div style="display:flex; align-items:center; gap:20px;">
+                <div class="nav-brand">墨韻 · 表達教練</div>
+                <div class="nav-links">
+                    <button id="tab-stu" class="active" onclick="switchMainTab('stu')">學生練習</button>
+                    <button id="tab-tea" onclick="switchMainTab('tea')">教師管理</button>
+                </div>
+            </div>
+
+            <div id="view-stu-banner" style="display:none; align-items:center; gap:12px;">
+                <span id="displayIdentity"
+                    style="font-weight:900; color:var(--primary); font-size:0.95rem; font-family:'Noto Serif TC',serif;">--</span>
+                <button class="btn btn-sm"
+                    style="width:auto; padding:5px 14px; background:transparent; border:1px solid var(--vermilion); color:var(--vermilion); font-size:0.85rem;"
+                    onclick="logout()">登出</button>
+            </div>
+        </nav>
+
+        <main class="container">
+            <!-- 學生練習視圖 -->
+            <div class="main-layout" id="view-stu-body">
+                <section class="card fade-in">
+                    <h3>課程錄製</h3>
+                    <div class="section-divider"></div>
+
+                    <label>選取今日習作</label>
+                    <select id="lessonSel" style="font-weight:700; color:var(--ink); margin-bottom:20px;">
+                        <option value="">-- 請選取課程 --</option>
+                    </select>
+
+                    <div
+                        style="margin-bottom:24px; background:#fff; border:1px solid var(--border); padding:28px; border-radius:4px; box-shadow:var(--shadow-sm);">
+                        <div id="studentQuestions" style="display:flex; flex-direction:column; gap:16px;">
+                            <div class="question-card q-what">
+                                <label class="q-label" style="color:var(--ink);">壹、文意結構 (What)</label>
+                                <div id="displayQWhat" class="q-content"
+                                    style="color:var(--text-muted); font-size:0.95rem;">經由選取課程顯示導讀內容...</div>
+                            </div>
+                            <div class="question-card q-how">
+                                <label class="q-label" style="color:var(--primary);">貳、寫作手法 (How)</label>
+                                <div id="displayQHow" class="q-content"
+                                    style="color:var(--text-muted); font-size:0.95rem;">經由選取課程顯示導讀內容...</div>
+                            </div>
+                            <div class="question-card q-why">
+                                <label class="q-label" style="color:var(--vermilion);">參、作者意圖 (Why)</label>
+                                <div id="displayQWhy" class="q-content"
+                                    style="color:var(--text-muted); font-size:0.95rem;">經由選取課程顯示導讀內容...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="recordTime" style="display:none;">00:00</div>
+
+                    <div id="recordInitial">
+                        <button type="button" id="recordBtn" class="btn">「 開始錄製 」</button>
+                    </div>
+
+                    <div id="recordControls" style="display:none; flex-direction:column; gap:12px;">
+                        <button type="button" id="submitBtn" class="btn"
+                            style="color:var(--vermilion); border-color:var(--vermilion);">「 滿意成果，送出評分 」</button>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                            <button type="button" id="resumeBtn" class="btn" style="font-size:0.9rem;">接續錄音</button>
+                            <button type="button" id="retryBtn" class="btn"
+                                style="color:var(--text-muted); border-color:var(--border); font-size:0.9rem;">重新錄製</button>
+                        </div>
+                    </div>
+
+                    <div id="recordingWave" style="display:none;">
+                        <div class="wave-bar" style="animation-delay: 0.1s"></div>
+                        <div class="wave-bar" style="animation-delay: 0.2s"></div>
+                        <div class="wave-bar" style="animation-delay: 0.3s"></div>
+                        <div class="wave-bar" style="animation-delay: 0.4s"></div>
+                        <span style="font-size:0.85rem; color:var(--text-muted); margin-left:10px;">系統正在傾聽...</span>
+                    </div>
+                </section>
+
+                <section style="display:flex; flex-direction:column; gap:24px;">
+                    <div id="resCard" class="card fade-in" style="display:none; border-top: 4px solid var(--accent);">
+                        <h3>本次分析結果</h3>
+                        <div class="section-divider"></div>
+                        <div class="stat-grid" id="scoreBars" style="margin-bottom:24px;"></div>
+
+                        <div id="resAnalysis" class="analysis-section"></div>
+
+                        <div style="display:grid; grid-template-columns: 1fr; gap:20px;">
+                            <div>
+                                <label>具體回饋</label>
+                                <ul id="resFeedback" style="padding-left:20px; font-size:0.9rem;"></ul>
+                            </div>
+                            <div>
+                                <label>練習建議</label>
+                                <ul id="resDrills" style="padding-left:20px; font-size:0.9rem;"></ul>
+                            </div>
+                        </div>
+                        <div id="resSummary"
+                            style="font-weight:900;color:var(--accent);text-align:center;margin-top:20px;font-size:1.1rem;font-family:'Noto Serif TC',serif;">
+                        </div>
+                    </div>
+
+                    <div class="card fade-in">
+                        <h3>學習歷程回顧</h3>
+                        <div class="section-divider"></div>
+                        <div id="historyContainer">
+                            <p style="text-align:center; color:var(--text-muted); padding:40px;">（載入中...）</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 教師管理視圖 -->
+            <div class="main-layout" id="view-tea" style="display:none; grid-template-columns: 1fr;">
+                <!-- 教師驗證區塊 -->
+                <div id="adminAuthPage" class="card" style="max-width:400px; margin:100px auto; text-align:center;">
+                    <h3>教師身分驗證</h3>
+                    <div class="section-divider" style="margin:0 auto 24px auto;"></div>
+                    <p style="color:var(--text-muted); margin-bottom:24px;">請輸入管理密碼以存取習作歷程與課程設定。</p>
+                    <input type="password" id="adminPassInput" placeholder="請輸入密碼..."
+                        style="text-align:center; margin-bottom:16px;">
+                    <button class="btn" style="width:100%;" onclick="verifyAdminPortal()">驗證登入</button>
+                </div>
+
+                <!-- 教師主儀表板 -->
+                <div id="adminMainPage" style="display:none;">
+                    <section class="card fade-in">
+                        <h3>教師專業管理台</h3>
+                        <div class="section-divider"></div>
+
+                        <div role="navigation"
+                            style="display:flex; gap:16px; margin-bottom:30px; border-bottom:1px solid var(--border); padding-bottom:8px; width:100%;">
+                            <button id="teatab-h" class="active" onclick="switchTeaTab('h')"
+                                style="background:transparent; border:none; border-bottom:2px solid var(--vermilion); color:var(--vermilion); font-weight:700; cursor:pointer; font-size:1.05rem; padding:4px 8px; font-family:'Noto Serif TC',serif;">習作歷程</button>
+                            <button id="teatab-l" onclick="switchTeaTab('l')"
+                                style="background:transparent; border:none; border-bottom:2px solid transparent; color:var(--text-muted); font-weight:700; cursor:pointer; font-size:1.05rem; padding:4px 8px; font-family:'Noto Serif TC',serif;">課程管理</button>
+                        </div>
+
+                        <!-- 習作歷程分頁 -->
+                        <div id="tea-h" class="tea-tab-content active">
+                            <div
+                                style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:30px; align-items:flex-end;">
+                                <div><label>習作主題</label><select id="adminLessonSel"
+                                        onchange="renderAdminHistory()"></select></div>
+                                <div><label>篩選班級</label><select id="adminClassSel"
+                                        onchange="renderAdminHistory()"></select></div>
+                                <div style="display:flex; gap:12px;">
+                                    <button class="btn btn-sm" style="color:var(--ink); border-color:var(--ink);"
+                                        onclick="copyAdminScores()">[ 複製成績 ]</button>
+                                    <a href="https://docs.google.com/spreadsheets/d/1M5FMFEuDXxxvPbrNG8vdId1FIaehydrr9Nkkd8W8A5I/"
+                                        target="_blank" class="btn btn-sm"
+                                        style="color:var(--accent); border-color:var(--accent); text-decoration:none;">[
+                                        報表 ]</a>
+                                </div>
+                            </div>
+
+                            <div class="stat-grid" style="margin-bottom:30px;">
+                                <div class="stat-card">
+                                    <div id="totalSubmissions" class="stat-num">--</div>
+                                    <div style="font-size:0.75rem; opacity:0.8;">累計人次</div>
+                                </div>
+                                <div class="stat-card" style="border-color:var(--accent);">
+                                    <div id="avgScore" class="stat-num" style="color:var(--accent);">--</div>
+                                    <div style="font-size:0.75rem; opacity:0.8;">全班平均</div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive" id="adminHistoryTableContainer"></div>
+                        </div>
+
+                        <!-- 課程管理分頁 -->
+                        <div id="tea-l" class="tea-tab-content" style="display:none;">
+                            <div class="admin-layout">
+                                <aside class="admin-sidebar" id="lessonAdminSidebar">
+                                    <div
+                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                                        <h4 style="margin:0;">課文列表</h4>
+                                        <button class="btn btn-sm" onclick="prepareNewLesson()"
+                                            style="width:auto; padding:4px 10px;">＋ 新增</button>
+                                    </div>
+                                    <div id="sidebarLessonsList"></div>
+                                    <button class="btn btn-sm"
+                                        style="margin-top:20px; background:var(--bg-body); border:1px dashed var(--accent); color:var(--accent);"
+                                        onclick="batchGenAIQuestions()">補齊空白問題</button>
+                                </aside>
+
+                                <div class="admin-editor" id="lessonEditorPanel">
+                                    <div id="editorEmptyState"
+                                        style="text-align:center; padding:100px 0; color:var(--text-muted);">
+                                        <div
+                                            style="font-size:2.5rem; margin-bottom:20px; font-family:'Noto Serif TC',serif; color:var(--text-muted); opacity:0.5;">
+                                            <span
+                                                style="border:1px solid var(--border); border-radius:50%; width:80px; height:80px; display:inline-flex; align-items:center; justify-content:center;">文</span>
+                                        </div>
+                                        <h4 style="font-weight:normal; letter-spacing:2px;">請選取左側課程進行編輯</h4>
+                                    </div>
+
+                                    <div id="editorForm" style="display:none;">
+                                        <div
+                                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                                            <h3 id="editorHeader" style="margin:0;">編輯詳情</h3>
+                                            <div style="display:flex; gap:8px;">
+                                                <button class="btn btn-sm"
+                                                    style="background:var(--bg-body); color:var(--text-main); width:auto;"
+                                                    onclick="cancelEdit()">取消</button>
+                                                <button class="btn btn-sm"
+                                                    style="width:auto; color:var(--success); border-color:var(--success);"
+                                                    onclick="saveLessonData()">儲存發布</button>
+                                            </div>
+                                        </div>
+
+                                        <input type="hidden" id="editLessonIdx" value="">
+
+                                        <div style="display:grid; grid-template-columns: 1fr; gap:20px;">
+                                            <div>
+                                                <label>習作標題</label>
+                                                <input type="text" id="lsnTitle" placeholder="標題內容...">
+                                            </div>
+                                            <div>
+                                                <label>講義 / 課文內容</label>
+                                                <textarea id="lsnContent" rows="8" placeholder="貼上課文或引導語..."></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            style="background:var(--bg-body); padding:20px; border-radius:12px; margin-top:24px;">
+                                            <div
+                                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                                <h4 style="margin:0; color:var(--heritage-red);">AI 導覽問題設定</h4>
+                                                <button class="btn btn-sm"
+                                                    style="width:auto; border-color:var(--primary); color:var(--primary);"
+                                                    onclick="generateQAIForCurrent()">AI 全解析</button>
+                                            </div>
+
+                                            <div style="display:flex; flex-direction:column; gap:16px;">
+                                                <div>
+                                                    <div
+                                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                                        <label style="margin:0;">Q1. What 結構 (綜述整體內容與架構)</label>
+                                                        <button class="btn-sm"
+                                                            style="background:none; color:var(--scholar-blue); border:1px solid var(--scholar-blue); font-size:0.7rem; padding:2px 8px; cursor:pointer;"
+                                                            onclick="regenerateSingleQ('what')">重新生成</button>
+                                                    </div>
+                                                    <input type="text" id="lsnQWhat">
+                                                </div>
+                                                <div>
+                                                    <div
+                                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                                        <label style="margin:0;">Q2. How 寫作手法 (表現方式、意象)</label>
+                                                        <button class="btn-sm"
+                                                            style="background:none; color:var(--success); border:1px solid var(--success); font-size:0.7rem; padding:2px 8px; cursor:pointer;"
+                                                            onclick="regenerateSingleQ('how')">重新生成</button>
+                                                    </div>
+                                                    <input type="text" id="lsnQHow">
+                                                </div>
+                                                <div>
+                                                    <div
+                                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                                        <label style="margin:0;">Q3. Why 作者意圖 (情感、目的)</label>
+                                                        <button class="btn-sm"
+                                                            style="background:none; color:var(--heritage-red); border:1px solid var(--heritage-red); font-size:0.7rem; padding:2px 8px; cursor:pointer;"
+                                                            onclick="regenerateSingleQ('why')">重新生成</button>
+                                                    </div>
+                                                    <input type="text" id="lsnQWhy">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+    </div>
+    </div>
+
+    <div id="detailModal" class="modal">
+        <div class="modal-content" style="width:700px; background:var(--paper); max-height:85vh; overflow-y:auto;">
+            <div id="detailContent"></div>
+            <button class="btn" style="margin-top:25px;" onclick="closeModal('detailModal')">關閉詳閱</button>
+        </div>
+    </div>
+
+    <div id="alertModal" class="modal">
+        <div style="background:#fff; padding:35px; width:350px; text-align:center; border:2px solid var(--gold);">
+            <h3 id="alertTitle">提示</h3>
+            <p id="alertMsg" style="margin-bottom:30px;"></p>
+            <button class="btn" onclick="closeModal('alertModal')">確定</button>
+        </div>
+    </div>
+
+    <script>
+        const currentGasUrl = "https://script.google.com/macros/s/AKfycbyQjuALiNn7ua1lIlI_4Rh16zdBoFamZ4_8dsUJkAXqE0Q3xEBFNkyJmli0Tvfskok/exec";
+        const APP_VERSION = "2026.04.02.V6";
+
+        // doGet 支援的 action（不觸發 CORS 302 重定向）
+        const GET_ACTIONS = new Set([
+            'getLessons', 'getRoster', 'getMyRecords',
+            'verifyPassword', 'getAdminStats', 'ping', 'getInitialData'
+        ]);
+
+        async function callGAS(payload) {
+            console.log("Calling GAS:", payload);
+
+            if (GET_ACTIONS.has(payload.action)) {
+                // GET 模式：query string，GAS doGet 無 302 重定向
+                const params = new URLSearchParams();
+                for (const key in payload) {
+                    const val = typeof payload[key] === 'object' ? JSON.stringify(payload[key]) : payload[key];
+                    params.append(key, val);
+                }
+                const res = await fetch(currentGasUrl + '?' + params.toString());
+                if (!res.ok) throw new Error("連線失敗: HTTP " + res.status);
+                return await res.json();
+            } else {
+                // POST 模式：大資料（analyzeSpeech 等寫入操作）
+                const res = await fetch(currentGasUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
+                });
+                if (!res.ok) throw new Error("伺服器端連線異常: HTTP " + res.status);
+                return await res.json();
+            }
+        }
+
+        // --- 核心導通：接續驗證邏輯 ---
+
+        async function portalVerify() {
+            hideLoading();
+            const cls = document.getElementById('loginClassSel').value;
+            const stu = document.getElementById('loginStuSel').value;
+            const pass = document.getElementById('loginPassInput').value;
+            if (!cls || !stu) return myAlert("溫馨提醒", "請先選取班級與姓名");
+            if (!pass) return myAlert("提示", "請輸入練習口令");
+            const fullName = `[${cls}] ${stu}`;
+            try {
+                const json = await callGAS({ action: 'verifyPassword', type: 'STUDENT', student: fullName, password: pass });
+                if (json.valid) {
+                    localStorage.setItem('stu_id_v4', fullName);
+                    localStorage.setItem('stu_pass_v4', pass);
+                    document.getElementById('authPage').style.display = 'none';
+                    document.getElementById('mainContainer').style.display = 'block';
+                    document.getElementById('displayIdentity').innerText = fullName;
+                    loadMyRecords();
+                } else {
+                    myAlert("失敗", "口令不正確");
+                }
+            } catch (e) {
+                myAlert("錯誤", "連線失敗: " + e.message);
+            }
+        }
+
+        async function verifyAdminPortal(savedPass, silent = false) {
+            const btn = document.getElementById('teaLoginBtn');
+            if (btn && !silent) btn.innerText = "驗證中...";
+            const teaEl = document.getElementById('teaPassInput');
+            const admEl = document.getElementById('adminPassInput');
+            const pass = savedPass || (teaEl && teaEl.value) || (admEl && admEl.value) || "";
+            if (!pass) {
+                if (!silent) myAlert("溫馨提醒", "請輸入密碼");
+                if (btn) btn.innerText = "進入管理後台";
+                return;
+            }
+            try {
+                const json = await callGAS({ action: 'verifyPassword', type: 'ADMIN', password: pass });
+                if (json.valid) {
+                    localStorage.setItem('tea_auth_v4', pass);
+                    document.getElementById('authPage').style.display = 'none';
+                    document.getElementById('mainContainer').style.display = 'block';
+                    document.getElementById('displayIdentity').innerText = "管理員";
+                    switchMainTab('tea');
+                    fetchData();
+                    loadAdminStats();
+                } else {
+                    if (btn) btn.innerText = "進入管理後台";
+                    if (!silent) myAlert("失敗", "密碼錯誤");
+                }
+            } catch (e) {
+                if (btn) btn.innerText = "進入管理後台";
+                if (!silent) myAlert("連線失敗", e.message);
+            }
+        }
+
+        let lessons = [], roster = {}, adminData = { roster: [], records: [] };
+        let isRecording = false, mediaRecorder, audioChunks = [];
+        let isPaused = false;
+
+        // IndexedDB 統一由 dbOpen() 管理 (見下方)
+
+        function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+        // checkAutoAuth 在底部統一呼叫
+
+        function toggleAuthRole(role) {
+            document.getElementById('stuAuthForm').style.display = role === 'stu' ? 'block' : 'none';
+            document.getElementById('teaAuthForm').style.display = role === 'tea' ? 'block' : 'none';
+        }
+
+        function checkAutoAuth() {
+            const stuId = localStorage.getItem('stu_id_v4');
+            const teaId = localStorage.getItem('tea_auth_v4');
+
+            // 樂觀跳轉：先隱藏登錄頁，後在背景驗證或加載
+            if (teaId || stuId) {
+                document.getElementById('authPage').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+
+                if (teaId) {
+                    document.getElementById('displayIdentity').innerText = "👨‍🏫 管理員";
+                    switchMainTab('tea');
+                    verifyAdminPortal(teaId, true); // 背景靜默驗證
+                } else {
+                    document.getElementById('displayIdentity').innerText = stuId;
+                    switchMainTab('stu');
+                }
+            }
+        }
+
+        async function testConnection() {
+            const formData = new FormData();
+            formData.append('action', 'ping');
+            try {
+                const res = await fetch(currentGasUrl, { method: 'POST', body: formData });
+                const json = await res.json();
+                if (json.status === "pong") {
+                    myAlert("連線成功", "後端腳本已正確運作 (版本: " + APP_VERSION + ")");
+                } else {
+                    myAlert("連線異常", "收到未知回應：" + JSON.stringify(json));
+                }
+            } catch (e) {
+                myAlert("通訊失敗", "GAS 無法連通，請確認該網址是否已「部署為新版本」且權限設為「任何人(Anyone)」。\n\n錯誤詳情: " + e.message);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('stu_id_v4');
+            localStorage.removeItem('stu_pass_v4');
+            localStorage.removeItem('tea_auth_v4');
+            location.reload();
+        }
+
+        async function impersonateStudent(fullName) {
+            if (!fullName) return;
+            localStorage.setItem('stu_id_v4', fullName);
+            localStorage.setItem('stu_pass_v4', 'MASTER_AUTH');
+            loadMyRecords();
+        }
+
+        function renderAdminStudentSwitcher() {
+            const container = document.getElementById('displayIdentity');
+            const currentStu = localStorage.getItem('stu_id_v4');
+            let html = `<select onchange="impersonateStudent(this.value)" style="margin:0; border:1px solid var(--accent); color:var(--primary); background:transparent; font-weight:700; height:32px; min-width:200px; padding:0 10px; border-radius:4px; font-size:0.85rem; box-sizing:border-box;">`;
+            html += `<option value="">-- 切換視角 --</option>`;
+
+            Object.keys(roster).forEach(cls => {
+                const sorted = roster[cls].sort((a, b) => a.no - b.no);
+                sorted.forEach(s => {
+                    const id = `[${cls}] ${s.no} ${s.name}`;
+                    html += `<option value="${id}" ${id === currentStu ? 'selected' : ''}>${id}</option>`;
+                });
+            });
+            html += `</select>`;
+            container.innerHTML = html;
+        }
+
+        async function fetchData() {
+            // 優先從會話緩存讀取，加速渲染 (SWR 策略第一步：顯示舊資料)
+            const cachedData = sessionStorage.getItem('init_data_v4');
+            if (cachedData) {
+                try {
+                    const initData = JSON.parse(cachedData);
+                    renderLoadedData(initData.lessons, initData.roster);
+                } catch (e) { }
+            }
+
+            try {
+                // SWR 策略第二步：背景更新最新資料。合併請求以減少 GAS HTTPS 交握延遲
+                const initRes = await callGAS({ action: 'getInitialData' });
+
+                if (initRes.status === 'success') {
+                    // 存入緩存以利下次刷新
+                    sessionStorage.setItem('init_data_v4', JSON.stringify(initRes.data));
+                    renderLoadedData(initRes.data.lessons, initRes.data.roster);
+                }
+            } catch (e) {
+                console.error("Data fetch failed", e);
+            }
+        }
+
+        function renderLoadedData(lData, rData) {
+            lessons = lData; roster = rData;
+
+            const lSel = document.getElementById('lessonSel');
+            const lcSel = document.getElementById('loginClassSel');
+            const alSel = document.getElementById('adminLessonSel');
+            const acSel = document.getElementById('adminClassSel');
+
+            if (lSel) {
+                lSel.innerHTML = '<option value="">-- 尚未選取課程 --</option>';
+                lessons.forEach((l, i) => lSel.innerHTML += `<option value="${i}">${l.name}</option>`);
+            }
+            if (lcSel) {
+                lcSel.innerHTML = '<option value="">-- 選取班級 --</option>';
+                Object.keys(roster).forEach(c => lcSel.innerHTML += `<option value="${c}">${c}</option>`);
+            }
+            if (alSel) {
+                alSel.innerHTML = '<option value="">-- 全部課程 --</option>';
+                lessons.forEach((l) => alSel.innerHTML += `<option value="${l.name}">${l.name}</option>`);
+            }
+            if (acSel) {
+                acSel.innerHTML = '<option value="">-- 選取班級 --</option>';
+                const classes = Object.keys(roster);
+                classes.forEach(c => acSel.innerHTML += `<option value="${c}">${c}</option>`);
+                if (classes.length > 0 && acSel.selectedIndex <= 0) acSel.selectedIndex = 1;
+            }
+
+            renderCurrentLessons();
+        }
+
+        // fetchData() 已在底部初始化時呼叫，不再重複
+
+
+        function onLoginClassChange() {
+            const cls = document.getElementById('loginClassSel').value;
+            const lsSel = document.getElementById('loginStuSel');
+            lsSel.innerHTML = '<option value="">-- 選取姓名 --</option>';
+            if (roster[cls]) {
+                const sorted = roster[cls].sort((a, b) => a.no - b.no);
+                sorted.forEach(s => lsSel.innerHTML += `<option value="${s.no} ${s.name}">${s.no} ${s.name}</option>`);
+            }
+        }
+
+        // 錄音邏輯與計時
+        let recordInterval, secondsElapsed = 0;
+        let lastBlob = null;
+        let currentLessonIdx = ""; // 錄音當下鎖定的課程索引
+
+        document.getElementById('recordBtn').onclick = async function () {
+            if (isRecording) {
+                stopRecording();
+                return;
+            }
+
+            currentLessonIdx = document.getElementById('lessonSel').value;
+            if (currentLessonIdx === "") return myAlert("溫馨提醒", "請先選取練習課程。");
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // 使用較低的位元率以減少檔案體積 (Speech 不需要高音質)
+                const options = { audioBitsPerSecond: 64000 };
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                // 如果不是暫停狀態，才重置數據
+                if (!isPaused) {
+                    audioChunks = [];
+                    secondsElapsed = 0;
+                    document.getElementById('recordTime').style.display = 'block';
+                }
+
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    lastBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                };
+
+                mediaRecorder.start(1000); // 每秒觸發一次 dataavailable，確保數據流穩定
+                recordInterval = setInterval(() => {
+                    secondsElapsed++;
+                    let m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+                    let s = (secondsElapsed % 60).toString().padStart(2, '0');
+                    document.getElementById('recordTime').innerText = `${m}:${s} / 03:00`;
+                    if (secondsElapsed >= 180) stopRecording();
+                }, 1000);
+
+                this.innerText = "🛑 停錄並檢查";
+                this.classList.add('recording');
+                document.getElementById('recordingWave').style.display = 'flex';
+                isRecording = true;
+                isPaused = false;
+            } catch (e) { console.error(e); myAlert("權限障礙", "錄音功能需麥克風權限。"); }
+        };
+
+        function stopRecording() {
+            if (!isRecording) return;
+            mediaRecorder.stop();
+            isRecording = false;
+            isPaused = true;
+            clearInterval(recordInterval);
+
+            const btn = document.getElementById('recordBtn');
+            btn.classList.remove('recording');
+            document.getElementById('recordInitial').style.display = 'none';
+            document.getElementById('recordControls').style.display = 'flex';
+            document.getElementById('recordingWave').style.display = 'none';
+        }
+
+        document.getElementById('submitBtn').onclick = async () => {
+            if (secondsElapsed < 60) {
+                if (!confirm(`⚠️ 您的錄音時間不足一分鐘（目前 ${secondsElapsed} 秒）。\n\n根據規則：錄音不滿一分鐘將必定「不及格」。\n\n確定要現在送出評分嗎？\n建議：點擊「繼續錄製」來增加內容長度。`)) {
+                    return;
+                }
+            }
+
+            showLoading();
+            const loadingText = document.getElementById('loadingText');
+            loadingText.innerText = "🖋️ 正在準備語音墨跡...";
+
+            try {
+                // 確保 MediaRecorder 資源完全釋放
+                await new Promise(r => setTimeout(r, 500));
+
+                if (!lastBlob) throw new Error("AUDIO_NOT_READY");
+                if (audioChunks.length === 0) throw new Error("AUDIO_EMPTY");
+
+                loadingText.innerText = "🧬 正在轉換音讀數據...";
+                await processAndUpload(lastBlob, secondsElapsed, currentLessonIdx);
+
+            } catch (e) {
+                console.error("Critical Submit Error:", e);
+                hideLoading();
+                let msg = "系統在處理錄音時發生預期外的錯誤。";
+                if (e.message === "AUDIO_NOT_READY") msg = "音檔尚未準備好，請稍候再試。";
+                if (e.message === "AUDIO_EMPTY") msg = "音檔內容為空，請確認麥克風是否正常運作。";
+                if (e.message === "BASE64_FAIL") msg = "音檔編碼轉換失敗。";
+
+                myAlert("傳送失敗", msg + "\n\n錯誤代碼: " + (e.message || "UNKNOWN"));
+            } finally {
+                // 這裡不直接 hideLoading，因為 uploadRecord 內部會處理
+            }
+        };
+
+        document.getElementById('resumeBtn').onclick = () => {
+            document.getElementById('recordInitial').style.display = 'block';
+            document.getElementById('recordControls').style.display = 'none';
+            document.getElementById('recordBtn').click();
+        };
+
+        document.getElementById('retryBtn').onclick = () => {
+            resetRecordUI();
+        };
+
+        function resetRecordUI() {
+            isPaused = false;
+            isRecording = false;
+            lastBlob = null;
+            audioChunks = [];
+            secondsElapsed = 0;
+            clearInterval(recordInterval);
+            document.getElementById('recordInitial').style.display = 'block';
+            document.getElementById('recordControls').style.display = 'none';
+            document.getElementById('recordingWave').style.display = 'none';
+            document.getElementById('recordBtn').innerText = "🎙️ 開始錄製";
+            document.getElementById('recordBtn').classList.remove('recording');
+            document.getElementById('recordTime').style.display = 'none';
+        }
+
+        async function processAndUpload(blob, duration, lessonIdx = "") {
+            // 如果沒帶入鎖定的索引，才從下拉選單抓 (後備方案)
+            if (!lessonIdx) lessonIdx = document.getElementById('lessonSel').value;
+
+            if (lessonIdx === "") throw new Error("LESSON_NULL");
+            const lesson = lessons[lessonIdx];
+            const student = localStorage.getItem('stu_id_v4');
+
+            // 使用 Promise 包裹 FileReader 確保非同步執行順序，加入 10 秒安全逾時
+            const base64Audio = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                const timeout = setTimeout(() => reject(new Error("ENCODE_TIMEOUT")), 10000);
+
+                reader.onloadend = () => {
+                    clearTimeout(timeout);
+                    const parts = reader.result.split(',');
+                    if (parts.length < 2) reject(new Error("BASE64_FAIL"));
+                    else resolve(parts[1]);
+                };
+                reader.onerror = () => {
+                    clearTimeout(timeout);
+                    reject(new Error("READ_FAIL"));
+                };
+                reader.readAsDataURL(blob);
+            });
+
+            const recordId = Date.now();
+            const pendingData = { id: recordId, student, lesson: lesson.name, lessonIdx: lessonIdx, audio: base64Audio, duration, time: new Date().toISOString() };
+
+            // 重要：改為非阻塞儲存，儲存失敗不應影響上傳進程
+            saveToLocalDB(pendingData).catch(e => console.warn("Auto-save failed", e));
+
+            await uploadRecord(pendingData);
+        }
+
+        const DB_NAME = "OralCoachDB", DB_VER = 2, STORE_NAME = "pending_records";
+        function dbOpen() {
+            return new Promise((res, rej) => {
+                const timeout = setTimeout(() => rej(new Error("DB_OPEN_TIMEOUT")), 3000);
+                try {
+                    const req = indexedDB.open(DB_NAME, DB_VER);
+                    req.onupgradeneeded = () => {
+                        const db = req.result;
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            db.createObjectStore(STORE_NAME, { keyPath: "id" });
+                        }
+                    };
+                    req.onsuccess = () => { clearTimeout(timeout); res(req.result); };
+                    req.onerror = () => { clearTimeout(timeout); rej(req.error); };
+                    req.onblocked = () => { clearTimeout(timeout); rej(new Error("DB_BLOCKED")); };
+                } catch (e) { clearTimeout(timeout); rej(e); }
+            });
+        }
+        async function saveToLocalDB(data) {
+            try {
+                const db = await dbOpen();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, "readwrite");
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.put(data);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                    // 防止單一交易掛死整個流程，設置安全逾時
+                    setTimeout(() => reject(new Error("IDB_TIMEOUT")), 3000);
+                });
+            } catch (e) {
+                console.warn("Local storage failed, continuing with upload...", e);
+                return Promise.resolve(); // 儲存失敗不響應上傳主流程
+            }
+        }
+        async function removeFromLocalDB(id) {
+            try {
+                const db = await dbOpen();
+                const tx = db.transaction(STORE_NAME, "readwrite");
+                tx.objectStore(STORE_NAME).delete(id);
+            } catch (e) {
+                console.warn("Removal from DB failed", e);
+            }
+        }
+        async function getCachedRecord(student, lessonName) {
+            try {
+                const db = await dbOpen();
+                return new Promise((res) => {
+                    const tx = db.transaction(STORE_NAME, "readonly");
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.getAll();
+                    req.onsuccess = () => {
+                        const found = req.result.find(r => r.student === student && r.lesson === lessonName);
+                        res(found);
+                    };
+                    req.onerror = () => res(null);
+                });
+            } catch (e) {
+                console.warn("Cached record check failed", e);
+                return null;
+            }
+        }
+
+        document.getElementById('lessonSel').onchange = async function () {
+            const lessonIdx = this.value;
+            if (lessonIdx === "") {
+                document.getElementById('displayQWhat').innerText = "經由選取課程顯示導讀內容...";
+                document.getElementById('displayQHow').innerText = "經由選取課程顯示導讀內容...";
+                document.getElementById('displayQWhy').innerText = "經由選取課程顯示導讀內容...";
+                return;
+            }
+            const lesson = lessons[lessonIdx];
+
+            // 學生頁面呈現導學問題
+            document.getElementById('displayQWhat').innerText = lesson.q_what || "教師尚未設定第一部分導讀。";
+            document.getElementById('displayQHow').innerText = lesson.q_how || "教師尚未設定第二部分導讀。";
+            document.getElementById('displayQWhy').innerText = lesson.q_why || "教師尚未設定第三部分導讀。";
+
+            const student = localStorage.getItem('stu_id_v4');
+            const cached = await getCachedRecord(student, lesson.name);
+            if (cached) {
+                if (confirm(`偵測到您上次有未送出的「${lesson.name}」錄音，是否要直接復原並送出評分？`)) {
+                    showLoading();
+                    uploadRecord(cached);
+                }
+            }
+        };
+
+        async function uploadRecord(data) {
+            const loadingText = document.getElementById('loadingText');
+            let lastError = null;
+
+            for (let attempt = 1; attempt <= 2; attempt++) {
+                showLoading();
+                loadingText.innerText = attempt === 1 ? "正在傳送語音墨跡..." : `連線稍慢，正在嘗試重新傳送 (${attempt}/2)...`;
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+                try {
+                    const lsn = lessons.find(l => l.name === data.lesson) || { q_what: "", q_how: "", q_why: "" };
+                    const lessonContext = `\n\n【課程參考內容】\n${lsn.content || ""}\n\n【核心導學問題 (學生必答)】\n1. What結構: ${lsn.q_what || "整體課文結構和主旨"}\n2. How寫作手法: ${lsn.q_how || "使用的修辭、意象、筆法"}\n3. Why作者意圖: ${lsn.q_why || "想傳達的情感、道理或目的"}`;
+
+                    const prompt = `你是專業且【富有耐心、以引導理解為重】的國中口語表達教練。接收學生就文意課文《${data.lesson}》的錄製分析。${lessonContext}
+            請執行以下「理解優先」的檢核標準：
+            
+            【計分邏輯：嚴謹評鑑】
+            總分 (total_score) 應嚴格地區分「基礎統整」與「深度析論」：
+            - 文意深度 (understanding)：40% (正確概括 What。若僅完成此項且無 How/Why，總分應落在 80-84 分)
+            - 論述架構 (coherence)：25% (解說的邏輯與層次感)
+            - 手法與意圖 (grammar)：15% (必須具體提及 How/Why 且與文本緊密結合，才是 90 分以上的關鍵)
+            - 流暢程度 (fluency)：10% (表達是否自然，過多贅詞應扣分)
+            - 口齒音準 (pronunciation)：10% (發音精確度)
+            
+            【評分分級標準】
+            1. 基礎級 (80-85 分)：能正確重述課文大意 (What)，架構清晰，但對寫作手法與意圖僅點到為止。
+            2. 進階級 (86-92 分)：除大意統整外，能具體舉出課文中的例子說明寫作手法 (How) 或作者目的 (Why)。
+            3. 優異級 (93 分以上)：具備深刻的文學賞析眼光，能橫跨 What-How-Why 進行邏輯嚴密的深度析論，並展現個人見解。
+            4. 警示邏輯：若錄音時長達 40 秒但內容僅是不斷重複或無實質統整，仍應給予不及格 (50-59)。
+            
+            【教練回饋】
+            - 語氣依然親切引導，但「析論內容」必須直指學生的思維盲點。
+            - 90 分以下的回答，請明確告訴學生「如果你能再多談談某個手法與主旨的關係，分數就能往 90 邁進」。
+            
+            回傳格式務必為純 JSON：
+            {
+              "full_transcript": "全文逐字稿 (含贅詞)",
+              "scores": {
+                "understanding": 1-5,
+                "coherence": 1-5,
+                "fluency": 1-5,
+                "pronunciation": 1-5,
+                "grammar": 1-5
+              },
+              "overall_analysis": "核心析論 (300字以上，需橫跨 What-Why-How 三層次並解釋五面向得分與總分聯動關係)",
+              "summary": "一句激勵的話",
+              "feedback_items": ["具體優點", "關鍵進步建議"],
+              "drills": ["進階思維挑戰"],
+              "total_score": 0-100
+            }`;
+
+                    const res = await fetch(currentGasUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        signal: controller.signal,
+                        body: JSON.stringify({
+                            action: 'analyzeSpeech',
+                            prompt: prompt,
+                            audioData: data.audio,
+                            studentName: data.student,
+                            lessonName: data.lesson,
+                            duration: data.duration,
+                            version: APP_VERSION
+                        })
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!res.ok) throw new Error(`HTTP_${res.status}_${res.statusText}`);
+
+                    const statusCheck = setTimeout(() => {
+                        if (document.getElementById('loadingOverlay').style.display !== 'none') {
+                            loadingText.innerText = "語音已送達，AI 教練正深度析讀中...";
+                        }
+                    }, 3000);
+
+                    const raw = await res.json();
+                    clearTimeout(statusCheck);
+
+                    if (raw.status === "error") throw new Error(raw.message || "SERVER_ERR");
+
+                    let ai = raw.aiResult;
+                    if (!ai && raw.data && raw.data.candidates) {
+                        try {
+                            const text = raw.data.candidates[0].content.parts[0].text.replace(/```json|```/g, "");
+                            ai = JSON.parse(text);
+                        } catch (pe) { console.error("Parse Fail", pe); }
+                    }
+
+                    if (!ai) throw new Error("AI_EMPTY");
+
+                    ai.duration = data.duration;
+
+                    // 背景清理本地備份，不讓資料庫狀態影響結果顯示
+                    removeFromLocalDB(data.id).catch(e => console.warn("Cleanup failed", e));
+
+                    renderAiFeedback(ai);
+                    loadMyRecords();
+                    hideLoading();
+                    const b = document.getElementById('recordBtn');
+                    if (b) {
+                        b.innerText = "🎙️ 開始錄製"; b.disabled = false; b.classList.remove('recording');
+                    }
+                    return; // 成功則結束
+
+                } catch (e) {
+                    clearTimeout(timeoutId);
+                    console.error(`Upload Attempt ${attempt} failed:`, e);
+                    lastError = e;
+                    if (e.name === 'AbortError') break; // 逾時就不重試
+                }
+            }
+
+            hideLoading();
+            const b = document.getElementById('recordBtn');
+            if (b) {
+                b.innerText = "🎙️ 開始錄製"; b.disabled = false; b.classList.remove('recording');
+            }
+            if (lastError && lastError.name === 'AbortError') {
+                myAlert("通訊逾時", "伺服器分析時間較長。錄音已暫存在瀏覽器，您可以稍後再嘗試。");
+            } else {
+                const errorDetail = (lastError && lastError.message) ? ` (${lastError.message})` : "";
+                myAlert("傳輸失敗", `與伺服器連線異常${errorDetail}，請確認網路環境或檢查後端部署。`);
+            }
+        }
+
+        async function loadMyRecords() {
+            const student = localStorage.getItem('stu_id_v4');
+            const pass = localStorage.getItem('stu_pass_v4');
+            const adminPass = localStorage.getItem('tea_auth_v4');
+            if (!student) return;
+
+            showLoading();
+            const container = document.getElementById('historyContainer');
+            try {
+                const res = await fetch(`${currentGasUrl}?action=getMyRecords&name=${encodeURIComponent(student)}&password=${encodeURIComponent(pass)}&adminPass=${encodeURIComponent(adminPass)}`);
+                const json = await res.json();
+
+                if (json.status === "error") {
+                    container.innerHTML = `<p style="text-align:center; color:var(--vermilion); padding:40px;">⚠️ ${json.message}</p>`;
+                    return;
+                }
+
+                if (!json.data || json.data.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:#ccc; padding:60px;">墨跡未乾，尚無練習紀錄。</p>';
+                } else {
+                    container.innerHTML = json.data.map(r => {
+                        let ai; try { ai = JSON.parse(r.feedback); } catch (e) { ai = { summary: r.feedback }; }
+                        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(ai))));
+                        return `
+                            <div class="history-card" onclick="renderAiFeedback('${encoded}', true)">
+                                <div>
+                                    <div style="font-weight:900; color:var(--ink);">${r.lesson}</div>
+                                    <div style="font-size:0.75rem; color:#aaa; margin-top:5px;">🕒 ${r.time}</div>
+                                </div>
+                                <div style="font-family:'Noto Serif TC', serif; font-weight:900; font-size:1.5rem; color:var(--gold);">${r.score || '--'}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<p style="text-align:center; color:red; padding:40px;">讀取失敗</p>';
+            }
+            finally { hideLoading(); }
+        }
+
+        function renderAiFeedback(ai, isEncoded = false) {
+            if (isEncoded) {
+                try {
+                    ai = JSON.parse(decodeURIComponent(escape(atob(ai))));
+                } catch (e) { console.error("Decode Error", e); }
+            }
+            const card = document.getElementById('resCard');
+            card.style.display = 'block'; card.scrollIntoView({ behavior: 'smooth' });
+
+            const labs = { understanding: "文意深度", coherence: "論述架構", grammar: "手法運用", fluency: "流暢程度", pronunciation: "口齒音準" };
+            let html = '';
+            for (let k in labs) {
+                const val = (ai && ai.scores && ai.scores[k]) ? ai.scores[k] : '--';
+                html += `<div style="text-align:center; flex:1;"><div style="font-size:1.5rem; font-weight:900; color:var(--gold);">${val}</div><div style="font-size:0.75rem;">${labs[k]}</div></div>`;
+            }
+            html += `<div style="text-align:center; flex:1; border-left:1px solid #eee; margin-left:10px;"><div style="font-size:2rem; font-weight:900; color:var(--vermilion);">${(ai && ai.total_score) ? ai.total_score : '--'}</div><div style="font-size:0.75rem; color:var(--vermilion); font-weight:700;">綜合評分</div></div>`;
+
+            document.getElementById('scoreBars').innerHTML = html;
+            document.getElementById('resAnalysis').innerHTML = `<b>教練析讀：</b>${(ai && ai.overall_analysis) || ''}<br><br><b>原音逐字稿：</b>${(ai && (ai.full_transcript || ai.transcript_summary)) || ''}`;
+            document.getElementById('resFeedback').innerHTML = (ai && ai.feedback_items) ? ai.feedback_items.map(i => `<li>${i}</li>`).join('') : "";
+            document.getElementById('resDrills').innerHTML = (ai && ai.drills) ? ai.drills.map(i => `<li>${i}</li>`).join('') : "";
+            document.getElementById('resSummary').innerText = ai ? `✨ 「 ${ai.summary || ''} 」` : "";
+        }
+
+        async function loadAdminStats() {
+            showLoading();
+            const teacherKey = localStorage.getItem('tea_auth_v4');
+            try {
+                const res = await fetch(`${currentGasUrl}?action=getAdminStats&adminPass=${encodeURIComponent(teacherKey)}`);
+                adminData = (await res.json());
+                renderAdminHistory();
+            } catch (e) {
+                console.error(e);
+                hideLoading();
+            }
+            finally { hideLoading(); }
+        }
+
+        function copyAdminScores() {
+            const lessonName = document.getElementById('adminLessonSel').value;
+            const className = document.getElementById('adminClassSel').value;
+            const currentRoster = roster[className] || [];
+
+            if (!lessonName || !className) return myAlert("提醒", "請先選取習作與班級");
+            if (currentRoster.length === 0) return myAlert("提醒", "找不到該班級名冊");
+
+            const subRecords = adminData.records.filter(r => r.lesson === lessonName && String(r.student).includes(`[${className.trim()}]`));
+            const bestScoresMap = {};
+            subRecords.forEach(r => {
+                const score = Number(r.score) || 0;
+                if (!bestScoresMap[r.student] || score > bestScoresMap[r.student]) {
+                    bestScoresMap[r.student] = score;
+                }
+            });
+
+            let resultText = "";
+            currentRoster.sort((a, b) => a.no - b.no).forEach(s => {
+                const fullName = `[${className}] ${s.no} ${s.name}`;
+                const score = bestScoresMap[fullName] || 0;
+                resultText += `${score}\n`;
+            });
+
+            navigator.clipboard.writeText(resultText).then(() => {
+                myAlert("成功", `已複製「${className}」班 ${currentRoster.length} 筆純成績。`);
+            }).catch(err => {
+                console.error('Clipboard Error:', err);
+                myAlert("失敗", "無法存取剪貼簿，請手動複製。");
+            });
+        }
+
+        function renderAdminHistory() {
+            const lessonName = document.getElementById('adminLessonSel').value;
+            const className = document.getElementById('adminClassSel').value;
+            const container = document.getElementById('adminHistoryTableContainer');
+
+            if (!lessonName || !className) {
+                document.getElementById('totalSubmissions').innerText = "--";
+                document.getElementById('avgScore').innerText = "--";
+                container.innerHTML = '<p style="text-align:center; color:#ccc; padding:60px;">請先選取「課程」與「班級」以查看詳細統計與名單。</p>';
+                return;
+            }
+
+            const currentRoster = roster[className] || [];
+            const subRecords = adminData.records.filter(r => r.lesson === lessonName && String(r.student).includes(`[${className.trim()}]`));
+
+            const bestScoresMap = {};
+            subRecords.forEach(r => {
+                const score = Number(r.score) || 0;
+                if (!bestScoresMap[r.student] || score > bestScoresMap[r.student]) {
+                    bestScoresMap[r.student] = score;
+                }
+            });
+
+            const uniqueCount = Object.keys(bestScoresMap).length;
+            const scoresArray = Object.values(bestScoresMap);
+            const sum = scoresArray.reduce((a, b) => a + b, 0);
+
+            document.getElementById('totalSubmissions').innerText = uniqueCount;
+            document.getElementById('avgScore').innerText = uniqueCount ? Math.round(sum / uniqueCount) : "--";
+
+            if (currentRoster.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:var(--vermilion); padding:40px;">⚠️ 在 ${className} 班級內找不到學生名冊，請檢查「班級名單」分頁。</p>`;
+                return;
+            }
+
+            let html = `<table class="admin-table"><thead><tr><th style="width:180px;">座號 姓名</th><th>練習歷程 (點擊詳閱)</th><th style="width:100px;">最高分</th></tr></thead><tbody>`;
+            currentRoster.sort((a, b) => a.no - b.no).forEach(s => {
+                const fullName = `[${className}] ${s.no} ${s.name}`;
+                const recordsForThisStu = subRecords.filter(r => String(r.student).trim() === fullName.trim())
+                    .sort((a, b) => new Date(b.time) - new Date(a.time));
+
+                const bestScore = bestScoresMap[fullName] || 0;
+
+                let historyHtml = "";
+                if (recordsForThisStu.length === 0) {
+                    historyHtml = '<span class="status-none">未交</span>';
+                } else {
+                    recordsForThisStu.forEach(r => {
+                        const score = Number(r.score) || 0;
+                        const isBest = (score === bestScore && score > 0);
+                        const encodedFeedback = btoa(unescape(encodeURIComponent(r.feedback)));
+                        const timeHint = new Date(r.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+
+                        historyHtml += `<span class="score-chip ${isBest ? 'best' : ''}" 
+                            title="${timeHint}"
+                            onclick="peekRecord('${encodedFeedback}', true)">${score}</span>`;
+                    });
+                }
+
+                html += `<tr>
+                    <td><b>${s.no}</b> ${s.name}</td>
+                    <td>${historyHtml}</td>
+                    <td style="color:var(--gold); font-weight:900; font-size:1.2rem;">${bestScore > 0 ? bestScore : '--'}</td>
+                </tr>`;
+            });
+            container.innerHTML = html + `</tbody></table>`;
+        }
+
+        function peekRecord(feedbackStr, isEncoded = false) {
+            let ai;
+            try {
+                const rawJson = isEncoded ? decodeURIComponent(escape(atob(feedbackStr))) : feedbackStr;
+                ai = JSON.parse(rawJson);
+            } catch (e) { ai = { summary: feedbackStr }; }
+            const labs = { understanding: "文意深度", coherence: "論述架構", grammar: "手法運用", fluency: "流暢程度", pronunciation: "口齒音準" };
+
+            let scoreHtml = '<div style="display:flex; gap:10px; margin-bottom:20px; align-items:center;">';
+            if (ai.scores) {
+                for (let k in ai.scores) {
+                    scoreHtml += `<div style="text-align:center; flex:1;"><div style="font-size:1.5rem; font-weight:900; color:var(--gold);">${ai.scores[k]}</div><div style="font-size:0.75rem;">${labs[k]}</div></div>`;
+                }
+            }
+            scoreHtml += `<div style="text-align:center; flex:1.2; border-left:1px solid #eee; margin-left:10px;"><div style="font-size:2.5rem; font-weight:900; color:var(--vermilion); line-height:1;">${ai.total_score || '--'}</div><div style="font-size:0.8rem; color:var(--vermilion); font-weight:700;">綜合評分</div></div>`;
+            scoreHtml += '</div>';
+
+            const transcript = ai.full_transcript || "暫無逐字稿";
+            const feedback = ai.feedback_items ? ai.feedback_items.map(i => `<li>${i}</li>`).join('') : "";
+            const drills = ai.drills ? ai.drills.map(i => `<li>${i}</li>`).join('') : "";
+            const overall = ai.overall_analysis || "無";
+
+            document.getElementById('detailContent').innerHTML = `
+                <h3 style="text-align:center;">🔍 習作評語詳情</h3>
+                <div class="gold-line" style="margin: 20px auto;"></div>
+                ${scoreHtml}
+                <div class="analysis-section"><b>深度解析：</b><br>${overall}</div>
+                <div style="font-size:0.9rem; margin-bottom:15px;"><b>錄音時長：</b>${ai.duration || "--"} 秒 &nbsp; | &nbsp; <b>原音逐字稿：</b>${transcript}</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div><b style="color:var(--gold); font-size:0.8rem;">建議與亮點</b><ul style="font-size:0.85rem; padding-left:15px;">${feedback}</ul></div>
+                    <div><b style="color:var(--gold); font-size:0.8rem;">後續練習建議</b><ul style="font-size:0.85rem; padding-left:15px;">${drills}</ul></div>
+                </div>
+            `;
+            openModal('detailModal');
+        }
+
+        function renderCurrentLessons() {
+            const sidebar = document.getElementById('sidebarLessonsList');
+            if (sidebar) {
+                sidebar.innerHTML = lessons.map((l, i) => `
+                    <div class="lesson-item" onclick="editLesson(${i})">
+                        <b style="color:var(--ink); font-size:0.9rem;">${l.name}</b>
+                        <div class="lesson-status ${l.content ? 'published' : ''}">${l.content ? '已發佈' : '待更新'}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function prepareNewLesson() {
+            document.getElementById('editorEmptyState').style.display = 'none';
+            document.getElementById('editorForm').style.display = 'block';
+            document.getElementById('editorHeader').innerText = "🆕 新增習作主題";
+            document.getElementById('editLessonIdx').value = "";
+            document.getElementById('lsnTitle').value = "";
+            document.getElementById('lsnContent').value = "";
+            document.getElementById('lsnQWhat').value = "";
+            document.getElementById('lsnQHow').value = "";
+            document.getElementById('lsnQWhy').value = "";
+        }
+
+        function editLesson(idx) {
+            const l = lessons[idx];
+            document.getElementById('editorEmptyState').style.display = 'none';
+            document.getElementById('editorForm').style.display = 'block';
+            document.getElementById('editorHeader').innerText = "編輯習作：" + l.name;
+            document.getElementById('editLessonIdx').value = idx;
+            document.getElementById('lsnTitle').value = l.name;
+            document.getElementById('lsnContent').value = l.content || "";
+            document.getElementById('lsnQWhat').value = l.q_what || "";
+            document.getElementById('lsnQHow').value = l.q_how || "";
+            document.getElementById('lsnQWhy').value = l.q_why || "";
+
+            // Sidebar active state
+            const items = document.querySelectorAll('.lesson-item');
+            items.forEach((item, i) => {
+                item.className = i === idx ? 'lesson-item active' : 'lesson-item';
+            });
+        }
+
+        async function saveLessonData() {
+            const idx = document.getElementById('editLessonIdx').value;
+            const title = document.getElementById('lsnTitle').value;
+            const content = document.getElementById('lsnContent').value;
+            const qWhat = document.getElementById('lsnQWhat').value;
+            const qHow = document.getElementById('lsnQHow').value;
+            const qWhy = document.getElementById('lsnQWhy').value;
+
+            if (!title || !content) return myAlert("提醒", "請填寫課程標題與講義內容");
+
+            showLoading();
+            try {
+                const payload = {
+                    action: idx === "" ? 'addLesson' : 'updateLesson',
+                    lessonIdx: idx,
+                    lessonName: title,
+                    content: content,
+                    q_what: qWhat,
+                    q_how: qHow,
+                    q_why: qWhy
+                };
+                const json = await callGAS(payload);
+                if (json.status === 'success') {
+                    myAlert("成功", idx === "" ? "課程已發佈" : "課程已更新");
+                    fetchData();
+                } else {
+                    throw new Error(json.message);
+                }
+            } catch (e) {
+                console.error(e);
+                myAlert("異常", "儲存失敗：" + e.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function regenerateSingleQ(type) {
+            const content = document.getElementById('lsnContent').value;
+            if (!content) return myAlert("提醒", "請先填寫講義內容以便解析");
+
+            const fieldIdMap = { 'what': 'lsnQWhat', 'how': 'lsnQHow', 'why': 'lsnQWhy' };
+            const originalVal = document.getElementById(fieldIdMap[type]).value;
+            document.getElementById(fieldIdMap[type]).value = "正在重新生成...";
+
+            try {
+                const json = await callGAS({
+                    action: 'generateLessonQuestions',
+                    content: content,
+                    target: type
+                });
+                if (json.status === 'success' && json.data) {
+                    document.getElementById(fieldIdMap[type]).value = json.data[type] || "";
+                } else {
+                    throw new Error("AI 解析失敗");
+                }
+            } catch (e) {
+                document.getElementById(fieldIdMap[type]).value = originalVal;
+                myAlert("重新生成失敗", "請手動填寫或稍後再試。");
+            }
+        }
+
+        async function generateQAIForCurrent() {
+            const content = document.getElementById('lsnContent').value;
+            if (!content) return myAlert("提醒", "請先填寫講義內容以便解析");
+
+            showLoading();
+            try {
+                const json = await callGAS({
+                    action: 'generateLessonQuestions',
+                    content: content,
+                    target: 'all'
+                });
+                if (json.status === 'success' && json.data) {
+                    const q = json.data;
+                    document.getElementById('lsnQWhat').value = q.what || "";
+                    document.getElementById('lsnQHow').value = q.how || "";
+                    document.getElementById('lsnQWhy').value = q.why || "";
+                } else {
+                    throw new Error("AI 解析失敗");
+                }
+            } catch (e) {
+                myAlert("AI 解析失敗", "請手動填寫或稍後再試。");
+            } finally { hideLoading(); }
+        }
+
+        async function batchGenAIQuestions() {
+            const emptyLessons = lessons.filter(l => !l.q_what || !l.q_how || !l.q_why);
+            if (emptyLessons.length === 0) return myAlert("完成", "所有課程均已有引導問題，無需補齊。");
+
+            if (!confirm(`偵測到 ${emptyLessons.length} 門課程尚未設定引導問題。\n確定要現在自動生成並補齊嗎？`)) return;
+
+            showLoading();
+            const loadingText = document.getElementById('loadingText');
+            for (let i = 0; i < emptyLessons.length; i++) {
+                const l = emptyLessons[i];
+                loadingText.innerText = `[${i + 1}/${emptyLessons.length}] 正在補齊：${l.name}`;
+                try {
+                    const genJson = await callGAS({ action: 'generateLessonQuestions', content: l.content || "(無課文)", target: 'all' });
+
+                    if (genJson.status === 'success' && genJson.data) {
+                        const q = genJson.data;
+                        const updateJson = await callGAS({
+                            action: 'updateLessonOnlyQuestions',
+                            lessonName: l.name,
+                            q_what: q.what,
+                            q_how: q.how,
+                            q_why: q.why
+                        });
+
+                        if (updateJson.status === 'success') {
+                            // 更新內存數據，立即反映在介面上
+                            l.q_what = q.what; l.q_how = q.how; l.q_why = q.why;
+                        }
+                    }
+                } catch (e) { console.warn(`Batch gen fail for ${l.name}`, e); }
+            }
+            myAlert("成功", "空白問題已批量補齊完成");
+            fetchData();
+        }
+
+        function cancelEdit() {
+            document.getElementById('editorEmptyState').style.display = 'block';
+            document.getElementById('editorForm').style.display = 'none';
+            const items = document.querySelectorAll('.lesson-item');
+            items.forEach(item => item.classList.remove('active'));
+        }
+
+        function switchTeaTab(tab) {
+            const h = document.getElementById('tea-h');
+            const l = document.getElementById('tea-l');
+            const btnH = document.getElementById('teatab-h');
+            const btnL = document.getElementById('teatab-l');
+
+            if (tab === 'h') {
+                h.style.display = 'block';
+                l.style.display = 'none';
+                btnH.style.borderBottomColor = 'var(--vermilion)';
+                btnH.style.color = 'var(--vermilion)';
+                btnH.classList.add('active');
+
+                btnL.style.borderBottomColor = 'transparent';
+                btnL.style.color = 'var(--text-muted)';
+                btnL.classList.remove('active');
+            } else {
+                h.style.display = 'none';
+                l.style.display = 'block';
+                btnL.style.borderBottomColor = 'var(--vermilion)';
+                btnL.style.color = 'var(--vermilion)';
+                btnL.classList.add('active');
+
+                btnH.style.borderBottomColor = 'transparent';
+                btnH.style.color = 'var(--text-muted)';
+                btnH.classList.remove('active');
+            }
+        }
+
+        async function saveRoster() {
+            const raw = document.getElementById('rosterRaw').value.trim();
+            const lines = raw.split('\n');
+            const data = lines.map(line => {
+                const p = line.split(/[,,，\t\s]+/);
+                return { className: p[0], no: p[1], name: p[2], password: p[3] || "123456" };
+            });
+            await fetch(currentGasUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'updateRoster', data: data }) });
+            myAlert("完成", "名單已同步");
+            fetchData();
+        }
+
+        function switchMainTab(t) {
+            const isStu = t === 'stu';
+            document.getElementById('view-stu-banner').style.display = isStu ? 'flex' : 'none';
+            document.getElementById('view-stu-body').style.display = isStu ? 'grid' : 'none';
+            document.getElementById('view-tea').style.display = isStu ? 'none' : 'grid';
+
+            document.getElementById('tab-stu').className = isStu ? 'active' : '';
+            document.getElementById('tab-tea').className = isStu ? '' : 'active';
+
+            if (isStu) {
+                const isTea = localStorage.getItem('tea_auth_v4');
+                if (isTea) renderAdminStudentSwitcher();
+                else document.getElementById('displayIdentity').innerText = localStorage.getItem('stu_id_v4') || "--";
+                loadMyRecords();
+            } else {
+                // 教師端視圖切換
+                const isTea = localStorage.getItem('tea_auth_v4');
+                if (isTea) {
+                    document.getElementById('adminAuthPage').style.display = 'none';
+                    document.getElementById('adminMainPage').style.display = 'block';
+                    fetchData();
+                    loadAdminStats();
+                } else {
+                    document.getElementById('adminAuthPage').style.display = 'block';
+                    document.getElementById('adminMainPage').style.display = 'none';
+                }
+            }
+        }
+
+        function myAlert(t, m) {
+            hideLoading(); // 多重保險：顯示警告時務必關閉 Loading
+            document.getElementById('alertTitle').innerText = t;
+            document.getElementById('alertMsg').innerText = m;
+            openModal('alertModal');
+        }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        window.onclick = function (event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        }
+
+        // --- 初始化 (唯一入口) ---
+        checkAutoAuth();
+        fetchData();
+    </script>
+</body>
+
+</html>
