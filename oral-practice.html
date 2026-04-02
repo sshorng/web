@@ -86,33 +86,53 @@
 
         .nav-links {
             display: flex;
-            gap: 16px;
+            gap: 24px;
             height: 100%;
-            align-items: flex-end;
-            padding-bottom: 12px;
+            align-items: center; /* 改為垂直居中對齊 */
+            padding-bottom: 0;
         }
 
         .nav-links button {
             background: transparent;
             border: none;
-            border-bottom: 2px solid transparent;
-            padding: 4px 8px;
+            padding: 8px 4px;
             font-size: 1.05rem;
             font-weight: 700;
             cursor: pointer;
-            transition: .2s;
+            transition: .25s;
             color: var(--text-muted);
             font-family: 'Noto Serif TC', serif;
-            border-radius: 0
+            position: relative; /* 為虛擬元素定位 */
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .nav-links button:hover {
-            color: var(--ink)
+            color: var(--ink);
         }
 
         .nav-links button.active {
             color: var(--vermilion);
-            border-bottom: 2px solid var(--vermilion)
+        }
+
+        /* 標籤下方的小紅線 (膠囊造型) */
+        .nav-links button::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 3px;
+            background: var(--vermilion);
+            border-radius: 10px;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-links button.active::after {
+            width: 100%; /* 啟動時展開 */
         }
 
         /* — 佈局 — */
