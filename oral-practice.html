@@ -88,7 +88,8 @@
             display: flex;
             gap: 24px;
             height: 100%;
-            align-items: center; /* 改為垂直居中對齊 */
+            align-items: center;
+            /* 改為垂直居中對齊 */
             padding-bottom: 0;
         }
 
@@ -102,7 +103,8 @@
             transition: .25s;
             color: var(--text-muted);
             font-family: 'Noto Serif TC', serif;
-            position: relative; /* 為虛擬元素定位 */
+            position: relative;
+            /* 為虛擬元素定位 */
             border-radius: 0;
             display: flex;
             flex-direction: column;
@@ -132,7 +134,8 @@
         }
 
         .nav-links button.active::after {
-            width: 100%; /* 啟動時展開 */
+            width: 100%;
+            /* 啟動時展開 */
         }
 
         /* — 佈局 — */
@@ -325,11 +328,21 @@
         }
 
         #recordingWave {
-            display: flex;
-            gap: 4px;
-            justify-content: center;
+            display: none;
+            flex-direction: column;
             align-items: center;
-            height: 40px
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(107, 123, 113, 0.03);
+            border-radius: var(--radius);
+        }
+
+        #audioVisualizer {
+            width: 100%;
+            height: 60px;
+            cursor: default;
         }
 
         .wave-bar {
@@ -338,18 +351,6 @@
             background: var(--gold);
             border-radius: 1px;
             animation: wave .8s ease-in-out infinite
-        }
-
-        @keyframes wave {
-
-            0%,
-            100% {
-                height: 8px
-            }
-
-            50% {
-                height: 28px
-            }
         }
 
         /* — 教師管理 — */
@@ -712,24 +713,57 @@
         /* — 手機適配 — */
         @media(max-width:768px) {
             nav {
-                padding: 0 14px;
-                height: 50px
+                flex-wrap: wrap;
+                padding: 8px 14px;
+                height: auto;
+                min-height: 50px;
+                gap: 6px;
             }
 
             .nav-brand {
-                font-size: 1rem
+                font-size: 0.95rem;
+                letter-spacing: 1px;
+                flex: 1;
+                /* 標題佔據可用空間 */
+                white-space: nowrap;
+            }
+
+            .nav-links {
+                gap: 4px;
+            }
+
+            .nav-links button {
+                padding: 4px 8px;
+                font-size: 0.85rem;
+                min-width: 70px;
+            }
+
+            #view-stu-banner {
+                width: 100%;
+                justify-content: space-between;
+                border-top: 1px dashed var(--border);
+                padding-top: 6px;
+                margin-top: 2px;
+            }
+
+            #displayIdentity,
+            #displayIdentity select {
+                font-size: 0.85rem !important;
+                min-width: auto !important;
+                max-width: 180px;
             }
 
             .container {
-                padding: 14px
+                padding: 12px
             }
 
             .card,
             .panel {
-                padding: 18px
+                padding: 16px
             }
 
             .modal-content {
+                width: 92%;
                 padding: 20px
             }
 
@@ -859,12 +893,16 @@
                         </div>
                     </div>
 
-                    <div id="recordingWave" style="display:none;">
-                        <div class="wave-bar" style="animation-delay: 0.1s"></div>
-                        <div class="wave-bar" style="animation-delay: 0.2s"></div>
-                        <div class="wave-bar" style="animation-delay: 0.3s"></div>
-                        <div class="wave-bar" style="animation-delay: 0.4s"></div>
-                        <span style="font-size:0.85rem; color:var(--text-muted); margin-left:10px;">系統正在傾聽...</span>
+                    <div id="recordingWave">
+                        <canvas id="audioVisualizer"></canvas>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="wave-bar" style="animation-delay: 0.1s"></div>
+                            <div class="wave-bar" style="animation-delay: 0.2s"></div>
+                            <div class="wave-bar" style="animation-delay: 0.3s"></div>
+                            <div class="wave-bar" style="animation-delay: 0.4s"></div>
+                            <span
+                                style="font-size:0.85rem; color:var(--text-muted); margin-left:10px;">系統正在傾聽其聲...</span>
+                        </div>
                     </div>
                 </section>
 
@@ -1330,6 +1368,88 @@
         let lastBlob = null;
         let currentLessonIdx = ""; // 錄音當下鎖定的課程索引
 
+        // 視覺化變數
+        let audioCtx, analyser, visualDataArray, animationId;
+
+        function initVisualizer(stream) {
+            try {
+                if (audioCtx) audioCtx.close();
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                const source = audioCtx.createMediaStreamSource(stream);
+                source.connect(analyser);
+
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                visualDataArray = new Uint8Array(bufferLength);
+
+                drawVisualizer();
+            } catch (e) {
+                console.warn("Visualizer init failed", e);
+            }
+        }
+
+        function drawVisualizer() {
+            const canvas = document.getElementById('audioVisualizer');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            // 處理高清螢幕解析度
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+            }
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            animationId = requestAnimationFrame(drawVisualizer);
+            analyser.getByteFrequencyData(visualDataArray);
+
+            ctx.clearRect(0, 0, width, height);
+
+            // 繪製平滑頻譜 (墨跡風)
+            const barWidth = (width / visualDataArray.length) * 2;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < visualDataArray.length; i++) {
+                barHeight = (visualDataArray[i] / 255) * height * 0.8;
+
+                // 使用系統配色：蟹殼青 -> 銅綠金 漸層 (帶有透明度模擬墨色)
+                const gradient = ctx.createLinearGradient(0, height, 0, 0);
+                gradient.addColorStop(0, 'rgba(107, 123, 113, 0.8)'); // --primary
+                gradient.addColorStop(1, 'rgba(181, 147, 92, 0.9)');  // --accent
+
+                ctx.fillStyle = gradient;
+
+                // 繪製對稱條形，增加穩定感
+                const roundedHeight = Math.max(barHeight, 4 * dpr);
+                const yPos = (height - roundedHeight) / 2;
+
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                    ctx.roundRect(x, yPos, barWidth - (2 * dpr), roundedHeight, 4 * dpr);
+                } else {
+                    ctx.rect(x, yPos, barWidth - (2 * dpr), roundedHeight);
+                }
+                ctx.fill();
+
+                x += barWidth;
+                if (x > width) break;
+            }
+        }
+
+        function stopVisualizer() {
+            if (animationId) cancelAnimationFrame(animationId);
+            if (audioCtx) {
+                audioCtx.close().catch(e => { });
+                audioCtx = null;
+            }
+        }
+
         document.getElementById('recordBtn').onclick = async function () {
             if (isRecording) {
                 stopRecording();
@@ -1369,6 +1489,10 @@
                 this.innerText = "🛑 停錄並檢查";
                 this.classList.add('recording');
                 document.getElementById('recordingWave').style.display = 'flex';
+
+                // 啟動視覺化
+                initVisualizer(stream);
+
                 isRecording = true;
                 isPaused = false;
             } catch (e) { console.error(e); myAlert("權限障礙", "錄音功能需麥克風權限。"); }
@@ -1386,6 +1510,9 @@
             document.getElementById('recordInitial').style.display = 'none';
             document.getElementById('recordControls').style.display = 'flex';
             document.getElementById('recordingWave').style.display = 'none';
+
+            // 停止視覺化
+            stopVisualizer();
         }
 
         document.getElementById('submitBtn').onclick = async () => {
@@ -1397,7 +1524,7 @@
 
             showLoading();
             const loadingText = document.getElementById('loadingText');
-            loadingText.innerText = "🖋️ 正在準備語音墨跡...";
+            loadingText.innerText = "正在準備語音墨跡...";
 
             try {
                 // 確保 MediaRecorder 資源完全釋放
@@ -1446,6 +1573,9 @@
             document.getElementById('recordBtn').innerText = "🎙️ 開始錄製";
             document.getElementById('recordBtn').classList.remove('recording');
             document.getElementById('recordTime').style.display = 'none';
+
+            // 停止視覺化
+            stopVisualizer();
         }
 
         async function processAndUpload(blob, duration, lessonIdx = "") {
@@ -1590,18 +1720,27 @@
             請執行以下「理解優先」的檢核標準：
             
             【計分邏輯：嚴謹評鑑】
-            總分 (total_score) 應嚴格地區分「基礎統整」與「深度析論」：
-            - 文意深度 (understanding)：40% (正確概括 What。若僅完成此項且無 How/Why，總分應落在 80-84 分)
+            總分 (total_score) 應展現極高的鑑別度，嚴禁「放水」或給予虛高分數：
+            - 文意深度 (understanding)：40% (若錄製時長低於 45 秒或僅點到大意，此項嚴禁超過 3 分)
             - 論述架構 (coherence)：25% (解說的邏輯與層次感)
-            - 手法與意圖 (grammar)：15% (必須具體提及 How/Why 且與文本緊密結合，才是 90 分以上的關鍵)
-            - 流暢程度 (fluency)：10% (表達是否自然，過多贅詞應扣分)
-            - 口齒音準 (pronunciation)：10% (發音精確度)
+            - 手法與意圖 (grammar)：20% (必須具體提及 How/Why，若無則此項給 1-2 分，此為破 80 分的生死關鍵)
+            - 流暢程度 (fluency)：10% (贅詞過多應扣分)
+            - 口齒音準 (pronunciation)：5% (發音精確度)
             
             【評分分級標準】
-            1. 基礎級 (80-85 分)：能正確重述課文大意 (What)，架構清晰，但對寫作手法與意圖僅點到為止。
-            2. 進階級 (86-92 分)：除大意統整外，能具體舉出課文中的例子說明寫作手法 (How) 或作者目的 (Why)。
-            3. 優異級 (93 分以上)：具備深刻的文學賞析眼光，能橫跨 What-How-Why 進行邏輯嚴密的深度析論，並展現個人見解。
-            4. 警示邏輯：若錄音時長達 40 秒但內容僅是不斷重複或無實質統整，仍應給予不及格 (50-59)。
+            1. 待加強 (50-65 分)：時長過短、不斷重複、胡言亂語或完全未觸及核心問題。
+            2. 基礎級 (66-75 分)：能概括課文大意 (What)，但內容空洞、缺乏細節，錄音在 45 秒以下通常落在本階。
+            3. 進階級 (76-87 分)：除大意統整外，能具體舉例說明寫作手法 (How) 或作者目的 (Why)，內容具備基礎邏輯。
+            4. 優異級 (88-100 分)：具備文學深度，能橫跨 What-How-Why 進行邏輯嚴密的深度析論，且展現個人見解。
+            5. 強制懲罰：若錄音低於 30 秒且資訊量貧乏，總分嚴禁超過 65 分。
+            
+            【術語規範：請務必遵守】
+            在教練析讀內容中，請使用對應的「中文術語」取代英文，嚴禁直接使用 Understanding, Coherence 等：
+            - 使用「文意深度」
+            - 使用「論述架構」
+            - 使用「手法運用」 
+            - 使用「流暢程度」
+            - 使用「口齒音準」
             
             【教練回饋】
             - 語氣依然親切引導，但「析論內容」必須直指學生的思維盲點。
@@ -1617,7 +1756,7 @@
                 "pronunciation": 1-5,
                 "grammar": 1-5
               },
-              "overall_analysis": "核心析論 (300字以上，需橫跨 What-Why-How 三層次並解釋五面向得分與總分聯動關係)",
+              "overall_analysis": "核心析論 (需超過 300 字，按 What、Why、How 三層次使用『點列方式』詳盡析解，並解釋五個分項得分與總分的關聯性)",
               "summary": "一句激勵的話",
               "feedback_items": ["具體優點", "關鍵進步建議"],
               "drills": ["進階思維挑戰"],
@@ -1740,12 +1879,24 @@
             finally { hideLoading(); }
         }
 
+        function mdToHtml(txt) {
+            if (!txt) return "";
+            return String(txt)
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // 處理 **粗體**
+                .replace(/\n/g, '<br>')                  // 處理換行
+                .replace(/^- (.*)/gm, '• $1');          // 處理點列符號
+        }
+
         function renderAiFeedback(ai, isEncoded = false) {
             if (isEncoded) {
                 try {
                     ai = JSON.parse(decodeURIComponent(escape(atob(ai))));
                 } catch (e) { console.error("Decode Error", e); }
             }
+
+            // --- 優化：分析完成後強制跳轉學生視圖 ---
+            switchMainTab('stu');
+
             const card = document.getElementById('resCard');
             card.style.display = 'block'; card.scrollIntoView({ behavior: 'smooth' });
 
@@ -1758,7 +1909,10 @@
             html += `<div style="text-align:center; flex:1; border-left:1px solid #eee; margin-left:10px;"><div style="font-size:2rem; font-weight:900; color:var(--vermilion);">${(ai && ai.total_score) ? ai.total_score : '--'}</div><div style="font-size:0.75rem; color:var(--vermilion); font-weight:700;">綜合評分</div></div>`;
 
             document.getElementById('scoreBars').innerHTML = html;
-            document.getElementById('resAnalysis').innerHTML = `<b>教練析讀：</b>${(ai && ai.overall_analysis) || ''}<br><br><b>原音逐字稿：</b>${(ai && (ai.full_transcript || ai.transcript_summary)) || ''}`;
+
+            // --- 優化：處理解析內容與 Markdown 格式 ---
+            const analysisTxt = mdToHtml(ai && ai.overall_analysis);
+            document.getElementById('resAnalysis').innerHTML = `<b>教練析讀：</b><br>${analysisTxt}<br><br><b>原音逐字稿：</b>${(ai && (ai.full_transcript || ai.transcript_summary)) || ''}`;
             document.getElementById('resFeedback').innerHTML = (ai && ai.feedback_items) ? ai.feedback_items.map(i => `<li>${i}</li>`).join('') : "";
             document.getElementById('resDrills').innerHTML = (ai && ai.drills) ? ai.drills.map(i => `<li>${i}</li>`).join('') : "";
             document.getElementById('resSummary').innerText = ai ? `✨ 「 ${ai.summary || ''} 」` : "";
@@ -1898,7 +2052,7 @@
             const transcript = ai.full_transcript || "暫無逐字稿";
             const feedback = ai.feedback_items ? ai.feedback_items.map(i => `<li>${i}</li>`).join('') : "";
             const drills = ai.drills ? ai.drills.map(i => `<li>${i}</li>`).join('') : "";
-            const overall = ai.overall_analysis || "無";
+            const overall = mdToHtml(ai.overall_analysis || "無");
 
             document.getElementById('detailContent').innerHTML = `
                 <h3 style="text-align:center;">🔍 習作評語詳情</h3>
