@@ -317,13 +317,17 @@
                                 placeholder="王小明&#10;李小華&#10;張小美"></textarea>
                         </div>
 
-                        <div class="flex justify-between">
+                        <div class="flex justify-between space-x-2">
                             <button id="save-names-btn"
-                                class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg">
+                                class="btn bg-[#9d8ec7] hover:bg-[#8a7bb4] text-white font-medium py-2 px-4 rounded-lg flex-1">
                                 儲存名單
                             </button>
+                            <button id="export-names-btn"
+                                class="btn bg-[#f5f3ff] hover:bg-[#e9e4ff] text-[#6c5b9c] border border-[#d4cce3] font-medium py-2 px-4 rounded-lg flex-1" title="導出為 names.json 供 GitHub 同步">
+                                📥 導出名單
+                            </button>
                             <button id="clear-names-btn"
-                                class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-2 px-4 rounded-lg">
+                                class="btn bg-[#a8a8b3] hover:bg-[#9a9aa5] text-white font-medium py-2 px-4 rounded-lg flex-1">
                                 清空名單
                             </button>
                         </div>
@@ -506,6 +510,7 @@
         const classTabsContainer = document.getElementById('class-tabs');
         const nameInput = document.getElementById('name-input');
         const saveNamesBtn = document.getElementById('save-names-btn');
+        const exportNamesBtn = document.getElementById('export-names-btn');
         const clearNamesBtn = document.getElementById('clear-names-btn');
         const pickBtn = document.getElementById('pick-btn');
         const pickMultipleBtn = document.getElementById('pick-multiple-btn');
@@ -550,13 +555,16 @@
         const pickerSection = document.getElementById('picker-section');
 
         // Initialize
-        function init() {
+        async function init() {
             loadClassesFromStorage();
             updateClassSelect();
             updateNameInput();
             updatePickedList();
             setupCustomTimeControls();
             updateModeButtons();
+            
+            // 背景非同步從 GitHub 同步載入 names.json (免阻擋網頁渲染)
+            await loadNamesFromGitHub();
 
             // Set up timer buttons
             document.querySelectorAll('.timer-btn').forEach(btn => {
@@ -707,6 +715,49 @@
         }
 
                 // Name picker functions
+        async function loadNamesFromGitHub() {
+            try {
+                // 使用快取破除 (Cache Busting) 戳記防止 CDN/瀏覽器快取 names.json
+                const response = await fetch(`./names.json?t=${Date.now()}`);
+                if (response.ok) {
+                    const remoteClasses = await response.json();
+                    if (remoteClasses && typeof remoteClasses === 'object' && Object.keys(remoteClasses).length > 0) {
+                        classes = remoteClasses;
+                        
+                        if (!classes[currentClass]) {
+                            currentClass = Object.keys(classes)[0];
+                        }
+                        
+                        saveClassesToStorage(); // 存入 localStorage 以便離線使用
+                        
+                        updateClassSelect();
+                        updateNameInput();
+                        updatePickedList();
+                        resetDrawingState();
+                        
+                        showToast('🔄 已成功從 GitHub 同步最新名單！');
+                    }
+                }
+            } catch (e) {
+                console.log('GitHub names.json 載入失敗或不存在，使用本機 LocalStorage。', e);
+            }
+        }
+
+        function exportNamesToJSON() {
+            try {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(classes, null, 4));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", "names.json");
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                showToast('📥 導出成功！請將 names.json 移至您的本機 GitHub 專案目錄。');
+            } catch (e) {
+                showToast('❌ 導出失敗：' + e.message);
+            }
+        }
+
         function loadClassesFromStorage() {
             const savedClasses = localStorage.getItem('classroomTool_classes');
             if (savedClasses) {
@@ -1108,6 +1159,10 @@
                 showToast('名單已儲存！');
                 resetDrawingState(); // 儲存名單後自動更新分組與顯示狀態
             }
+        });
+
+        exportNamesBtn.addEventListener('click', () => {
+            exportNamesToJSON();
         });
 
         clearNamesBtn.addEventListener('click', () => {
