@@ -237,6 +237,24 @@
                     <div class="md:border-r md:pr-6">
                         <h2 class="text-xl font-bold text-[#6c5b9c] mb-4">抽籤</h2>
 
+                        <!-- 模式切換：全班 vs 組內抽籤 (免下拉選單，一鍵直達) -->
+                        <div class="flex bg-[#f5f5f8] p-1 rounded-lg mb-4 border border-[#e2e2e7]">
+                            <button id="mode-class-btn" class="flex-1 py-2 text-center text-sm font-semibold rounded-md transition duration-200 bg-[#9d8ec7] text-white shadow-sm" type="button">
+                                👤 全班抽籤
+                            </button>
+                            <button id="mode-group-btn" class="flex-1 py-2 text-center text-sm font-semibold rounded-md transition duration-200 text-[#6b7280] hover:text-[#6c5b9c]" type="button">
+                                👥 組內抽籤
+                            </button>
+                        </div>
+
+                        <!-- 組別選擇區域 (免下拉，一鍵點選特定組) -->
+                        <div id="group-select-container" class="hidden mb-4">
+                            <label class="block text-xs font-semibold text-[#6b7280] mb-2">選擇要抽籤的組別：</label>
+                            <div id="group-buttons" class="flex flex-wrap gap-2">
+                                <!-- 組別按鈕會在此處動態生成 -->
+                            </div>
+                        </div>
+
                         <div id="confetti-container"
                             class="relative w-full h-48 bg-gradient-to-r from-[#f0ebff] to-[#f5f5f8] rounded-lg flex items-center justify-center mb-6 overflow-hidden border border-[#e2e2e7]">
                             <div id="winner-display" class="text-4xl font-bold text-[#6c5b9c] text-center px-4 z-10">
@@ -273,17 +291,16 @@
 
                         <div class="mb-6">
                             <label class="block text-[#6b7280] mb-2">選擇班級</label>
-                            <div class="flex mb-2">
-                                <select id="class-select"
-                                    class="flex-grow bg-[#f5f5f8] border border-[#e2e2e7] rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]">
-                                    <option value="class1">班級 1</option>
-                                </select>
+                            <div class="flex items-center space-x-2 mb-2">
+                                <div id="class-tabs" class="flex-grow flex space-x-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-[#d4cce3]">
+                                    <!-- 班級按鈕將在此處動態生成，一鍵切換免下拉 -->
+                                </div>
                                 <button id="add-class-btn"
-                                    class="bg-[#9d8ec7] text-white px-4 py-2 rounded-r-lg hover:bg-[#8a7bb4]">
-                                    新增班級
+                                    class="bg-[#9d8ec7] text-white px-3 py-2 rounded-lg hover:bg-[#8a7bb4] shrink-0 font-medium text-sm transition duration-200">
+                                    ＋ 新增班級
                                 </button>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between mt-2">
                                 <button id="rename-class-btn" class="text-sm text-[#9d8ec7] hover:text-[#6c5b9c]">
                                     重新命名班級
                                 </button>
@@ -486,7 +503,7 @@
 
         let currentClass = 'class1';
 
-        const classSelect = document.getElementById('class-select');
+        const classTabsContainer = document.getElementById('class-tabs');
         const nameInput = document.getElementById('name-input');
         const saveNamesBtn = document.getElementById('save-names-btn');
         const clearNamesBtn = document.getElementById('clear-names-btn');
@@ -517,6 +534,15 @@
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toast-message');
 
+        // 新增抽籤狀態控制變數
+        let currentDrawMode = 'all'; // 'all' 或 'group'
+        let activeGroup = null; // 當前選定的小組名稱
+
+        const modeClassBtn = document.getElementById('mode-class-btn');
+        const modeGroupBtn = document.getElementById('mode-group-btn');
+        const groupSelectContainer = document.getElementById('group-select-container');
+        const groupButtonsContainer = document.getElementById('group-buttons');
+
         // Tab functionality
         const timerTab = document.getElementById('timer-tab');
         const pickerTab = document.getElementById('picker-tab');
@@ -530,6 +556,7 @@
             updateNameInput();
             updatePickedList();
             setupCustomTimeControls();
+            updateModeButtons();
 
             // Set up timer buttons
             document.querySelectorAll('.timer-btn').forEach(btn => {
@@ -679,7 +706,7 @@
             }
         }
 
-        // Name picker functions
+                // Name picker functions
         function loadClassesFromStorage() {
             const savedClasses = localStorage.getItem('classroomTool_classes');
             if (savedClasses) {
@@ -698,15 +725,86 @@
             localStorage.setItem('classroomTool_classes', JSON.stringify(classes));
         }
 
-        function updateClassSelect() {
-            classSelect.innerHTML = '';
-            Object.keys(classes).forEach(classId => {
-                const option = document.createElement('option');
-                option.value = classId;
-                option.textContent = classes[classId].name;
-                classSelect.appendChild(option);
+        // 智慧分組名單解析器
+        function isGroupHeader(line) {
+            const trimmed = line.trim();
+            if (/^【.*】$/.test(trimmed) || /^\[.*\]$/.test(trimmed)) return true;
+            if (/^第?.+組$/.test(trimmed)) return true;
+            if (/^(?:Group|G)\s*[a-zA-Z0-9]+$/i.test(trimmed)) return true;
+            return false;
+        }
+
+        function cleanGroupName(headerLine) {
+            return headerLine.trim().replace(/[【\]\[】:：]/g, '');
+        }
+
+        function getParsedGroupsAndStudents(classId) {
+            const classData = classes[classId];
+            if (!classData || !classData.students) {
+                return { groups: {}, allStudents: [], hasGroups: false };
+            }
+
+            const groups = {};
+            const allStudents = [];
+            let currentGroup = null;
+            let hasGroups = false;
+
+            classData.students.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed === '') return;
+
+                if (isGroupHeader(line)) {
+                    currentGroup = cleanGroupName(line);
+                    if (!groups[currentGroup]) {
+                        groups[currentGroup] = [];
+                    }
+                    hasGroups = true;
+                } else {
+                    const studentName = line; // 保留尾部空格做為加權依據
+                    allStudents.push(studentName);
+                    
+                    if (currentGroup) {
+                        groups[currentGroup].push(studentName);
+                    } else {
+                        const defaultGroup = '未分組';
+                        if (!groups[defaultGroup]) {
+                            groups[defaultGroup] = [];
+                        }
+                        groups[defaultGroup].push(studentName);
+                    }
+                }
             });
-            classSelect.value = currentClass;
+
+            return { groups, allStudents, hasGroups };
+        }
+
+        function updateClassSelect() {
+            if (!classTabsContainer) return;
+            classTabsContainer.innerHTML = '';
+            
+            Object.keys(classes).forEach(classId => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.classId = classId;
+                
+                const isActive = (classId === currentClass);
+                btn.className = `px-3 py-1.5 rounded-lg font-semibold text-sm transition duration-200 whitespace-nowrap ${
+                    isActive 
+                        ? 'bg-[#9d8ec7] text-white shadow-sm' 
+                        : 'bg-[#f5f5f8] border border-[#e2e2e7] text-[#6b7280] hover:bg-[#e9e8ed]'
+                }`;
+                btn.textContent = classes[classId].name;
+                
+                btn.addEventListener('click', () => {
+                    currentClass = classId;
+                    updateClassSelect(); // 重新渲染標籤選取狀態
+                    updateNameInput();
+                    updatePickedList();
+                    resetDrawingState();
+                });
+                
+                classTabsContainer.appendChild(btn);
+            });
         }
 
         function updateNameInput() {
@@ -727,8 +825,80 @@
             }
         }
 
+        function updateModeButtons() {
+            if (currentDrawMode === 'all') {
+                modeClassBtn.className = 'flex-1 py-2 text-center text-sm font-semibold rounded-md transition duration-200 bg-[#9d8ec7] text-white shadow-sm';
+                modeGroupBtn.className = 'flex-1 py-2 text-center text-sm font-semibold rounded-md transition duration-200 text-[#6b7280] hover:text-[#6c5b9c]';
+            } else {
+                modeClassBtn.className = 'flex-1 py-2 text-center text-sm font-semibold rounded-md transition duration-200 text-[#6b7280] hover:text-[#6c5b9c]';
+                modeGroupBtn.className = 'flex-1 py-2 text-center text-sm font-semibold rounded-md transition duration-200 bg-[#9d8ec7] text-white shadow-sm';
+            }
+            renderGroups();
+        }
+
+        function renderGroups() {
+            if (!groupSelectContainer || !groupButtonsContainer) return;
+
+            const parsed = getParsedGroupsAndStudents(currentClass);
+
+            if (currentDrawMode === 'group') {
+                groupSelectContainer.classList.remove('hidden');
+                groupButtonsContainer.innerHTML = '';
+
+                if (parsed.hasGroups) {
+                    const groupNames = Object.keys(parsed.groups);
+                    
+                    if (!activeGroup || !parsed.groups[activeGroup]) {
+                        activeGroup = groupNames[0] || null;
+                    }
+
+                    groupNames.forEach(groupName => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        const isActive = (groupName === activeGroup);
+                        
+                        btn.className = `px-3 py-1.5 rounded-lg text-xs font-semibold transition duration-200 ${
+                            isActive
+                                ? 'bg-[#9d8ec7] text-white shadow-sm'
+                                : 'bg-[#f5f5f8] border border-[#e2e2e7] text-[#6b7280] hover:bg-[#e9e8ed]'
+                        }`;
+                        
+                        btn.textContent = `${groupName} (${parsed.groups[groupName].length}人)`;
+                        
+                        btn.addEventListener('click', () => {
+                            activeGroup = groupName;
+                            renderGroups();
+                        });
+                        
+                        groupButtonsContainer.appendChild(btn);
+                    });
+                } else {
+                    const msg = document.createElement('div');
+                    msg.className = 'text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 w-full';
+                    msg.innerHTML = '⚠️ <b>尚未設定分組名單！</b><br>請在右側的「班級管理」名單中加入分組標記（如：輸入「【第一組】」，後面換行輸入組員名字），儲存後即可在此進行組內抽籤。';
+                    groupButtonsContainer.appendChild(msg);
+                }
+            } else {
+                groupSelectContainer.classList.add('hidden');
+            }
+        }
+
+        function resetDrawingState() {
+            winnerDisplay.textContent = '準備抽籤';
+            renderGroups();
+        }
+
         function pickName() {
-            const availableStudents = classes[currentClass].students.filter(
+            const parsed = getParsedGroupsAndStudents(currentClass);
+            let pool = [];
+
+            if (currentDrawMode === 'group' && activeGroup && parsed.groups[activeGroup]) {
+                pool = parsed.groups[activeGroup];
+            } else {
+                pool = parsed.allStudents;
+            }
+
+            const availableStudents = pool.filter(
                 student => !classes[currentClass].picked.includes(student)
             );
 
@@ -918,11 +1088,14 @@
             timerSection.classList.add('hidden');
         });
 
-        classSelect.addEventListener('change', () => {
-            currentClass = classSelect.value;
-            updateNameInput();
-            updatePickedList();
-            winnerDisplay.textContent = '準備抽籤';
+        modeClassBtn.addEventListener('click', () => {
+            currentDrawMode = 'all';
+            updateModeButtons();
+        });
+
+        modeGroupBtn.addEventListener('click', () => {
+            currentDrawMode = 'group';
+            updateModeButtons();
         });
 
         saveNamesBtn.addEventListener('click', () => {
@@ -933,6 +1106,7 @@
                 classes[currentClass].students = names;
                 saveClassesToStorage();
                 showToast('名單已儲存！');
+                resetDrawingState(); // 儲存名單後自動更新分組與顯示狀態
             }
         });
 
