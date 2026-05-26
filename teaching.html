@@ -722,7 +722,22 @@
                 if (response.ok) {
                     const remoteClasses = await response.json();
                     if (remoteClasses && typeof remoteClasses === 'object' && Object.keys(remoteClasses).length > 0) {
-                        classes = remoteClasses;
+                        // 智慧同步：更新本地已有的班級名稱與預設學生名單（students），
+                        // 並保留本地已抽出的狀態（picked）；若有遠端新增班級則直接加入，
+                        // 本地特有的班級亦予以保留，防誤刪。
+                        Object.keys(remoteClasses).forEach(classId => {
+                            if (classes[classId]) {
+                                classes[classId].name = remoteClasses[classId].name;
+                                classes[classId].students = remoteClasses[classId].students;
+                                // 保持 classes[classId].picked 不動！
+                            } else {
+                                classes[classId] = {
+                                    name: remoteClasses[classId].name,
+                                    students: remoteClasses[classId].students,
+                                    picked: []
+                                };
+                            }
+                        });
                         
                         if (!classes[currentClass]) {
                             currentClass = Object.keys(classes)[0];
@@ -735,7 +750,7 @@
                         updatePickedList();
                         resetDrawingState();
                         
-                        showToast('🔄 已成功從 GitHub 同步最新名單！');
+                        showToast('🔄 已成功同步最新班級學生名單！');
                     }
                 }
             } catch (e) {
@@ -745,7 +760,17 @@
 
         function exportNamesToJSON() {
             try {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(classes, null, 4));
+                // 複製一份 classes 資料結構，但將所有班級的 picked 狀態清空，只儲存預設名單
+                const exportData = {};
+                Object.keys(classes).forEach(classId => {
+                    exportData[classId] = {
+                        name: classes[classId].name,
+                        students: classes[classId].students,
+                        picked: []
+                    };
+                });
+
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 4));
                 const downloadAnchor = document.createElement('a');
                 downloadAnchor.setAttribute("href", dataStr);
                 downloadAnchor.setAttribute("download", "names.json");
