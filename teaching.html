@@ -808,7 +808,26 @@
             try {
                 showToast('正在建立雲端同步空間...', 2000);
                 
-                // 複製並過濾 picked 名單（只儲存預設名單）
+                // 1. 匿名向 KVdb.io 申請一個 Bucket 空間
+                const emailParam = `email=classroomtool_${Date.now()}_${Math.floor(Math.random() * 1000)}@anonymous.com`;
+                const createRes = await fetch('https://kvdb.io/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: emailParam
+                });
+
+                if (!createRes.ok) {
+                    throw new Error('申請雲端空間失敗: ' + createRes.status);
+                }
+
+                const bucketId = (await createRes.text()).trim();
+                if (!bucketId || bucketId.length < 5) {
+                    throw new Error('回傳的空間 ID 無效');
+                }
+                
+                // 2. 複製並過濾 picked 名單（只儲存預設名單）
                 const syncData = {};
                 Object.keys(classes).forEach(classId => {
                     syncData[classId] = {
@@ -818,31 +837,22 @@
                     };
                 });
 
-                const response = await fetch('https://api.npoint.io', {
+                const response = await fetch(`https://kvdb.io/${bucketId}/classes`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
                     body: JSON.stringify(syncData)
                 });
 
                 if (response.ok) {
-                    const result = await response.json();
-                    if (result && result.id) {
-                        const syncId = result.id;
-                        localStorage.setItem('classroomTool_syncId', syncId);
-                        
-                        updateSyncModalUI();
-                        showToast('🎉 雲端空間建立成功！', 3000);
-                    } else {
-                        throw new Error('伺服器未回傳代碼');
-                    }
+                    localStorage.setItem('classroomTool_syncId', bucketId);
+                    
+                    updateSyncModalUI();
+                    showToast('🎉 雲端空間建立成功！', 3000);
                 } else {
-                    throw new Error('網路回應錯誤: ' + response.status);
+                    throw new Error('同步名單失敗: ' + response.status);
                 }
             } catch (e) {
                 console.error(e);
-                showToast('❌ 建立失敗，請稍後再試！');
+                showToast('❌ 建立失敗：' + e.message);
             }
         }
 
@@ -862,11 +872,8 @@
                     };
                 });
 
-                const response = await fetch(`https://api.npoint.io/${syncId}`, {
-                    method: 'POST', // npoint 支援使用 POST 匿名覆寫
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                const response = await fetch(`https://kvdb.io/${syncId}/classes`, {
+                    method: 'POST',
                     body: JSON.stringify(syncData)
                 });
 
@@ -888,7 +895,7 @@
             try {
                 if (manual) showToast('正在從雲端拉取名單...', 2000);
                 
-                const response = await fetch(`https://api.npoint.io/${syncId}?t=${Date.now()}`);
+                const response = await fetch(`https://kvdb.io/${syncId}/classes?t=${Date.now()}`);
                 if (response.ok) {
                     const remoteClasses = await response.json();
                     if (remoteClasses && typeof remoteClasses === 'object' && Object.keys(remoteClasses).length > 0) {
