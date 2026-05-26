@@ -291,16 +291,17 @@
 
                         <div class="mb-6">
                             <label class="block text-[#6b7280] mb-2">選擇班級</label>
-                            <div class="flex items-center space-x-2 mb-2">
-                                <div id="class-tabs" class="flex-grow flex space-x-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-[#d4cce3]">
-                                    <!-- 班級按鈕將在此處動態生成，一鍵切換免下拉 -->
-                                </div>
+                            <div class="flex mb-2">
+                                <select id="class-select"
+                                    class="flex-grow bg-[#f5f5f8] border border-[#e2e2e7] rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9d8ec7]">
+                                    <option value="class1">班級 1</option>
+                                </select>
                                 <button id="add-class-btn"
-                                    class="bg-[#9d8ec7] text-white px-3 py-2 rounded-lg hover:bg-[#8a7bb4] shrink-0 font-medium text-sm transition duration-200">
-                                    ＋ 新增班級
+                                    class="bg-[#9d8ec7] text-white px-4 py-2 rounded-r-lg hover:bg-[#8a7bb4] font-medium transition duration-200">
+                                    新增班級
                                 </button>
                             </div>
-                            <div class="flex justify-between mt-2">
+                            <div class="flex justify-between">
                                 <button id="rename-class-btn" class="text-sm text-[#9d8ec7] hover:text-[#6c5b9c]">
                                     重新命名班級
                                 </button>
@@ -507,7 +508,7 @@
 
         let currentClass = 'class1';
 
-        const classTabsContainer = document.getElementById('class-tabs');
+        const classSelect = document.getElementById('class-select');
         const nameInput = document.getElementById('name-input');
         const saveNamesBtn = document.getElementById('save-names-btn');
         const exportNamesBtn = document.getElementById('export-names-btn');
@@ -855,32 +856,15 @@
         }
 
         function updateClassSelect() {
-            if (!classTabsContainer) return;
-            classTabsContainer.innerHTML = '';
-            
+            if (!classSelect) return;
+            classSelect.innerHTML = '';
             Object.keys(classes).forEach(classId => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.dataset.classId = classId;
-                
-                const isActive = (classId === currentClass);
-                btn.className = `px-3 py-1.5 rounded-lg font-semibold text-sm transition duration-200 whitespace-nowrap ${
-                    isActive 
-                        ? 'bg-[#9d8ec7] text-white shadow-sm' 
-                        : 'bg-[#f5f5f8] border border-[#e2e2e7] text-[#6b7280] hover:bg-[#e9e8ed]'
-                }`;
-                btn.textContent = classes[classId].name;
-                
-                btn.addEventListener('click', () => {
-                    currentClass = classId;
-                    updateClassSelect(); // 重新渲染標籤選取狀態
-                    updateNameInput();
-                    updatePickedList();
-                    resetDrawingState();
-                });
-                
-                classTabsContainer.appendChild(btn);
+                const option = document.createElement('option');
+                option.value = classId;
+                option.textContent = classes[classId].name;
+                classSelect.appendChild(option);
             });
+            classSelect.value = currentClass;
         }
 
         function updateNameInput() {
@@ -1162,6 +1146,13 @@
             timerTab.classList.add('bg-[#e2e2e7]', 'text-[#6b7280]');
             pickerSection.classList.remove('hidden');
             timerSection.classList.add('hidden');
+        });
+
+        classSelect.addEventListener('change', () => {
+            currentClass = classSelect.value;
+            updateNameInput();
+            updatePickedList();
+            resetDrawingState();
         });
 
         modeClassBtn.addEventListener('click', () => {
