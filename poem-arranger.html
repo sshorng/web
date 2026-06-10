@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>詩句排列小工具</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans TC', 'Noto Serif TC', sans-serif;
+    background: #f5f0eb;
+    color: #3d3a3a;
+    padding: 24px;
+  }
+
+  .app {
+    max-width: 1060px;
+    margin: 0 auto;
+  }
+
+  /* ─── Title ─── */
+  .title-section {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .title-section h1 {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: #b8a89a;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .title-input {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #d4cdc5;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: #3d3a3a;
+    text-align: center;
+    padding: 6px 16px;
+    width: 70%;
+    min-width: 260px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .title-input:focus {
+    border-bottom-color: #a67c5b;
+  }
+
+  .title-input::placeholder {
+    color: #c8bfb5;
+    font-weight: 400;
+    font-size: 20px;
+  }
+
+  /* ─── Section Label ─── */
+  .section-label {
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: #b8a89a;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e0d8d0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .section-label .count {
+    font-size: 12px;
+    color: #a67c5b;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  /* ─── Pool (all verses at top) ─── */
+  .pool-section {
+    background: #fffcf9;
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+    border: 1px solid #ede8e2;
+    margin-bottom: 20px;
+  }
+
+  .pool-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .verse-chip {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 7px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    user-select: none;
+    background: #f8f3ed;
+    border: 1px solid #ece4db;
+    color: #5a5550;
+    white-space: nowrap;
+  }
+
+  .verse-chip:hover {
+    background: #efe6dc;
+    border-color: #d4c1b0;
+    color: #3d3a3a;
+    transform: translateY(-1px);
+  }
+
+  .verse-chip.selected {
+    background: #a67c5b !important;
+    border-color: #a67c5b !important;
+    color: #fff !important;
+    transform: none !important;
+    cursor: default;
+  }
+
+  /* ─── Editor (below) ─── */
+  .editor-section {
+    background: #fffcf9;
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+    border: 1px solid #ede8e2;
+    min-height: 240px;
+  }
+
+  .editor-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+    color: #ccbfb3;
+    font-size: 15px;
+    letter-spacing: 2px;
+    text-align: center;
+  }
+
+  .editor-hint .icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
+
+  .selected-list {
+    list-style: none;
+    padding: 0;
+    min-height: 80px;
+  }
+
+  .selected-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 12px 12px 16px;
+    background: #fdfaf6;
+    border: 1px solid #ede6de;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    cursor: grab;
+    transition: all 0.12s ease;
+    position: relative;
+  }
+
+  .selected-item:hover {
+    border-color: #d4c6b8;
+    background: #faf4ed;
+  }
+
+  .selected-item.dragging {
+    opacity: 0.35;
+    border-style: dashed;
+    border-color: #a67c5b;
+  }
+
+  .selected-item.drag-over {
+    border-color: #a67c5b;
+    background: #f0e7dd;
+    box-shadow: 0 0 0 2px rgba(166,124,91,0.18);
+  }
+
+  .selected-item .drag-handle {
+    color: #c8bbb0;
+    font-size: 16px;
+    cursor: grab;
+    flex-shrink: 0;
+    line-height: 1;
+    user-select: none;
+    width: 14px;
+    text-align: center;
+  }
+
+  .selected-item:hover .drag-handle { color: #a67c5b; }
+
+  .selected-item .verse-text {
+    flex: 1;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #3d3a3a;
+  }
+
+  .selected-item .remove-btn {
+    background: none;
+    border: none;
+    color: #d4c6b8;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .selected-item .remove-btn:hover { color: #b08870; }
+
+  /* ─── Actions ─── */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    font-family: 'Noto Sans TC', sans-serif;
+    padding: 8px 22px;
+    border-radius: 8px;
+    border: 1px solid #ddd5cc;
+    background: #fcf8f4;
+    color: #5a5550;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .btn:hover {
+    background: #f0e8e0;
+    border-color: #cbb8a8;
+  }
+
+  .btn-primary {
+    background: #a67c5b;
+    border-color: #a67c5b;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #8f6a4d;
+    border-color: #8f6a4d;
+  }
+
+  .btn-danger {
+    color: #b0806a;
+    border-color: #e0cec4;
+  }
+
+  .btn-danger:hover {
+    background: #f5e8e0;
+    border-color: #c9a894;
+  }
+
+  /* ─── Toast ─── */
+  /* ─── Large mode ─── */
+  body.large-mode .verse-chip { font-size: 17px; padding: 10px 18px; }
+  body.large-mode .selected-item .verse-text { font-size: 20px; }
+  body.large-mode .title-input { font-size: 28px; }
+
+  .btn-size { font-size: 13px; position: relative; padding-left: 32px; }
+  .btn-size::before {
+    content: 'A';
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 12px; font-weight: 700; color: inherit;
+  }
+  body.large-mode .btn-size::before { font-size: 16px; }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #3d3a3a;
+    color: #f0e8e0;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    font-family: 'Noto Sans TC', sans-serif;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ─── Modal ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(61,58,58,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 16px;
+    padding: 36px 40px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    position: relative;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #b8a89a;
+    cursor: pointer;
+  }
+
+  .modal-close:hover { color: #5a5550; }
+
+  .modal-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #3d3a3a;
+    margin-bottom: 4px;
+  }
+
+  .modal-byline {
+    font-size: 13px;
+    color: #b8a89a;
+    margin-bottom: 20px;
+  }
+
+  .modal-poem {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 16px;
+    line-height: 2.2;
+    color: #3d3a3a;
+  }
+
+  .modal-poem .line { padding: 3px 0; }
+
+  .copy-btn {
+    margin-top: 18px;
+    width: 100%;
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 640px) {
+    body { padding: 14px; }
+    .title-input { width: 100%; font-size: 20px; }
+    .verse-chip { font-size: 13px; padding: 6px 12px; }
+    .pool-section { padding: 14px; }
+    .editor-section { padding: 14px; }
+    .modal { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Title -->
+  <div class="title-section">
+    <h1>✦ 詩句排列 ✦</h1>
+  </div>
+
+  <!-- Pool – all verses -->
+  <div class="pool-section">
+    <div class="section-label">
+      <span>詩句庫</span>
+      <span class="count" id="poolCount">31 句</span>
+    </div>
+    <div class="pool-grid" id="poolGrid"></div>
+  </div>
+
+  <!-- Editor – selected & ordered -->
+  <div class="editor-section">
+    <div class="section-label">
+      <span>我的詩</span>
+      <span class="count">已選 <span id="selectedCount">0</span> 句（5–8 句）</span>
+    </div>
+
+    <input class="title-input" id="titleInput" type="text" placeholder="為這首詩命名…" maxlength="40" style="width:100%; margin-bottom:14px; font-size:22px; text-align:left;">
+
+    <ul class="selected-list" id="selectedList"></ul>
+
+    <div class="editor-hint" id="editorHint">
+      <div class="icon">☕</div>
+      <div>點選上方詩句加入，拖曳調整順序</div>
+    </div>
+
+    <div class="actions" id="actions">
+      <button class="btn btn-primary" id="showOutputBtn">完成 · 預覽詩作</button>
+      <button class="btn btn-danger" id="clearAllBtn">全部清除</button>
+      <button class="btn btn-size" id="sizeToggleBtn">字體</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <div class="modal-title" id="modalPoemTitle">無題</div>
+    <div class="modal-byline">— 排列自選詩句</div>
+    <div class="modal-poem" id="modalPoemBody"></div>
+    <button class="btn btn-primary copy-btn" id="copyBtn">複製詩句</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'poem_arranger_state';
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      selected: selected,
+      title: titleInput ? titleInput.value : ''
+    }));
+  } catch (_) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.selected)) selected = data.selected;
+    if (data.title && titleInput) titleInput.value = data.title;
+  } catch (_) {}
+}
+
+const ALL_VERSES = [
+  "用盡全力抱住風",
+  "你曾在我心中放進月亮",
+  "而你是整個熱帶的中心",
+  "攜帶那些痛苦遷徙",
+  "利刃輕輕劃破時間的薄膜",
+  "輕易地發誓，也輕易地得到了報應",
+  "無法帶我們安然通過生命，而不被割傷",
+  "沒有人希望為同一片海洋葬身兩次",
+  "天氣熱得哀傷都失去了重量",
+  "但至少還有愛是一種溫柔的抵抗",
+  "你是連日乾旱的第一場雨",
+  "因為長大後才發現快樂是限量的",
+  "在沙灘上為你攏幾朵浪當棉被",
+  "一起走過的那些美麗的漣漪，後來怎麼都變成了浪",
+  "你走的時候比海更靜",
+  "每個季節都有屬於它自己的秘密",
+  "我曾踏月而來，只因你在山中",
+  "安靜的語彙來自　未曾抵達的遠方",
+  "謝謝你願意讓我是你的飛蛾",
+  "就像有些手適合握緊，有些適合錯過",
+  "我的愛是一冊寂靜的歌",
+  "讓滿天星斗，與夏威夷豆一起過期",
+  "歡迎回來，因你而空無一物的地方",
+  "讓所有的傷口生鏽",
+  "生活是陽光　微風　雨和星空",
+  "等等天空就會忘記了",
+  "慌張的將春天揉成一張色紙",
+  "我的孤獨還沒闌珊",
+  "情緒不再易乾、易於解釋",
+  "在雨聲之外等待雨停",
+  "原來長大，就是安靜地面對失去"
+];
+
+let selected = [];
+let dragSrcIndex = null;
+
+const poolGrid = document.getElementById('poolGrid');
+const selectedList = document.getElementById('selectedList');
+const editorHint = document.getElementById('editorHint');
+const actions = document.getElementById('actions');
+const selectedCount = document.getElementById('selectedCount');
+const poolCount = document.getElementById('poolCount');
+const titleInput = document.getElementById('titleInput');
+const showOutputBtn = document.getElementById('showOutputBtn');
+const clearAllBtn = document.getElementById('clearAllBtn');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
+const modalPoemTitle = document.getElementById('modalPoemTitle');
+const modalPoemBody = document.getElementById('modalPoemBody');
+const copyBtn = document.getElementById('copyBtn');
+const toast = document.getElementById('toast');
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (window._toastTimer) clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+/* ─── Pool ─── */
+function renderPool() {
+  poolGrid.innerHTML = '';
+  ALL_VERSES.forEach((verse, idx) => {
+    const chip = document.createElement('span');
+    chip.className = 'verse-chip' + (selected.includes(idx) ? ' selected' : '');
+    chip.textContent = (idx + 1) + '. ' + verse;
+    if (!selected.includes(idx)) {
+      chip.addEventListener('click', () => addVerse(idx));
+    }
+    poolGrid.appendChild(chip);
+  });
+  poolCount.textContent = ALL_VERSES.length + ' 句';
+}
+
+/* ─── Editor ─── */
+function renderEditor() {
+  selectedList.innerHTML = '';
+  selected.forEach((idx, pos) => {
+    const li = document.createElement('li');
+    li.className = 'selected-item';
+    li.draggable = true;
+    li.dataset.pos = pos;
+
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+
+    const text = document.createElement('span');
+    text.className = 'verse-text';
+    text.textContent = ALL_VERSES[idx];
+
+    const rm = document.createElement('button');
+    rm.className = 'remove-btn';
+    rm.textContent = '✕';
+    rm.addEventListener('click', (e) => { e.stopPropagation(); removeVerse(pos); });
+
+    li.append(handle, text, rm);
+
+    li.addEventListener('dragstart', (e) => {
+      dragSrcIndex = pos;
+      li.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', pos);
+    });
+
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dragging');
+      document.querySelectorAll('.selected-item').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    li.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.selected-item').forEach(el => el.classList.remove('drag-over'));
+      li.classList.add('drag-over');
+    });
+
+    li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
+
+    li.addEventListener('drop', (e) => {
+      e.preventDefault();
+      li.classList.remove('drag-over');
+      if (dragSrcIndex === null || dragSrcIndex === pos) { dragSrcIndex = null; return; }
+      const item = selected.splice(dragSrcIndex, 1)[0];
+      selected.splice(pos, 0, item);
+      dragSrcIndex = null;
+      renderAll();
+    });
+
+    selectedList.appendChild(li);
+  });
+
+  const count = selected.length;
+  selectedCount.textContent = count;
+  editorHint.style.display = count === 0 ? 'flex' : 'none';
+}
+
+/* ─── Actions ─── */
+function addVerse(idx) {
+  if (selected.includes(idx)) return;
+  if (selected.length >= 8) { showToast('最多選 8 句 ☕'); return; }
+  selected.push(idx);
+  renderAll();
+}
+
+function removeVerse(pos) {
+  selected.splice(pos, 1);
+  renderAll();
+}
+
+function renderAll() { renderPool(); renderEditor(); saveState(); }
+
+clearAllBtn.addEventListener('click', () => { selected = []; renderAll(); showToast('已全部清除'); });
+
+titleInput.addEventListener('input', saveState);
+
+/* ─── Font size toggle ─── */
+const sizeToggleBtn = document.getElementById('sizeToggleBtn');
+if (localStorage.getItem('poem_large_mode') === '1') document.body.classList.add('large-mode');
+
+sizeToggleBtn.addEventListener('click', () => {
+  document.body.classList.toggle('large-mode');
+  localStorage.setItem('poem_large_mode', document.body.classList.contains('large-mode') ? '1' : '0');
+});
+
+/* ─── Output ─── */
+showOutputBtn.addEventListener('click', () => {
+  const count = selected.length;
+  if (count < 5) { showToast('請至少選 5 句'); return; }
+  if (count > 8) { showToast('最多選 8 句'); return; }
+  const title = titleInput.value.trim() || '無題';
+  modalPoemTitle.textContent = title;
+  modalPoemBody.innerHTML = selected.map(idx => `<div class="line">${ALL_VERSES[idx]}</div>`).join('');
+  modalOverlay.classList.add('active');
+});
+
+function closeModal() { modalOverlay.classList.remove('active'); }
+modalCloseBtn.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+copyBtn.addEventListener('click', () => {
+  const title = titleInput.value.trim() || '無題';
+  const text = title + '\n' + '—'.repeat(title.length) + '\n' + selected.map(idx => ALL_VERSES[idx]).join('\n');
+  navigator.clipboard.writeText(text).then(() => showToast('已複製到剪貼簿'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('已複製到剪貼簿');
+    });
+});
+
+/* ─── Init ─── */
+loadState();
+renderAll();
+</script>
+</body>
+</html>
