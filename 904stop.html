@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>九年級寫作專題簡報：當我停下來，我看到……（多題材範例升級版）</title>
+<style>
+  :root {
+    --bg-color: #0b1120;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-blue: #38bdf8;
+    --accent-amber: #fbbf24;
+    --accent-rose: #f43f5e;
+    --accent-emerald: #34d399;
+    --accent-purple: #c084fc;
+    --accent-cyan: #22d3ee;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+  }
+
+  body {
+    background-color: #000;
+    font-family: "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* 16:9 簡報畫布 */
+  #deck-container {
+    width: 100vw;
+    height: 56.25vw; /* 16:9 比例 */
+    max-height: 100vh;
+    max-width: 177.78vh; /* 16:9 比例 */
+    background-color: var(--bg-color);
+    position: relative;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 2.2vw 3.8vw 3.6vw 3.8vw;
+    display: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    animation: fadeIn 0.25s ease-in-out;
+  }
+
+  .slide.active {
+    display: flex;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 頂部導覽列 */
+  .slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--card-border);
+    padding-bottom: 0.6vw;
+    margin-bottom: 1.2vw;
+    flex-shrink: 0;
+  }
+  .slide-category {
+    font-size: 1.15vw;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent-blue);
+  }
+  .slide-title {
+    font-size: 2.3vw;
+    font-weight: 800;
+    color: #fff;
+    margin-top: 0.1vw;
+  }
+  .badge {
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    padding: 0.35vw 0.9vw;
+    border-radius: 9999px;
+    font-size: 0.95vw;
+    font-weight: 600;
+  }
+
+  /* 格線系統 */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5vw;
+    flex: 1;
+    min-height: 0;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.3vw;
+    flex: 1;
+    min-height: 0;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1.1vw;
+    flex: 1;
+    min-height: 0;
+  }
+  .grid-matrix {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 1vw;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 0.9vw;
+    padding: 1.4vw 1.6vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    position: relative;
+    height: 100%;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .card.highlight {
+    border-color: var(--accent-blue);
+    background: linear-gradient(145deg, #1e293b, #132f50);
+  }
+  .card.danger {
+    border-color: var(--accent-rose);
+    background: rgba(244, 63, 94, 0.09);
+  }
+  .card.success {
+    border-color: var(--accent-emerald);
+    background: rgba(52, 211, 153, 0.09);
+  }
+  .card.purple {
+    border-color: var(--accent-purple);
+    background: rgba(192, 132, 252, 0.09);
+  }
+
+  .card-title {
+    font-size: 1.5vw;
+    font-weight: 700;
+    margin-bottom: 0.8vw;
+    display: flex;
+    align-items: center;
+    gap: 0.5vw;
+    flex-shrink: 0;
+  }
+  .card-body {
+    font-size: 1.22vw;
+    line-height: 1.68;
+    color: #e2e8f0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  /* 強調與標籤 */
+  b.amber { color: var(--accent-amber); }
+  b.blue { color: var(--accent-blue); }
+  b.rose { color: var(--accent-rose); }
+  b.emerald { color: var(--accent-emerald); }
+  b.purple { color: var(--accent-purple); }
+  b.cyan { color: var(--accent-cyan); }
+
+  .highlight-tag {
+    background: rgba(251, 191, 36, 0.2);
+    color: var(--accent-amber);
+    padding: 0.1vw 0.4vw;
+    border-radius: 0.3vw;
+    font-weight: bold;
+  }
+  .keyword-pill {
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: var(--accent-blue);
+    padding: 0.2vw 0.5vw;
+    border-radius: 0.3vw;
+    font-size: 0.85vw;
+    display: inline-block;
+    margin-right: 0.4vw;
+    margin-top: 0.4vw;
+  }
+
+  /* 倒數計時器 */
+  .timer-box {
+    background: #020617;
+    border: 2px solid var(--accent-amber);
+    border-radius: 1.5vw;
+    padding: 2vw;
+    text-align: center;
+    margin: auto;
+    width: 65%;
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.2);
+  }
+  .timer-display {
+    font-size: 5.5vw;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 900;
+    color: var(--accent-amber);
+    letter-spacing: 4px;
+    margin: 0.5vw 0;
+  }
+  .timer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1.5vw;
+    margin-top: 1vw;
+  }
+  .btn {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: #fff;
+    padding: 0.6vw 1.5vw;
+    font-size: 1.1vw;
+    border-radius: 0.6vw;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn:hover {
+    background: var(--accent-blue);
+    color: #000;
+  }
+  .btn.primary {
+    background: var(--accent-amber);
+    color: #000;
+    border-color: var(--accent-amber);
+  }
+  .btn.primary:hover {
+    background: #f59e0b;
+  }
+
+  /* 底部控制欄 */
+  .controls-bar {
+    position: absolute;
+    bottom: 0.7vw;
+    left: 4.2vw;
+    right: 4.2vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85vw;
+    color: var(--text-muted);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 0.4vw;
+  }
+  .nav-btn {
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    padding: 0.25vw 0.7vw;
+    border-radius: 0.4vw;
+    cursor: pointer;
+    font-size: 0.82vw;
+  }
+  .nav-btn:hover {
+    color: #fff;
+    border-color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div id="deck-container">
+
+  <!-- Slide 1: 封面 -->
+  <div class="slide active" style="justify-content: center; align-items: center; text-align: center;">
+    <div class="badge" style="font-size: 1.1vw; margin-bottom: 1.2vw; padding: 0.4vw 1.2vw;">
+      國三第一次模擬考寫作診斷 ＆ 升級精修工作坊
+    </div>
+    <h1 style="font-size: 3.8vw; font-weight: 900; letter-spacing: 2px; line-height: 1.2; margin-bottom: 1vw;">
+      當我停下來，我看到……
+    </h1>
+    <p style="font-size: 1.5vw; color: var(--accent-blue); font-weight: 600; margin-bottom: 2.2vw;">
+      從「急促路過」到「定格深思」：多維選材 ✕ 導演慢鏡特寫
+    </p>
+    <div style="font-size: 1.05vw; color: var(--text-muted); background: var(--card-bg); padding: 0.7vw 1.8vw; border-radius: 9999px; border: 1px solid var(--card-border);">
+      主講教師：國文教學團隊 ｜ 核心目標：1-2段局部升級，見證字句發光
+    </div>
+  </div>
+
+  <!-- Slide 2: 審題核心解碼 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">考題診斷篇</div>
+        <div class="slide-title">題幹三大密碼：你真的「煞車」了嗎？</div>
+      </div>
+      <div class="badge">會考評分關鍵</div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><b class="blue">01</b> 動態煞車機制</div>
+        <div class="card-body" style="justify-content:space-between;">
+          <div style="line-height:1.75;">
+            • <b class="amber">先有動，後有靜</b>：對比才見張力。<br>
+            • 必須先交代原本「匆忙趕路、身心麻木」的慣常狀態。<br>
+            • 再寫出被什麼意外契機、阻礙或聲響「硬生生踩下煞車」。<br>
+            • <i>（少了前面的疾行，停下來就只是發呆！）</i>
+          </div>
+          <div style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); padding:0.9vw; border-radius:0.6vw; margin-top:1vw;">
+            <b class="blue" style="font-size:1.15vw; display:block; margin-bottom:0.2vw;">💡 核心口訣：</b>
+            急躁在先，定格在後；沒有煞車的對比，文字就失去戲劇張力！
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="blue">02</b> 具體微距鏡頭</div>
+        <div class="card-body" style="justify-content:space-between;">
+          <div style="line-height:1.75;">
+            • 停下來「看到」什麼？<br>
+            • <b class="rose">嚴禁空泛形容詞</b>（如：勤勞、堅強、美味）。<br>
+            • 必須給讀者具體像素：<b>手部動作、額頭汗珠、油花焦香、光影明暗</b>。<br>
+            • <i>（把抽象的美好，拆解成看得到的動態細節！）</i>
+          </div>
+          <div style="background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); padding:0.9vw; border-radius:0.6vw; margin-top:1vw;">
+            <b class="amber" style="font-size:1.15vw; display:block; margin-bottom:0.2vw;">💡 核心口訣：</b>
+            文字要有像素，考官才看得到畫面；像導演一樣推近特寫鏡頭！
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="blue">03</b> 穿透背後意涵</div>
+        <div class="card-body" style="justify-content:space-between;">
+          <div style="line-height:1.75;">
+            • <b class="emerald">由物及理，由景入情</b>。<br>
+            • 這個看似不起眼的小細節，給了深處升學競賽的你什麼心靈啟發？<br>
+            • <b class="emerald">拒絕道德說教</b>，要映照出真實的自我生命成長！<br>
+            • <i>（寫作不是說大話，而是誠實對話。）</i>
+          </div>
+          <div style="background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.3); padding:0.9vw; border-radius:0.6vw; margin-top:1vw;">
+            <b class="emerald" style="font-size:1.15vw; display:block; margin-bottom:0.2vw;">💡 核心口訣：</b>
+            不必教訓別人，只需打動自己；從一粒細砂，看見整個宇宙！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: 學生作文三大致命病灶 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">病灶掃描篇</div>
+        <div class="slide-title">檢視這份試卷，我們常犯的三大失分盲點</div>
+      </div>
+      <div class="badge">痛點分析</div>
+    </div>
+    <div class="grid-3">
+      <div class="card danger">
+        <div class="card-title" style="color: var(--accent-rose);">❌ 病灶一：只停不看</div>
+        <div class="card-body" style="justify-content:space-between;">
+          <div style="line-height:1.7;">
+            <b>【典型病徵】</b><br>
+            寫到停下來買蔥油餅或看見小草，下一句立刻跳大道理：「這讓我明白每個人都很辛苦，要懂得感恩。」<br><br>
+            👉 <b>致命弱點：</b>情節斷崖式跳躍，少了整整一段的微距特寫與感官細節！
+          </div>
+          <div style="background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.3); padding:0.9vw; border-radius:0.6vw; margin-top:1vw;">
+            <b class="emerald" style="font-size:1.15vw; display:block; margin-bottom:0.2vw;">✅ 升級處方：</b>
+            強制置入「電影慢鏡頭」，補齊 3 個連續動作動詞分解 ＋ 2 種感官疊加！
+          </div>
+        </div>
+      </div>
+      <div class="card danger">
+        <div class="card-title" style="color: var(--accent-rose);">❌ 病灶二：選材陳腐</div>
+        <div class="card-body" style="justify-content:space-between;">
+          <div style="line-height:1.7;">
+            <b>【典型病徵】</b><br>
+            千篇一律照抄考卷引言——阿伯擦汗很辛苦、小草被風吹不倒。全班有二十篇像雙胞胎。<br><br>
+            👉 <b>致命弱點：</b>缺乏個人生活的真實體溫，像毫無靈魂的罐頭文章。
+          </div>
+          <div style="background:rgba(192,132,252,0.12); border:1px solid rgba(192,132,252,0.3); padding:0.9vw; border-radius:0.6vw; margin-top:1vw;">
+            <b class="purple" style="font-size:1.15vw; display:block; margin-bottom:0.2vw;">✅ 升級處方：</b>
+            善用「選材四階光譜」，往「親情微光」或「審視被考試綁架的自己」推進！
+          </div>
+        </div>
+      </div>
+      <div class="card danger">
+        <div class="card-title" style="color: var(--accent-rose);">❌ 病灶三：結尾說教</div>
+        <div class="card-body" style="justify-content:space-between;">
+          <div style="line-height:1.7;">
+            <b>【典型病徵】</b><br>
+            結尾大喊政宣標語：「所以我們要放慢生活腳步，珍惜當下，世界就會處處充滿陽光。」<br><br>
+            👉 <b>致命弱點：</b>像國小週記口號，缺乏九年級應有的自省深度與情味回甘。
+          </div>
+          <div style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); padding:0.9vw; border-radius:0.6vw; margin-top:1vw;">
+            <b class="blue" style="font-size:1.15vw; display:block; margin-bottom:0.2vw;">✅ 升級處方：</b>
+            以象徵物或動作收束，寫停下來之後，自己轉身步向考場時那份從容的心境！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: 選材靈感九宮格矩陣（新擴充） -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">選材擴展篇</div>
+        <div class="slide-title">靈感九宮格：停下來，還能看到什麼？</div>
+      </div>
+      <div class="badge">突破撞題靈感庫</div>
+    </div>
+    <div class="grid-matrix">
+      <div class="card">
+        <div class="card-title"><b class="blue">① 校園角落</b></div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.65;">
+          • 早自習被粉筆灰染白的板擦<br>
+          • 晚自習窗外逐漸沈落的橘紅暮色<br>
+          • 同桌同學背上被汗水浸濕的校服
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="amber">② 通勤路上</b></div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.65;">
+          • 捷運手扶梯上如齒輪般面無表情的人潮<br>
+          • 雨天公車車窗上蜿蜒匯聚的水痕<br>
+          • 紅綠燈倒數 99 秒時，身旁外送員發愣的側臉
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="purple">③ 家中玄關</b></div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.65;">
+          • 父親那雙鞋後跟早已磨損傾斜的舊皮鞋<br>
+          • 母親在流理臺前微微佝僂的背影與粗糙指節<br>
+          • 深夜書桌上一杯不再冒煙但早已溫涼的牛奶
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="emerald">④ 巷弄職人</b></div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.65;">
+          • 夜市地瓜球攤販雙手壓網的沉穩臂力<br>
+          • 修鞋鋪老師傅用雙膝夾住鞋楦穿針引線<br>
+          • 資源回收阿嬤在紙箱夾縫中熟練壓扁鋁罐
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="cyan">⑤ 自然微光</b></div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.65;">
+          • 水泥牆縫間夾縫求生、迎風打顫的小野花<br>
+          • 雨後被沖刷到柏油路中央、奮力爬向草叢的蚯蚓<br>
+          • 停在單車把手上短暫歇腳的紅蜻蜓
+        </div>
+      </div>
+      <div class="card highlight">
+        <div class="card-title"><b class="rose">⑥ 內在自畫像 (高分關鍵)</b></div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.65;">
+          • 電梯金屬壁反光中，自己嘴角緊繃的疲憊雙眼<br>
+          • 考卷右上角密密麻麻、自己慌亂落下的紅筆筆跡<br>
+          • 忘了有多久沒有開懷大笑的自己
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: 選材四階光譜 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">立意躍升篇</div>
+        <div class="slide-title">選材四階光譜：立意如何層層推進？</div>
+      </div>
+      <div class="badge">立意分水嶺</div>
+    </div>
+    <div class="grid-4">
+      <div class="card">
+        <div class="card-title"><b class="blue">階梯 1</b> 日常物景</div>
+        <div class="card-body">
+          • 操場角落野草<br>• 雨後屋簷滴水<br>• 教室窗框積塵<br><br>
+          <span style="font-size:1.08vw; line-height:1.5; color:var(--text-muted);">級分落點：3~4級分<br>關鍵：必須反照自己的脆弱。</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="amber">階梯 2</b> 基層職人</div>
+        <div class="card-body">
+          • 蔥油餅攤老闆<br>• 烈日下交管警員<br>• 深夜垃圾車隊員<br><br>
+          <span style="font-size:1.08vw; line-height:1.5; color:var(--text-muted);">級分落點：4~5級分<br>關鍵：寫出手上粗繭與專注定力。</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="purple">階梯 3</b> 親情微光</div>
+        <div class="card-body">
+          • 母親水槽前駝背<br>• 父親磨平的鞋跟<br>• 祖母數零錢的指尖<br><br>
+          <span style="font-size:1.08vw; line-height:1.5; color:var(--accent-purple);">級分落點：5~6級分<br>關鍵：平日忽略的愧疚與溫熱。</span>
+        </div>
+      </div>
+      <div class="card highlight">
+        <div class="card-title"><b class="emerald">階梯 4</b> 自我審視</div>
+        <div class="card-body">
+          • 捷運玻璃倒影中的自己<br>• 雙眼布滿血絲、嘴角緊繃<br>• 慌亂數考卷的身影<br><br>
+          <span style="font-size:1.08vw; line-height:1.5; color:var(--accent-emerald);">級分落點：穩拿 6 級分！<br>關鍵：迷失於競爭中的靈魂覺醒。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: 慢鏡頭三部曲公式 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">技法核心篇</div>
+        <div class="slide-title">導演慢鏡頭：把 10 秒鐘拉長成一整段高潮</div>
+      </div>
+      <div class="badge">必學公式</div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><b class="blue">第一鏡</b> 廣角遠景・慣性狂奔</div>
+        <div class="card-body">
+          描繪平日生活的「速度」：手錶的分針、刺耳的鐘聲、低頭疾行的人潮、塞著耳機的世界。<br><br>
+          <i>例：平日的我總低頭盯著手錶讀秒，抓了油紙袋便拔腿狂奔……</i>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="amber">第二鏡</b> 中景定格・突然煞車</div>
+        <div class="card-body">
+          一個突如其來的「打斷」：熱氣撲面、腳步踉蹌、鞋帶鬆脫、水窪濺水，迫使身體靜止。<br><br>
+          <i>例：那天蒸氣朦朧了鏡片，我被迫停下腳步……</i>
+        </div>
+      </div>
+      <div class="card highlight">
+        <div class="card-title"><b class="emerald">第三鏡</b> 微距特寫・動作分解</div>
+        <div class="card-body">
+          <b>【3動詞 ＋ 2感官】</b>：手部的揉按翻轉、鐵鏟撞擊的鏗鏘、汗水滲透布料的痕跡。<br><br>
+          <i>例：粗繭雙手猛然一按、雙掌翻飛，麵糰如滿月旋開，熱油滋滋作響……</i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- Slide 7: 動態句式與動詞庫（前移至說理前） -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">畫面捕捉篇 02</div>
+        <div class="slide-title">動態句式與動詞庫：讓文字擁有電影畫面感</div>
+      </div>
+      <div class="badge">動態先於說理</div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><b class="blue">句式 1</b> 煞車轉折句</div>
+        <div class="card-body" style="font-size:1.15vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1vw; border-radius:0.6vw; border-left:4px solid var(--accent-blue);">
+            • 平日的我總被鐘聲催逼著狂奔……然而那一刻，一聲細微的<b>［撞擊/清脆聲響］</b>，硬生生截斷了我慣常的匆忙步伐。<br><br>
+            • 原本只想掠過這條熟悉的街角，一道不經意的<b>［斜陽/熱氣］</b>，卻將我的目光牢牢釘在……
+          </div>
+          <div style="font-size:0.95vw; color:var(--text-muted); border-top:1px solid var(--card-border); padding-top:0.4vw;">
+            ★ 功用：製造一動一靜的強烈煞車張力！
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="amber">句式 2</b> 連續動作分解句</div>
+        <div class="card-body" style="font-size:1.15vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1vw; border-radius:0.6vw; border-left:4px solid var(--accent-amber);">
+            • 只見他長滿粗繭的雙手猛然<b>［按壓］</b>、雙掌<b>［翻飛］</b>，那團麵糰便如滿月般在鐵板上<b>［旋開］</b>。<br><br>
+            • 一滴汗珠順著他燻黑的鬢角<b>［滑落］</b>，無聲地<b>［滲進］</b>褪色圍裙裡；雙手依然沉穩地<b>［掌控］</b>著火候。
+          </div>
+          <div style="font-size:0.95vw; color:var(--accent-amber); border-top:1px solid var(--card-border); padding-top:0.4vw; font-weight:bold;">
+            ★ 功用：一秒鐘動作拆成三個微距鏡頭！
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="emerald">武器 3</b> 神動詞矩陣</div>
+        <div class="card-body" style="font-size:1.15vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1vw; border-radius:0.6vw; border-left:4px solid var(--accent-emerald);">
+            • <b class="amber">手部分解</b>：揉、按、翻、旋、攥、抹、捻<br>
+            • <b class="blue">神情定格</b>：斂、凝、蹙、抿、垂、盯<br>
+            • <b class="purple">狀態滲透</b>：滲、嵌、褪、鍍、漫、泛、淌<br>
+            • <b class="emerald">聲響節奏</b>：沙沙、鏗鏘、滋滋、摩挲
+          </div>
+          <div style="font-size:0.95vw; color:var(--text-muted); border-top:1px solid var(--card-border); padding-top:0.4vw;">
+            ★ 功用：拒絕抽象形容詞，用動詞賦予畫面生命！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: 範例一【基層職人篇：蔥油餅阿伯】 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">範例對讀 01・職人篇</div>
+        <div class="slide-title">蔥油餅攤：從「概念敘述」到「微距慢鏡」</div>
+      </div>
+      <div class="badge">題材：基層職人</div>
+    </div>
+    <div class="grid-2">
+      <div class="card danger">
+        <div class="card-title" style="color: var(--accent-rose);">❌ 4 級分弱版（只有概念・缺乏畫面）</div>
+        <div class="card-body" style="font-size:1.2vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-rose);">
+            「每次放學我都匆匆忙忙去買蔥油餅。有一次排隊等很久，我停下來看著老闆做蔥油餅。老闆動作很快也很認真，滿頭大汗還是微笑招呼大家。這時我發現他不只是在賣點心，而是在用心工作，我們應該向他學習這種敬業專注的精神，放慢步調體會生活。」
+          </div>
+          <div style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.35); padding:1vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-rose); display:block; margin-bottom:0.3vw; font-size:1.2vw;">🔍 閱卷致命傷：</b>
+            全篇充斥「很快、很認真、滿頭大汗」等概括形容詞，讀者眼前毫無具體動作。結尾直接喊口號，說理空洞。
+          </div>
+        </div>
+      </div>
+      <div class="card success">
+        <div class="card-title" style="color: var(--accent-emerald);">✨ 6 級分升級版（動作分解＋感官疊加）</div>
+        <div class="card-body" style="font-size:1.18vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-emerald);">
+            「鐵鏟撞擊煎板的清脆鏗鏘聲在暮色中迴響。平日我總低頭盯著手錶讀秒，抓了油紙袋便拔腿狂奔；那天蒸氣朦朧了鏡片，我被迫退後半步停下腳步。只見老闆長滿粗繭的雙手<b class="amber">猛然一按、雙掌翻飛</b>，那團白生生的麵糰如滿月般在鐵板上旋開；熱油瞬間滋滋作響，金黃蔥花在滾油中<b class="amber">翻滾出焦香</b>，一滴汗珠順著他燻黑的鬢角滑落，滲進褪色的藍圍裙。那雙布滿燙痕的手沉穩地掌控著火候。我忽然愣住——在全班爭分奪秒的排名焦慮之外，<b class="emerald">原來有人正以如此從容的姿態，把重複了千萬次的平凡，煎成夜色裡最踏實的溫度</b>。」
+          </div>
+          <div style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.35); padding:0.9vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-emerald); display:block; margin-bottom:0.2vw; font-size:1.18vw;">💡 升級精髓：</b>
+            動詞分解（按、翻飛、旋開）＋ 雙感官（鐵鏟鏗鏘、熱油焦香）＋ 哲思映照自身升學焦慮，情味回甘！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 8: 範例二【親情微光篇：玄關父親的舊皮鞋】 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">範例對讀 02・親情篇</div>
+        <div class="slide-title">玄關角落：從「空泛感恩」到「生活微光」</div>
+      </div>
+      <div class="badge">題材：親情微光</div>
+    </div>
+    <div class="grid-2">
+      <div class="card danger">
+        <div class="card-title" style="color: var(--accent-rose);">❌ 4 級分弱版（平鋪直敘・跳躍說教）</div>
+        <div class="card-body" style="font-size:1.2vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-rose);">
+            「每天早晨我趕著出門上學，爸爸總是已經去上班了。有一天我因為忘了帶講義折返回家，在玄關停下來穿鞋時，看到爸爸放在地上的舊皮鞋很破爛，鞋底都磨平了。我突然想到爸爸為了這個家辛苦工作賺錢，從來不抱怨，我應該好好孝順爸爸，認真讀書報答他。」
+          </div>
+          <div style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.35); padding:1vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-rose); display:block; margin-bottom:0.3vw; font-size:1.2vw;">🔍 閱卷致命傷：</b>
+            皮鞋「破爛、磨平」太抽象簡略，缺乏觸感與光影；末尾硬套「好好孝順、認真報答」，情感粗糙且道德說教。
+          </div>
+        </div>
+      </div>
+      <div class="card success">
+        <div class="card-title" style="color: var(--accent-emerald);">✨ 6 級分升級版（微距細節＋情感回甘）</div>
+        <div class="card-body" style="font-size:1.18vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-emerald);">
+            「鑰匙在鎖孔裡急躁地一轉，我折返回家抓取遺落的講義。衝到玄關煞住腳步的瞬間，晨光斜切穿過鐵門紗窗，正好照亮了鞋櫃最下層那雙黑皮鞋。平日我總踢翻鞋子奪門而出，此刻蹲下身繫鞋帶，才第一次看清——<b class="amber">那雙鞋面的皮革早已龜裂出深淺不一的紋路，右側鞋跟甚至被體重與長路磨耗出一道嚴重的傾斜弧度</b>，邊緣還滲著幾點乾涸的泥痕。我伸出手輕輕摸過那粗糙的鞋面，指尖觸到的是父親日復一日奔波於風雨中的重力。<b class="purple">我總埋怨生活被模擬考的排名壓得喘不過氣，卻從未發覺，那個總沉默把熱早餐放在桌上的男人，早已替我踏平了多少坎坷</b>。」
+          </div>
+          <div style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.35); padding:0.9vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-emerald); display:block; margin-bottom:0.2vw; font-size:1.18vw;">💡 升級精髓：</b>
+            微距特寫（皮革龜裂、傾斜弧度、乾涸泥痕）＋ 觸覺轉化（摸到奔波的重力）＋ 深沉反省自我抱怨，極富感染力！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 9: 範例三【校園生活篇：晚自習的夕陽與黑板】 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">範例對讀 03・校園篇</div>
+        <div class="slide-title">九年級教室：從「抱怨升學」到「同儕共鳴」</div>
+      </div>
+      <div class="badge">題材：校園生活</div>
+    </div>
+    <div class="grid-2">
+      <div class="card danger">
+        <div class="card-title" style="color: var(--accent-rose);">❌ 4 級分弱版（流水帳記敘・缺乏氛圍）</div>
+        <div class="card-body" style="font-size:1.2vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-rose);">
+            「國三的生活每天都有寫不完的考卷，大家都很緊張。有一次晚自習下課，我因為寫得很累停下筆來，轉頭看著窗外的天空，夕陽很美麗。再看看旁邊的同學大家都在認真寫作業，老師也在改考卷。這讓我覺得大家都在同一條船上努力，我也要打起精神繼續拚會考。」
+          </div>
+          <div style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.35); padding:1vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-rose); display:block; margin-bottom:0.3vw; font-size:1.2vw;">🔍 閱卷致命傷：</b>
+            「夕陽很美麗、大家很認真」是典型概括陳腔，讀不出晚自習特殊的壓迫與光影感，同理感薄弱。
+          </div>
+        </div>
+      </div>
+      <div class="card success">
+        <div class="card-title" style="color: var(--accent-emerald);">✨ 6 級分升級版（聲光對比＋同舟共濟）</div>
+        <div class="card-body" style="font-size:1.18vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-emerald);">
+            「自動鉛筆芯在粗糙的影印考卷上『啪』一聲脆斷，急促的算式戛然而止。我揉了揉酸澀的眉心，被迫鬆開僵硬的手指。那一剎那，教室裡只剩下<b class="amber">原子筆尖摩挲紙張的沙沙聲，以及電風扇規律擺頭的低鳴</b>。橘紅色的殘陽正穿透走廊的格窗，在黑板密密麻麻的幾何圖形上鍍了一層暖金；飛舞在光柱裡的細碎粉筆灰，像極了我們無處安放的青春。我看著前方同學被汗水浸出深色印記的背脊，他正一筆一劃用力劃掉訂正欄。<b class="emerald">原本令人窒息的晚自習，在這一刻變得無比溫柔——這不是一場孤獨的受困，而是數十個同齡靈魂在沈默中互相支撐、迎向天明的證明</b>。」
+          </div>
+          <div style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.35); padding:0.9vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-emerald); display:block; margin-bottom:0.2vw; font-size:1.18vw;">💡 升級精髓：</b>
+            聽覺細節（筆芯脆斷、紙張沙沙）＋ 視覺象徵（光柱粉筆灰、汗漬背脊）＋ 將集體升學壓力昇華為溫柔同盟！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 10: 範例四【自然生命篇：水泥縫隙裡的碎米薺】 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">範例對讀 04・自然篇</div>
+        <div class="slide-title">操場邊緣：從「小草不服輸」到「以柔克剛」</div>
+      </div>
+      <div class="badge">題材：自然生命</div>
+    </div>
+    <div class="grid-2">
+      <div class="card danger">
+        <div class="card-title" style="color: var(--accent-rose);">❌ 4 級分弱版（擬人陳腔・小學作文腔）</div>
+        <div class="card-body" style="font-size:1.2vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-rose);">
+            「大隊接力練習結束後，我累得坐在操場旁邊休息。我停下來低頭看地面，發現操場跑道旁的水泥縫裡長了一棵綠色的小草。即使常常被人踩來踩去，它還是堅強地活著，迎風搖曳。這棵小草告訴我們，遇到挫折不能輕易放棄，要像小草一樣勇敢堅強面對國三的挑戰。」
+          </div>
+          <div style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.35); padding:1vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-rose); display:block; margin-bottom:0.3vw; font-size:1.2vw;">🔍 閱卷致命傷：</b>
+            陳腐的「這棵小草告訴我們」，把植物當成八股說教道具；寫法停留於小學日記，缺乏九年級應有的哲思。
+          </div>
+        </div>
+      </div>
+      <div class="card success">
+        <div class="card-title" style="color: var(--accent-emerald);">✨ 6 級分升級版（微距刻畫＋哲思穿透）</div>
+        <div class="card-body" style="font-size:1.18vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-emerald);">
+            「劇烈起伏的胸膛逼得我單膝跪地，大隊接力後的肺部像被烈火灼燒。汗水滑過睫毛砸進紅土跑道，我被迫定格在水泥邊溝的陰影裡。就在粗糙的防滑地磚接縫處，一株連名字都沒有的碎米薺正靜靜佇立。<b class="amber">它的莖只有筆芯般纖細，葉瓣被踩踏過好幾回，殘留著灰黑的鞋印，卻依然頑強地頂著一朵比米粒還小的白花</b>。風暴般的球鞋踏步聲轟鳴而過，它只是隨風極度貼伏，待腳步散去，又悄無聲息地挺直了腰桿。<b class="cyan">我原本以為堅強是刀槍不入、是橫衝直撞地奪冠；直到這一刻我才明白，最深沉的堅韌，是容許自己被踩進泥濘，卻依然在裂縫深處，開出屬於自己的純白</b>。」
+          </div>
+          <div style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.35); padding:0.9vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-emerald); display:block; margin-bottom:0.2vw; font-size:1.18vw;">💡 升級精髓：</b>
+            動態對比（狂奔疲憊 vs 靜止佇立）＋ 以柔克剛哲理（容許被踩踏但依舊開花），直接突破陳腔俗套！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 11: 範例五【自我審視篇：車窗倒影裡的緊繃神情】 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">範例對讀 05・自省篇 (6級分精華)</div>
+        <div class="slide-title">捷運車廂：從「看別人」昇華到「看自己」</div>
+      </div>
+      <div class="badge" style="border-color:var(--accent-rose); color:var(--accent-rose);">神級立意</div>
+    </div>
+    <div class="grid-2">
+      <div class="card danger">
+        <div class="card-title" style="color: var(--accent-rose);">❌ 4 級分弱版（被動抱怨・缺乏自省）</div>
+        <div class="card-body" style="font-size:1.2vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-rose);">
+            「每次搭捷運去補習班，我都只顧著背英文單字。今天因為忘記帶單字卡，我只好停下來看著車窗。我看到玻璃反射出我的樣子，覺得自己看起來很累、臉色很蒼白。我覺得現代的學生壓力真的太大了，大家都被考試逼得喘不過氣，希望以後可以不用這麼辛苦。」
+          </div>
+          <div style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.35); padding:1vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-rose); display:block; margin-bottom:0.3vw; font-size:1.2vw;">🔍 閱卷致命傷：</b>
+            停下來只停留在「發牢騷與抱怨制度」，沒有深層的自我對話與心境轉折，給人怨天尤人的負面觀感。
+          </div>
+        </div>
+      </div>
+      <div class="card highlight">
+        <div class="card-title" style="color: var(--accent-emerald);">✨ 6 級分升級版（鏡像投射＋自我和解）</div>
+        <div class="card-body" style="font-size:1.18vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-emerald);">
+            「車廂在隧道裡全速奔馳，刺耳的軌道摩擦聲尖銳地穿透耳膜。列車突然一個劇烈顛簸，迫使正慌亂在書包翻找模擬考題本的我抓緊拉環，赫然停住動作。漆黑的窗玻璃在窗外急速後退，化為一面幽暗的明鏡——<b class="amber">鏡子裡浮現一張陌生而慘白的臉，雙眉深鎖，嘴角緊抿成一條毫無溫度的冷線，眼底盡是因睡眠不足而浮腫的血絲</b>。我愣愣地看著那道倒影，竟感到一陣陌生的心驚。我為了追逐師長口中的明星志願，究竟在什麼時候，把那個原本愛笑、愛在陽光下看漫畫的自己丟在了路旁？<b class="rose">停在幽暗的隧道深處，我終於第一次對著玻璃裡的自己輕輕說：辛苦了，別怕，我們慢慢走</b>。」
+          </div>
+          <div style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.35); padding:0.9vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-emerald); display:block; margin-bottom:0.2vw; font-size:1.18vw;">💡 升級精髓：</b>
+            高階立意（停下來審視內在）＋ 鏡像神態微距刻畫 ＋ 溫柔擁抱焦慮的自己，會考閱卷老師評為頂級之作！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- Slide 12: 破解空泛說理 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">說理突破篇 01</div>
+        <div class="slide-title">告別空泛：為什麼「慢下來可以看到很多事」很致命？</div>
+      </div>
+      <div class="badge" style="border-color:var(--accent-rose); color:var(--accent-rose);">說理分水嶺</div>
+    </div>
+    <div class="grid-2">
+      <div class="card danger">
+        <div class="card-title" style="color:var(--accent-rose);">❌ 3~4 級分空洞套話（講了等於沒講）</div>
+        <div class="card-body" style="justify-content:space-between; font-size:1.18vw; line-height:1.7;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-rose);">
+            • 「停下來之後，我才發現世界其實很美好。」<br>
+            • 「放慢步調，可以看見以前沒注意的小細節。」<br>
+            • 「現代人太匆忙了，我們都要學會放慢腳步。」<br>
+            • 「感謝那些默默付出的人，我們要珍惜當下。」
+          </div>
+          <div style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.35); padding:1vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b style="color:var(--accent-rose); display:block; margin-bottom:0.3vw; font-size:1.2vw;">🔍 閱卷老師的真實心聲：</b>
+            這些全是「正確的廢話」！沒有<b>自己的焦慮痛點</b>、沒有<b>因果思考鏈</b>、沒有<b>深層心靈碰撞</b>，只是把題幹提示換句話說，千篇一律。
+          </div>
+        </div>
+      </div>
+      <div class="card success">
+        <div class="card-title" style="color:var(--accent-emerald);">✨ 5~6 級分高級說理的「三不與三要」</div>
+        <div class="card-body" style="justify-content:space-between; font-size:1.18vw; line-height:1.7;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-emerald);">
+            <b class="rose">【三不原則】</b>：<br>
+            1. <b class="rose">不要</b>高高在上教訓讀者（「大家應該……」）。<br>
+            2. <b class="rose">不要</b>只停留在「發現美景」（這不是遊記）。<br>
+            3. <b class="rose">不要</b>廉價的口號喊話（「世界充滿希望」）。
+          </div>
+          <div style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.35); padding:1vw; border-radius:0.6vw; margin-top:0.8vw;">
+            <b class="emerald">【三要秘訣】</b>：<br>
+            1. <b class="emerald">要自我剖析</b>：看別人，是為了照見自己的狹隘與狼狽。<br>
+            2. <b class="emerald">要追問代價</b>：加速讓我們得到了什麼？失去了什麼？<br>
+            3. <b class="emerald">要哲理回甘</b>：將眼前微小事物，轉化為人生的定盤針！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 13: 四大高級說理模型 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">說理突破篇 02</div>
+        <div class="slide-title">四大高級說理模型：把「空話」變成「哲理」</div>
+      </div>
+      <div class="badge">必背思維抓手</div>
+    </div>
+    <div class="grid-4">
+      <div class="card">
+        <div class="card-title"><b class="blue">模型 1</b> 速度與盲目</div>
+        <div class="card-body" style="font-size:1.05vw; line-height:1.65; justify-content:space-between;">
+          <div>
+            <b class="amber">【辨證關係】</b><br>
+            快 ✕ 清醒 的衝突。<br><br>
+            <b class="cyan">【說理金句】</b><br>
+            「我們總以為加速奔跑就能提早抵達幸福，卻在呼嘯的風聲裡，錯把麻木當成了堅強。停下來，不是認輸，而是奪回掌舵的清醒。」
+          </div>
+          <div style="font-size:0.95vw; color:var(--text-muted); border-top:1px solid var(--card-border); padding-top:0.5vw;">
+            適用：補習趕路、追逐排名
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="amber">模型 2</b> 鏡面反照</div>
+        <div class="card-body" style="font-size:1.05vw; line-height:1.65; justify-content:space-between;">
+          <div>
+            <b class="amber">【自我審視】</b><br>
+            看見他 ✕ 照見我。<br><br>
+            <b class="cyan">【說理金句】</b><br>
+            「看著他在油煙中從容翻轉麵糰，我忽然照見自己一筆劃錯便急躁撕紙的狼狽——原來最匱乏的從不是時間，而是一顆能耐得住重複的心。」
+          </div>
+          <div style="font-size:0.95vw; color:var(--text-muted); border-top:1px solid var(--card-border); padding-top:0.5vw;">
+            適用：基層職人、手藝專注
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="purple">模型 3</b> 隱形代價</div>
+        <div class="card-body" style="font-size:1.05vw; line-height:1.65; justify-content:space-between;">
+          <div>
+            <b class="amber">【視角翻轉】</b><br>
+            享受理所當然 ✕ 負重者。<br><br>
+            <b class="cyan">【說理金句】</b><br>
+            「世上從沒有平白無故的整潔平坦；我平日踢翻鞋子急躁出門的坦途，不過是父親用磨損傾斜的鞋跟，在暗處替我踩平了凹凸。」
+          </div>
+          <div style="font-size:0.95vw; color:var(--text-muted); border-top:1px solid var(--card-border); padding-top:0.5vw;">
+            適用：父母付出、清潔隊員
+          </div>
+        </div>
+      </div>
+      <div class="card highlight">
+        <div class="card-title"><b class="emerald">模型 4</b> 目的與過程</div>
+        <div class="card-body" style="font-size:1.05vw; line-height:1.65; justify-content:space-between;">
+          <div>
+            <b class="amber">【生命和解】</b><br>
+            盯著靶心 ✕ 沿途風景。<br><br>
+            <b class="cyan">【說理金句】</b><br>
+            「若生活只是一連串抵達下個目標的衝刺，抵達之後我們還剩什麼？停下來凝視微草，讓我懂得：人生不只有靶心，更有沿途正在呼吸的自己。」
+          </div>
+          <div style="font-size:0.95vw; color:var(--accent-emerald); border-top:1px solid var(--card-border); padding-top:0.5vw; font-weight:bold;">
+            適用：大考焦慮、自我安頓
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 15: 高級說理實戰句式庫（全新） -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">說理突破篇 03</div>
+        <div class="slide-title">高級說理實戰句式：把空泛口號化為深刻哲思</div>
+      </div>
+      <div class="badge" style="border-color:var(--accent-amber); color:var(--accent-amber);">說理填空鷹架</div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><b class="blue">句式 A</b> 對比翻轉句（速度 vs 清醒）</div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-blue);">
+            「我們總以為加速奔跑就能提早抵達<b>［目標／終點］</b>，直到停下來凝視<b>［眼前細節］</b>，才驚覺自己早已在風聲裡，錯把<b>［盲目麻木］</b>當成了堅強——停下來，不是認輸，而是奪回掌舵的清醒。」
+          </div>
+          <div style="font-size:0.95vw; color:var(--accent-blue);">
+            💡 <b>填空範例：</b>目標＝明星高中 ｜ 細節＝路旁野花 ｜ 盲目＝每天熬夜刷題
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="amber">句式 B</b> 鏡面反照句（看見他 ✕ 照見我）</div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-amber);">
+            「眼前那份<b>［從容／專注／平靜］</b>，像一面冷靜的明鏡，赫然照見了我<b>［焦躁／撕紙／抱怨］</b>的狼狽——原來我最匱乏的從不是時間，而是一顆能耐得住重複與寂寞的心。」
+          </div>
+          <div style="font-size:0.95vw; color:var(--accent-amber);">
+            💡 <b>填空範例：</b>專注＝老闆控火 ｜ 狼狽＝模擬考寫錯題急躁砸筆
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="purple">句式 C</b> 隱形負重句（理所當然 ✕ 代價）</div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-purple);">
+            「世上從沒有平白無故的<b>［坦途／整潔］</b>；我平日急著趕路所享受的順遂，不過是<b>［父親／他人］</b>用<b>［磨損傾斜的鞋跟／開裂的雙手］</b>，在暗處替我默默踩平了凹凸。」
+          </div>
+          <div style="font-size:0.95vw; color:var(--accent-purple);">
+            💡 <b>填空範例：</b>坦途＝安心讀書的環境 ｜ 負重＝父親粗糙老繭
+          </div>
+        </div>
+      </div>
+      <div class="card highlight">
+        <div class="card-title"><b class="emerald">句式 D</b> 生命和解句（目的 vs 過程）</div>
+        <div class="card-body" style="font-size:1.16vw; line-height:1.7; justify-content:space-between;">
+          <div style="background:rgba(0,0,0,0.3); padding:1.1vw; border-radius:0.6vw; border-left:4px solid var(--accent-emerald);">
+            「這不是一場耽誤時間的等待，而是生活為我按下的暫停鍵——讓我懂得：生命不只是一連串抵達靶心的衝刺，更有沿途正在呼吸、正在成長的自己。」
+          </div>
+          <div style="font-size:0.95vw; color:var(--accent-emerald); font-weight:bold;">
+            💡 <b>填空範例：</b>大考不是唯一終點，停下來能重新找回初衷與溫度
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 17: 現場重寫任務認領 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">實戰行動篇</div>
+        <div class="slide-title">今日實戰目標：局部重寫 1~2 段（約 150-250 字）</div>
+      </div>
+      <div class="badge">二選一任務</div>
+    </div>
+    <div class="grid-2">
+      <div class="card highlight">
+        <div class="card-title"><b class="amber">任務 A</b> 導演慢鏡頭特寫段（第 2 或 3 段）</div>
+        <div class="card-body">
+          • <b>適合對象</b>：作文內容空洞、只有流水帳平淡敘事的同學。<br><br>
+          • <b>重寫通關密碼</b>：<br>
+          　✅ 一個具體煞車契機（為什麼突然停下？）<br>
+          　✅ 至少 3 個精確動作動詞分解<br>
+          　✅ 至少 1 種非視覺感官（聲音／氣味／觸覺）<br>
+          　✅ 一個打動自己心靈的真實體悟
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="purple">任務 B</b> 情境破題 或 哲思收束段（第 1 或 4 段）</div>
+        <div class="card-body">
+          • <b>適合對象</b>：描寫尚可，但首尾平鋪直敘、像小學週記的同學。<br><br>
+          • <b>重寫通關密碼</b>：<br>
+          　✅ 首段：拒絕抄題，用「動靜對比」製造張力<br>
+          　✅ 尾段：拒絕口號，將微小事物連結自我生命覺醒<br>
+          　✅ 句型乾淨，寓意悠遠回甘
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 18: 20分鐘練筆倒數計時 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">沉浸練筆篇</div>
+        <div class="slide-title">專注心流：20 分鐘局部重寫進行中</div>
+      </div>
+      <div class="badge" style="border-color:var(--accent-amber); color:var(--accent-amber);">課堂即時挑戰</div>
+    </div>
+    <div class="timer-box">
+      <div style="font-size:1.5vw; color:#94a3b8; font-weight:bold;">✍️ 請挑選上述任一題材，將重寫段落寫在學習單稿紙上</div>
+      <div class="timer-display" id="timer-text">20:00</div>
+      <div class="timer-controls">
+        <button class="btn primary" id="btn-start" onclick="toggleTimer()">開始計時</button>
+        <button class="btn" onclick="resetTimer()">重設 (20:00)</button>
+        <button class="btn" onclick="addTime(5)">+5 分鐘</button>
+      </div>
+      <div style="margin-top:1.1vw; font-size:1.2vw; color:#e2e8f0; line-height:1.6;">
+        💡 靈感庫：父親的舊皮鞋 ｜ 晚自習的夕陽 ｜ 操場的小野草 ｜ 倒影中的自己 ｜ 蔥油餅攤
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 17: 同儕雙色螢光筆互評 -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="slide-category">同儕互評篇</div>
+        <div class="slide-title">雙色螢光筆互評法：做彼此的伯樂</div>
+      </div>
+      <div class="badge">7分鐘互動</div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><b class="amber">🟡 黃色筆</b> 抓神動詞</div>
+        <div class="card-body">
+          在同學的稿紙上，圈出最讓你「腦海中立刻浮現畫面」的那個<b>神級動詞</b>或<b>五感細節</b>！<br><br>
+          <i>（拒絕抽象形容詞，找出最強動詞）</i>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><b class="purple">🟣 粉色筆</b> 抓共鳴句</div>
+        <div class="card-body">
+          劃出全段中，最能觸動你、讓你心頭微微一顫的<b>心靈體悟句</b>！<br><br>
+          <i>（不是口號，而是真實的生命體溫）</i>
+        </div>
+      </div>
+      <div class="card success">
+        <div class="card-title"><b class="emerald">💬 寫一句具體讚美</b></div>
+        <div class="card-body">
+          <b>嚴禁寫：</b>「好棒」、「加油」、「讚」。<br><br>
+          <b>必須寫：</b>「我最喜歡你第＿行的『＿＿＿』，因為這句話讓我感覺到……」
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 18: 結語與考場心法 -->
+  <div class="slide" style="text-align:center; justify-content:center;">
+    <div class="badge" style="font-size:1.1vw; margin-bottom:1.5vw;">寫在第一次模擬考之後</div>
+    <h2 style="font-size:3vw; font-weight:800; line-height:1.4; margin-bottom:1.5vw;">
+      停下來，不是放棄奔跑；<br>
+      而是為了更清醒地，辨認自己前進的姿態。
+    </h2>
+    <p style="font-size:1.25vw; color:var(--text-muted); max-width:70%; margin:0 auto 2vw auto; line-height:1.7;">
+      下一次坐在會考考場上，當你感到筆下生澀、思緒匆忙時——<br>
+      請記得給自己三秒鐘，深吸一口氣，按下心裡的暫停鍵。<br>
+      調出你記憶中最動人的那個特寫鏡頭，你的文字就會擁有穿透人心的力量。
+    </p>
+    <div style="font-size:1.2vw; color:var(--accent-amber); font-weight:bold;">
+      祝 全體同學 會考寫作順利挺進 6 級分！🎉
+    </div>
+  </div>
+
+  <!-- 底部控制列 -->
+  <div class="controls-bar">
+    <div>
+      <button class="nav-btn" onclick="prevSlide()">◀ 上一頁 [Left]</button>
+      <button class="nav-btn" onclick="nextSlide()">下一頁 [Right / Space] ▶</button>
+      <button class="nav-btn" onclick="toggleFullScreen()">全螢幕 [F]</button>
+    </div>
+    <div id="slide-indicator" style="font-weight:bold; color:#fff;">1 / 19</div>
+    <div>按鍵導引：方向鍵翻頁 ｜ 空白鍵前進 ｜ F 切換全螢幕</div>
+  </div>
+
+</div>
+
+<script>
+  let currentSlide = 0;
+  const slides = document.querySelectorAll('.slide');
+  const indicator = document.getElementById('slide-indicator');
+
+  function showSlide(index) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[index].classList.add('active');
+    currentSlide = index;
+    indicator.textContent = `${index + 1} / ${slides.length}`;
+  }
+
+  function nextSlide() {
+    if (currentSlide < slides.length - 1) {
+      showSlide(currentSlide + 1);
+    }
+  }
+
+  function prevSlide() {
+    if (currentSlide > 0) {
+      showSlide(currentSlide - 1);
+    }
+  }
+
+  function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => alert(err.message));
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }
+
+  // 鍵盤事件監聽
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      nextSlide();
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      prevSlide();
+    } else if (e.key === 'f' || e.key === 'F') {
+      toggleFullScreen();
+    }
+  });
+
+  // 倒數計時器邏輯
+  let totalSeconds = 20 * 60;
+  let timerInterval = null;
+  let isRunning = false;
+  const timerText = document.getElementById('timer-text');
+  const btnStart = document.getElementById('btn-start');
+
+  function updateTimerDisplay() {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    timerText.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  function toggleTimer() {
+    if (!isRunning) {
+      isRunning = true;
+      btnStart.textContent = '暫停計時';
+      btnStart.classList.remove('primary');
+      timerInterval = setInterval(() => {
+        if (totalSeconds > 0) {
+          totalSeconds--;
+          updateTimerDisplay();
+        } else {
+          clearInterval(timerInterval);
+          isRunning = false;
+          btnStart.textContent = '時間到！';
+          alert('⏰ 20分鐘練筆時間到！請放筆，準備進行同儕雙色互評！');
+        }
+      }, 1000);
+    } else {
+      isRunning = false;
+      clearInterval(timerInterval);
+      btnStart.textContent = '繼續計時';
+      btnStart.classList.add('primary');
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    isRunning = false;
+    totalSeconds = 20 * 60;
+    btnStart.textContent = '開始計時';
+    btnStart.classList.add('primary');
+    updateTimerDisplay();
+  }
+
+  function addTime(mins) {
+    totalSeconds += mins * 60;
+    updateTimerDisplay();
+  }
+</script>
+
+</body>
+</html>
