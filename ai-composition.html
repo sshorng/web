@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學思達AI作文助教 (講義整合版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .feedback-card {
+            transition: all 0.3s ease-in-out;
+            border-left-width: 4px;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            100% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+        }
+        .fade-in {
+            animation: fadeInAnimation 0.5s ease-in-out;
+        }
+        @keyframes fadeInAnimation {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .dark .modal-content {
+            background: #1e293b; /* slate-800 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-slate-900 dark:text-slate-300">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400">學思達 AI 作文助教</h1>
+            <p class="mt-2 text-lg text-gray-600 dark:text-slate-400">我是你的專屬助教，請選擇課堂講義，讓我陪你一起練習！</p>
+        </header>
+
+        <main id="app-container">
+
+            <div class="mb-6 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg fade-in">
+                <label for="lesson-selector" class="block text-xl font-bold text-gray-900 dark:text-white mb-2">第一步：選擇講義課次</label>
+                <p class="text-sm text-gray-600 dark:text-slate-400 mb-3">選擇你正在學習的課程，AI助教將會提供專屬的引導與批改。</p>
+                <select id="lesson-selector" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    <option value="general">通用批改（不選擇特定課程）</option>
+                    <optgroup label="講義(上): 傳統型寫作">
+                        <option value="lesson2">第二堂: 審題模組-WWH羅盤</option>
+                        <option value="lesson3">第三堂: 立意模組-立意三層次</option>
+                        <option value="lesson4">第四堂: 結構模組-五段式結構</option>
+                        <option value="lesson6">第六堂: 情境開頭法</option>
+                        <option value="lesson7">第七堂: 豹尾之勁-首尾呼應</option>
+                        <option value="lesson8">第八堂: 文字的顯微鏡-細節描寫</option>
+                        <option value="lesson9">第九堂: 文字的化妝術-修辭三寶</option>
+                        <option value="lesson10">第十堂: 沙盤推演-我想開設一家這樣的店</option>
+                    </optgroup>
+                    <optgroup label="講義(下): 任務型寫作">
+                        <option value="lesson14">第十四堂: 情報分析學(上)-圖表與圖像</option>
+                        <option value="lesson16">第十六堂: 核心寫作-倉鼠題</option>
+                        <option value="lesson17">第十七堂: 情報分析學(下)-倫理思辨</option>
+                        <option value="lesson18">第十八堂: 終極試煉-罹癌少女題</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div id="guidance-section" class="hidden mb-6 bg-yellow-50 dark:bg-yellow-900/40 border-l-4 border-yellow-400 dark:border-yellow-500 p-5 rounded-lg shadow-md fade-in">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xl font-bold text-yellow-800 dark:text-yellow-300">⭐ 課前引導</h3>
+                    <button id="brainstorm-btn" class="flex items-center space-x-1.5 text-sm bg-yellow-200 text-yellow-800 dark:bg-yellow-900/80 dark:text-yellow-200 font-semibold py-1.5 px-3 rounded-lg hover:bg-yellow-300 dark:hover:bg-yellow-800/80 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                        </svg>
+                        <span>沒有靈感？問問助教</span>
+                    </button>
+                </div>
+                <div id="guidance-content" class="text-yellow-700 dark:text-yellow-200"></div>
+            </div>
+
+            <div id="input-section" class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-xl shadow-lg fade-in">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">第二步：輸入你的作文</h2>
+                    <button id="voice-input-btn" class="flex items-center space-x-2 text-sm bg-cyan-100 text-cyan-700 dark:bg-cyan-900/60 dark:text-cyan-300 font-semibold py-2 px-3 rounded-lg hover:bg-cyan-200 dark:hover:bg-cyan-900/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg id="mic-icon" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m12 7.5v-1.5a6 6 0 0 0-6-6v0a6 6 0 0 0-6 6v1.5m12 0v-1.5a6 6 0 0 0-6-6m0 0v-1.5m0 1.5v-1.5m0 0v-1.5m0 0a3 3 0 0 0-3 3v1.5m3-4.5v-1.5m0 0a3 3 0 0 0 3 3v1.5m-3-4.5v-1.5" /></svg>
+                        <span id="voice-status-text">語音輸入</span>
+                    </button>
+                </div>
+                
+                <!-- Topic Input Area -->
+                <div class="mb-4">
+                    <label for="topic-input" class="block text-sm font-medium text-gray-700 dark:text-slate-300">作文題目 (選填)</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <input type="text" id="topic-input" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white pr-10" placeholder="可手動輸入，或上傳題目圖片">
+                        <div class="absolute inset-y-0 right-0 flex items-center">
+                            <button id="upload-topic-btn" class="h-full px-3 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400" title="上傳題目圖片">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <input type="file" id="topic-file-upload" class="hidden" accept="image/png, image/jpeg">
+                        </div>
+                    </div>
+                     <div id="topic-preview-container" class="mt-2 hidden">
+                        <p class="text-xs text-gray-500 dark:text-slate-400">已上傳題目圖片：</p>
+                        <div class="relative w-32 h-32 border rounded-md p-1 dark:border-slate-600">
+                            <img id="topic-preview-img" class="w-full h-full object-contain" src="">
+                            <button id="remove-topic-img-btn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center">&times;</button>
+                        </div>
+                     </div>
+                     <p id="topic-upload-status" class="text-xs text-gray-500 dark:text-slate-400 mt-1 h-4"></p>
+                </div>
+
+                <!-- Text Input Area -->
+                <div>
+                    <div class="relative">
+                        <textarea id="essay-input" rows="18" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out resize-none bg-slate-50 text-gray-800 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-400" placeholder="點擊右上方「語音輸入」開始口述，或直接在此打字..."></textarea>
+                        <div id="word-count" class="absolute bottom-3 right-3 text-sm text-gray-500 dark:text-slate-400">0 字</div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex items-center space-x-4">
+                    <button id="submit-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300 ease-in-out flex items-center justify-center disabled:bg-gray-400">
+                        <span id="btn-text">開始批改</span>
+                        <div id="btn-loader" class="loader w-6 h-6 border-t-white hidden"></div>
+                    </button>
+                    <button id="show-feedback-btn" class="w-full bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 hidden">查看批改結果</button>
+                </div>
+                <p id="submit-error-message" class="text-red-500 text-center mt-4 text-sm hidden"></p>
+            </div>
+
+            <!-- Feedback Section (Initially hidden) -->
+            <div id="feedback-section" class="hidden"></div>
+        </main>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const essayInput = document.getElementById('essay-input');
+        const topicInput = document.getElementById('topic-input');
+        const wordCount = document.getElementById('word-count');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnLoader = document.getElementById('btn-loader');
+        const appContainer = document.getElementById('app-container');
+        const inputSection = document.getElementById('input-section');
+        const feedbackSection = document.getElementById('feedback-section');
+        const voiceInputBtn = document.getElementById('voice-input-btn');
+        const voiceStatusText = document.getElementById('voice-status-text');
+        const micIcon = document.getElementById('mic-icon');
+        const uploadTopicBtn = document.getElementById('upload-topic-btn');
+        const topicFileUpload = document.getElementById('topic-file-upload');
+        const topicUploadStatus = document.getElementById('topic-upload-status');
+        const topicPreviewContainer = document.getElementById('topic-preview-container');
+        const topicPreviewImg = document.getElementById('topic-preview-img');
+        const removeTopicImgBtn = document.getElementById('remove-topic-img-btn');
+        const showFeedbackBtn = document.getElementById('show-feedback-btn');
+        const lessonSelector = document.getElementById('lesson-selector');
+        const guidanceSection = document.getElementById('guidance-section');
+        const guidanceContent = document.getElementById('guidance-content');
+        const brainstormBtn = document.getElementById('brainstorm-btn');
+        const submitErrorMessage = document.getElementById('submit-error-message');
+
+
+        // --- API Configuration ---
+        const API_KEY = atob("QVEuQWI4Uk42TGJYamR5LWQzOTFWdHRpQll1TDhqMm40WTY3eDN5M1VXNHM2eHZkcnd6bnc=");
+        const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
+        const MODEL_NAME = "gemini-flash-latest";
+
+        // --- State Variables ---
+        let isListening = false;
+        let recognition;
+        let finalTranscript = '';
+        let punctuationTimer;
+        let isProcessingPunctuation = false;
+        let topicImageBase64 = null;
+        let currentEssayText = "";
+        let currentFeedback = null;
+        let chatHistory = [];
+        let brainstormChatHistory = [];
+
+        const lessons = {
+            'general': { title: '通用批改', guidance: null, prompt_addition: '' },
+            'lesson2': { 
+                title: '第二堂: 審題模組-WWH羅盤', 
+                guidance: '<strong>寫作前思考：</strong><ul class="list-disc list-inside mt-1"><li><strong>What:</strong> 這是一個關於什麼的故事？</li><li><strong>Why:</strong> 為什麼這件事對我重要？</li><li><strong>How:</strong> 我要透過哪個具體事件來呈現？</li></ul>',
+                prompt_addition: '請聚焦分析文章是否緊扣題旨，並檢查作者是否能透過WWH的思考層次，清晰地闡述其核心故事與意義。'
+            },
+            'lesson3': { 
+                title: '第三堂: 立意模組-立意三層次',
+                guidance: '<strong>寫作前思考：</strong><ul class="list-disc list-inside mt-1"><li><strong>A層次 (現實):</strong> 故事的具體人、事、物是什麼？</li><li><strong>B層次 (心靈):</strong> 這件事帶給我什麼內心體悟或成長？</li><li><strong>C層次 (社會):</strong> 我能從中提煉出什麼可以與他人分享的道理？</li></ul>',
+                prompt_addition: '請優先使用「立意三層次(A-B-C)」理論來評估本文的思想高度。分析文章是否成功從A層次的現實事件，提升到B層次的心靈體悟，甚至觸及C層次的社會關懷。'
+            },
+            'lesson4': { 
+                title: '第四堂: 結構模組-五段式結構',
+                guidance: '<strong>寫作前規劃：</strong>請先擬定五段式大綱，確保文章結構完整。<br><strong>段落提醒：</strong>每個段落記得要包含「主題句」、「舉例說明」、「結論句」。',
+                prompt_addition: '請重點檢視文章的「情境破題五段式結構」是否完整、段落安排是否精當。同時，請抽查核心段落是否具備「段落三要素」（主題句、舉例說明、結論句）。'
+            },
+            'lesson6': { 
+                title: '第六堂: 情境開頭法',
+                guidance: '<strong>開頭公式：</strong><ul class="list-disc list-inside mt-1"><li><strong>感官切入：</strong>用一個具體的視覺、聽覺或動作開場。</li><li><strong>情境描寫：</strong>用2-3句話將場景描寫得更完整。</li><li><strong>點明主旨：</strong>在段末有力地提出你的核心觀點。</li></ul>',
+                prompt_addition: '請特別針對第一段進行點評，分析其「情境開頭法」是否成功。檢查開頭是否包含「感官切入」、「情境描寫」，並在段末清晰地「點明主旨」。'
+            },
+            'lesson7': { 
+                title: '第七堂: 豹尾之勁-首尾呼應',
+                guidance: '<strong>結尾技巧：</strong><ul class="list-disc list-inside mt-1"><li><strong>情境呼應：</strong>在結尾再次描寫開頭的場景或物件，並賦予新意義。</li><li><strong>觀點呼應：</strong>在結尾用不同語句，再次強調並昇華開頭的核心觀點。</li></ul>',
+                prompt_addition: '請重點分析文章的「首尾呼應」做得如何。判斷結尾是採用「情境呼應」還是「觀點呼應」，並評價其效果是否讓文章結構更完整、主題更突出。'
+            },
+            'lesson8': { 
+                title: '第八堂: 文字的顯微鏡-細節描寫',
+                guidance: '<strong>寫作心法：</strong>Show, Don\'t Tell (展示，不告知)。<br><strong>練習目標：</strong>拒絕使用「很開心」、「很難過」等空泛的形容詞，改用五感（視覺、聽覺、嗅覺、味覺、觸覺）和身體反應來「畫」出情緒。',
+                prompt_addition: '請化身為「文字的顯微鏡」，細膩檢視文章中的細節描寫。找出文中的「形容詞懶人包」，並針對這些地方提出運用「五感摹寫」的具體修改建議，引導學生做到 Show, Don\'t Tell。'
+            },
+            'lesson9': { 
+                title: '第九堂: 文字的化妝術-修辭三寶',
+                guidance: '<strong>本次練習重點：</strong><ul class="list-disc list-inside mt-1"><li><strong>譬喻法：</strong>讓抽象變具體 (A像B)。</li><li><strong>轉化法：</strong>讓萬物有生命 (把東西當人寫)。</li><li><strong>映襯法：</strong>讓對比更強烈 (把相反的放一起)。</li></ul>',
+                prompt_addition: '請重點關注文章中「修辭三寶」（譬喻、轉化、映襯）的運用。找出作者使用的修辭，並評價其是否用得精準、能為意義服務，而非僅為華麗而堆砌。'
+            },
+            'lesson10': { 
+                title: '第十堂: 我想開設一家這樣的店',
+                guidance: '<strong>題目引導：</strong>這是一道結合「圖文資訊」的傳統題。請先閱讀圖片中的四種店家想法，觸發靈感。你的文章需要具體寫下：想開什麼店？為什麼開？店的樣貌？',
+                prompt_addition: '此為「我想開設一家這樣的店」的專題寫作。批改時請注意，除了基本評分標準外，也要評估學生是否能從A(現實樣貌)、B(心靈渴望)到C(社會價值)層次，深入闡述開店的理念與意義。'
+            },
+             'lesson14': { 
+                title: '第十四堂: 情報分析學(上)-圖表與圖像',
+                guidance: '<strong>分析三部曲：</strong><ul class="list-disc list-inside mt-1"><li><strong>看懂：</strong>客觀描述你看到了什麼資訊？</li><li><strong>找出：</strong>數據有什麼關鍵特徵 (最高/最低/趨勢)？圖像象徵什麼？</li><li><strong>詮釋：</strong>為你找到的特徵，提出一個合理的「為什麼」。</li></ul>',
+                prompt_addition: '此為任務型寫作練習。請優先檢查學生是否完成「詮釋資訊」的核心任務。分析學生對圖表/圖像的詮釋是否合理，以及個人經驗的連結是否能有效支持其觀點。'
+            },
+            'lesson16': { 
+                title: '第十六堂: 核心寫作-倉鼠題',
+                guidance: '<strong>題目任務：</strong><ol class="list-decimal list-inside mt-1"><li>從「盲目、耽溺、選擇、冒險、自由、牢籠」六個詞彙中擇一。</li><li>說明你選的詞彙和「倉鼠在滾輪上跑」的圖一有何關聯。</li><li>結合個人經驗或觀察，寫下你的感受與想法。</li></ol>',
+                prompt_addition: '此為「倉鼠題」的專題寫作。請重點批改學生是否完成所有任務指令：1. 是否明確做出選擇。 2. 是否清晰連結詞彙與圖像。 3. 個人經驗的闡述是否能深化主題。結構上，請檢視是否符合「詮釋資訊 -> 連結經驗 -> 綜合思辨」的任務型寫作架構。'
+            },
+            'lesson17': {
+                title: '第十七堂: 情報分析學(下)-倫理思辨',
+                guidance: '<strong>思辨練習：</strong>遇到對立觀點時，練習<ul class="list-disc list-inside mt-1"><li><strong>比較：</strong>分析雙方文化或立場的優缺點。</li><li><strong>決策：</strong>明確選擇一方，並提出你的核心理由。</li><li><strong>辯護：</strong>承認另一方也有道理，但說明為何你依然堅持自己的選擇。</li></ul>',
+                prompt_addition: '此為倫理思辨題。請評估學生是否能清晰地建立自己的立場，並進行有層次的論證。好的文章不應只單方面批評，而要能客觀分析雙方價值，並在比較後提出更深刻的見解。'
+            },
+            'lesson18': { 
+                title: '第十八堂: 終極試煉-罹癌少女題',
+                guidance: '<strong>寫作任務：</strong>如果你是這位罹癌少女，你會做同樣的選擇（冷凍遺體）嗎？<br><strong>思考角度：</strong><ul class="list-disc list-inside mt-1"><li><strong>少女本人：</strong>求生的渴望。</li><li><strong>媽媽：</strong>支持女兒的心願。</li><li><strong>爸爸：</strong>對女兒未來處境的擔憂。</li><li><strong>社會現實：</strong>高昂的費用與不確定的未來。</li></ul>請寫出你的選擇、感受與見解。',
+                prompt_addition: '此為「罹癌少女」的倫理決策題。批改時，請重點分析學生是否能代入「少女」的角色，同理各方（父、母、社會）的觀點，並在此基礎上，提出一個思慮周全、能自圓其說的決策與論述。'
+            },
+        };
+
+        // --- Speech Recognition Setup ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'cmn-Hant-TW';
+
+            recognition.onstart = () => {
+                isListening = true;
+                voiceStatusText.textContent = '聆聽中...';
+                voiceInputBtn.classList.add('pulse', 'bg-red-500', 'text-white', 'dark:bg-red-500');
+                micIcon.classList.add('text-white');
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                voiceStatusText.textContent = '語音輸入';
+                voiceInputBtn.classList.remove('pulse', 'bg-red-500', 'text-white', 'dark:bg-red-500');
+                micIcon.classList.remove('text-white');
+                processTranscript();
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                clearTimeout(punctuationTimer);
+                punctuationTimer = setTimeout(processTranscript, 1500);
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                if (event.error === 'not-allowed') {
+                    // Use a custom modal or a less intrusive notification in a real app
+                    alert('請允許瀏覽器使用麥克風才能啟用此功能。');
+                    voiceInputBtn.disabled = true;
+                }
+            };
+
+        } else {
+            console.warn('Speech Recognition not supported in this browser.');
+            voiceInputBtn.disabled = true;
+            voiceStatusText.textContent = '瀏覽器不支援';
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', loadFromLocalStorage);
+        lessonSelector.addEventListener('change', handleLessonSelect);
+        brainstormBtn.addEventListener('click', toggleBrainstormModal);
+        essayInput.addEventListener('input', () => {
+            saveToLocalStorage();
+            updateWordCount();
+        });
+        topicInput.addEventListener('input', saveToLocalStorage);
+        submitBtn.addEventListener('click', handleSubmit);
+        if (voiceInputBtn) {
+            voiceInputBtn.addEventListener('click', toggleVoiceInput);
+        }
+        uploadTopicBtn.addEventListener('click', () => topicFileUpload.click());
+        topicFileUpload.addEventListener('change', handleTopicFileUpload);
+        removeTopicImgBtn.addEventListener('click', () => {
+            topicImageBase64 = null;
+            topicPreviewImg.src = '';
+            topicPreviewContainer.classList.add('hidden');
+            topicInput.value = ''; // Also clear the text input
+            saveToLocalStorage();
+        });
+        showFeedbackBtn.addEventListener('click', () => {
+            inputSection.classList.add('hidden');
+            feedbackSection.classList.remove('hidden');
+        });
+
+        // --- Functions ---
+
+        function handleLessonSelect() {
+            const selectedLesson = lessonSelector.value;
+            if (selectedLesson && lessons[selectedLesson] && lessons[selectedLesson].guidance) {
+                guidanceContent.innerHTML = lessons[selectedLesson].guidance;
+                guidanceSection.classList.remove('hidden');
+            } else {
+                guidanceSection.classList.add('hidden');
+            }
+            // Auto-fill topic for specific lessons
+            if (selectedLesson === 'lesson10') {
+                 topicInput.value = "我想開設一家這樣的店";
+            } else if (selectedLesson === 'lesson16') {
+                 topicInput.value = "倉鼠題思辨";
+            } else if (selectedLesson === 'lesson18') {
+                 topicInput.value = "罹癌少女的選擇";
+            }
+            saveToLocalStorage();
+        }
+
+        function updateWordCount() {
+            wordCount.textContent = `${essayInput.value.length} 字`;
+        }
+
+        function saveToLocalStorage() {
+            const dataToSave = {
+                essay: essayInput.value,
+                topic: topicInput.value,
+                topicImg: topicImageBase64,
+                lesson: lessonSelector.value
+            };
+            localStorage.setItem('savedEssayData', JSON.stringify(dataToSave));
+        }
+
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('savedEssayData');
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                essayInput.value = parsedData.essay || '';
+                topicInput.value = parsedData.topic || '';
+                if (parsedData.lesson) {
+                    lessonSelector.value = parsedData.lesson;
+                    handleLessonSelect();
+                }
+                if (parsedData.topicImg) {
+                    topicImageBase64 = parsedData.topicImg;
+                    topicPreviewImg.src = `data:image/jpeg;base64,${topicImageBase64}`;
+                    topicPreviewContainer.classList.remove('hidden');
+                }
+                updateWordCount();
+            }
+        }
+        
+        async function handleTopicFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            topicUploadStatus.textContent = `檔案「${file.name}」辨識中...`;
+            uploadTopicBtn.disabled = true;
+            
+            try {
+                const base64Data = await fileToBase64(file);
+                topicImageBase64 = base64Data;
+                topicPreviewImg.src = `data:image/jpeg;base64,${base64Data}`;
+                topicPreviewContainer.classList.remove('hidden');
+
+                const prompt = "請辨識並抽取出這張圖片中的所有繁體中文文字，這是一份作文題目。請盡力還原換行與段落結構，並以純文字格式回傳。";
+                const text = await callGeminiVision(base64Data, prompt);
+                topicInput.value = text;
+                topicUploadStatus.textContent = `題目辨識完成！`;
+                saveToLocalStorage();
+            } catch (error) {
+                console.error('Topic OCR Error:', error);
+                topicUploadStatus.textContent = '題目辨識失敗，請重試。';
+                topicImageBase64 = null;
+                topicPreviewContainer.classList.add('hidden');
+            } finally {
+                uploadTopicBtn.disabled = false;
+                topicFileUpload.value = ''; // Reset file input
+                setTimeout(() => { topicUploadStatus.textContent = ''; }, 3000);
+            }
+        }
+        
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+        
+        async function callGeminiVision(base64ImageData, visionPrompt) {
+            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            const payload = { contents: [{ parts: [{ text: visionPrompt }, { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }] }] };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            const result = await response.json();
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                return result.candidates[0].content.parts[0].text;
+            }
+            return "AI無法從圖片中辨識出文字。";
+        }
+
+
+        function toggleVoiceInput() {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        async function processTranscript() {
+            if (!finalTranscript || isProcessingPunctuation) return;
+            
+            const textToProcess = finalTranscript;
+            finalTranscript = '';
+            isProcessingPunctuation = true;
+
+            const indicator = ' ✍️ AI 處理中...';
+            essayInput.value += indicator;
+            essayInput.scrollTop = essayInput.scrollHeight;
+
+            try {
+                const punctuatedText = await addPunctuation(textToProcess);
+                essayInput.value = essayInput.value.slice(0, -indicator.length); // Remove indicator
+                const currentText = essayInput.value;
+                const separator = currentText.length > 0 && !currentText.endsWith('\n') ? ' ' : '';
+                essayInput.value += separator + punctuatedText;
+            } catch (error) {
+                console.error("Punctuation error:", error);
+                essayInput.value = essayInput.value.slice(0, -indicator.length); // Remove indicator
+                essayInput.value += ' ' + textToProcess; // Fallback
+            } finally {
+                essayInput.dispatchEvent(new Event('input'));
+                isProcessingPunctuation = false;
+            }
+        }
+
+        async function addPunctuation(text) {
+            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            const prompt = `請為以下這段聽寫的繁體中文文字加上適當的標點符號，使其成為通順的句子。請直接回傳加上標點後的文字，不要包含任何額外的說明或標籤。\n\n文字如下：\n"${text}"`;
+            
+            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            const result = await response.json();
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                return result.candidates[0].content.parts[0].text.trim();
+            }
+            throw new Error("AI未能加上標點。");
+        }
+
+        async function handleSubmit() {
+            submitErrorMessage.classList.add('hidden'); // Reset on each click
+
+            const essayText = essayInput.value.trim();
+            const topicText = topicInput.value.trim();
+            if (essayText.length < 50) { 
+                submitErrorMessage.textContent = '作文內容至少需要50字才能進行批改喔！';
+                submitErrorMessage.classList.remove('hidden');
+                return; 
+            }
+            
+            const selectedLesson = lessonSelector.value;
+            setLoadingState(true, 'AI 助教批改中...');
+            
+            try {
+                const feedback = await getAIFeedback(essayText, topicText, topicImageBase64, selectedLesson);
+                currentEssayText = essayText;
+                currentFeedback = feedback;
+                chatHistory = [];
+                displayFeedback(feedback);
+            } catch (error) {
+                console.error("Error getting AI feedback:", error);
+                displayError("AI 批改時發生錯誤，請檢查網路連線或稍後再試。");
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        function setLoadingState(isLoading, text = 'AI 老師批改中...') {
+            const loadingHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-center"><div class="text-center text-gray-500 dark:text-slate-400"><div class="loader mx-auto"></div><h3 class="mt-4 text-xl font-medium">${text}</h3><p class="mt-1 text-md">正在深度分析你的文章結構與用詞，請稍候。</p></div></div>`;
+            if (isLoading) {
+                inputSection.classList.add('hidden');
+                feedbackSection.innerHTML = loadingHTML;
+                feedbackSection.classList.remove('hidden');
+            }
+        }
+
+        function displayFeedback(data) {
+            inputSection.classList.add('hidden');
+            feedbackSection.classList.remove('hidden');
+            feedbackSection.innerHTML = ''; // Clear previous results
+
+            const resultContainer = document.createElement('div');
+            resultContainer.className = 'bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-xl shadow-lg fade-in';
+            
+            const scoreText = { 6: '六級分（精熟）', 5: '五級分（精熟）', 4: '四級分（基礎）', 3: '三級分（待加強）', 2: '二级分（待加強）', 1: '一級分（待加強）' };
+
+            let feedbackHTML = `
+                <div class="flex justify-end mb-4 space-x-2">
+                    <button id="back-to-edit-btn" class="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">返回修改</button>
+                </div>
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white text-center">批改總評</h2>
+                    <div class="mt-2 text-center">
+                        <div class="inline-block bg-blue-100 text-blue-800 text-3xl font-bold px-6 py-2 rounded-full dark:bg-blue-900/50 dark:text-blue-300">${scoreText[data.overallScore] || `${data.overallScore}級分`}</div>
+                    </div>
+                    <p class="mt-4 text-left text-lg p-4 bg-gray-100 rounded-lg dark:bg-slate-700 text-gray-800 dark:text-slate-200"><span class="font-bold">老師的話：</span>${data.overallComment}</p>
+                </div>
+                <div class="space-y-4 mb-8">
+            `;
+            const dimensionColors = { '立意取材': 'border-l-red-500', '結構組織': 'border-l-blue-500', '遣詞造句': 'border-l-green-500', '錯別字、格式與標點符號': 'border-l-yellow-500' };
+
+            data.dimensionalFeedback.forEach(item => {
+                feedbackHTML += `<div class="feedback-card bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm ${dimensionColors[item.dimension] || 'border-l-gray-400'}"><h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">${item.dimension}</h3><div class="space-y-3"><div><h4 class="font-semibold text-green-600 dark:text-green-400">✔️ 做得好的地方</h4><p class="text-gray-700 dark:text-slate-300 ml-1">${item.strengths}</p></div><div><h4 class="font-semibold text-orange-600 dark:text-orange-400">💡 可以更好的地方</h4><p class="text-gray-700 dark:text-slate-300 ml-1">${item.suggestions}</p></div></div></div>`;
+            });
+            feedbackHTML += `</div>`;
+
+            // Key Guidance Section
+            feedbackHTML += `<div class="border-t dark:border-slate-700 pt-6"><h2 class="text-2xl font-bold text-gray-900 dark:text-white text-center mb-4">關鍵指導</h2><div class="space-y-6">`;
+            
+            data.keyGuidance.forEach(guidance => {
+                const revisedExampleHTML = guidance.revisedExample.replace(/\*\*(.*?)\*\*/g, '<strong class="text-green-600 dark:text-green-300 font-bold">$1</strong>');
+                feedbackHTML += `
+                    <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg text-gray-800 dark:text-slate-200 mb-3">⭐ 學習焦點：${guidance.focusArea}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-3 rounded-md bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-400 dark:border-orange-500">
+                                <p class="text-sm font-bold text-orange-700 dark:text-orange-400 mb-1">你的原文</p>
+                                <p class="text-md text-gray-700 dark:text-slate-300 whitespace-pre-wrap">${guidance.originalText}</p>
+                            </div>
+                            <div class="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 dark:border-green-500">
+                                <p class="text-sm font-bold text-green-700 dark:text-green-400 mb-1">可以這樣修改</p>
+                                <p class="text-md text-gray-700 dark:text-slate-300 whitespace-pre-wrap">${revisedExampleHTML}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <p class="font-semibold text-gray-700 dark:text-slate-300">💡 老師建議：</p>
+                            <p class="text-gray-600 dark:text-slate-400">${guidance.suggestions}</p>
+                        </div>
+                    </div>`;
+            });
+            feedbackHTML += `</div></div>`;
+            
+            // Add the chat box
+            feedbackHTML += `
+                <div id="ai-chat-container" class="mt-8 border-t pt-6 dark:border-slate-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">AI 作文家教</h3>
+                    <div id="chat-messages" class="h-64 overflow-y-auto p-3 bg-gray-100 dark:bg-slate-700 rounded-lg mb-3 space-y-4">
+                        <div class="flex justify-start"><div class="bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-slate-200 p-2 rounded-lg max-w-xs">同學你好！針對剛剛的批改建議，有什麼不清楚的地方，或想知道如何一步步修改嗎？隨時都可以問我喔！</div></div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <input type="text" id="chat-input" class="flex-1 w-full p-2 border border-gray-300 rounded-lg dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-400" placeholder="問問AI老師...">
+                        <button id="chat-send-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center">
+                            <span id="chat-send-btn-text">傳送</span>
+                            <div id="chat-loader" class="loader w-5 h-5 border-t-white hidden"></div>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            resultContainer.innerHTML = feedbackHTML;
+            feedbackSection.appendChild(resultContainer);
+            
+            document.getElementById('back-to-edit-btn').addEventListener('click', () => {
+                feedbackSection.classList.add('hidden');
+                inputSection.classList.remove('hidden');
+                showFeedbackBtn.classList.remove('hidden');
+            });
+
+            document.getElementById('chat-send-btn').addEventListener('click', handleChatSubmit);
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleChatSubmit();
+                }
+            });
+        }
+
+        function displayError(message) {
+            inputSection.classList.add('hidden');
+            feedbackSection.classList.remove('hidden');
+            feedbackSection.innerHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg fade-in"><div class="text-center text-red-500"><svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><h3 class="mt-2 text-xl font-medium">批改失敗</h3><p class="mt-1 text-md">${message || '抱歉，系統暫時無法連線，請稍後再試一次。'}</p></div></div>`;
+        }
+
+        async function getAIFeedback(essayText, topicText, topicImgBase64, lessonKey = 'general') {
+            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            
+            let lessonInstructions = '';
+            if (lessonKey && lessons[lessonKey] && lessons[lessonKey].prompt_addition) {
+                lessonInstructions = `\n## 課堂學習重點：\n本篇文章是針對「${lessons[lessonKey].title}」的練習。批改時，請務必聚焦於以下教學重點，並在回饋中明確使用講義中的相關術語：\n${lessons[lessonKey].prompt_addition}\n`;
+            }
+
+            const prompt = `# 指令：你是一位資深的台灣國中國文老師(學思達教學法)，你的任務是依據最新的114年會考標準與指定的課堂學習重點，批改學生的作文。請遵循「關鍵指導」批改模式。
+${lessonInstructions}
+## 評分哲學：
+你的評分應更具彈性與鼓勵性。**請優先依據「114年國中會考官方評分標準與各級分樣卷特徵」來評定基本級分。** 在此基礎上，再引用老師的「講義核心概念」(已包含在下方的教學核心與課堂學習重點中)作為拔尖的建議，引導學生從「符合標準」邁向「優秀」。
+
+## 你的教學核心（學思達講義知識庫）：
+你必須優先使用以下教學術語來分析文章並給予指導建議。
+1.  **立意層次 (A-B-C)**：檢視文章思想高度。A層次(現實)、B層次(心靈)、C層次(社會)。引導學生從A提升到B或C。
+2.  **情境破題五段式結構**：分析文章是否符合此架構（情境破題 -> 敘事記事 -> 感受寫情 -> 思辨說理 -> 總結呼應）。
+3.  **段落三要素**：檢查關鍵段落是否具備「主題句」、「舉例說明」、「結論句」。
+4.  **感官摹寫**：鼓勵學生運用五感細節(Show, Don't Tell)，拒絕「形容詞懶人包」。
+5.  **修辭三寶**：建議在適當時機使用「譬喻」、「轉化」、「映襯」來強化文采。
+6.  **首尾呼應**：檢視結尾是否能與開頭的「情境」或「觀點」呼應。
+
+## 批改流程與格式：
+1.  **第一階段：總評**
+    * 根據官方標準，給予一個1-6級分的\`overallScore\`。
+    * 撰寫一段溫暖、具體的\`overallComment\`。
+    * 針對四大向度，分別提供\`strengths\`和\`suggestions\`，放入\`dimensionalFeedback\`陣列中。
+2.  **第二階段：關鍵指導**
+    * **通讀全文後，策略性地選出「至少 3 個」最能幫助學生進步的「學習焦點」。**
+    * 為每一個學習焦點建立一個物件，放入\`keyGuidance\`陣列中。
+    * 每個物件包含：\`focusArea\`（點出學習焦點的標題）、\`originalText\`（該段落或句子的原文）、\`suggestions\`（**必須使用上述「講義知識庫」的術語來提出具體修改建議**）、\`revisedExample\`（修改後的示範）。**重要：請在修改後的範文中，將最關鍵的修改處用\`**粗體**\`標示出來。**
+3.  **JSON輸出**：你的最終輸出必須是「一個」不含任何前後說明的 JSON 物件，並嚴格遵守指定的 schema。
+
+## 學生作文資訊：
+### 作文題目（文字部分）：
+${topicText || "未提供"}
+${topicImgBase64 ? "\n### 作文題目（圖表部分）：\n[接下來會提供一張包含圖表的題目圖片，請務必同時參考文字與圖表內容進行批改，特別是在『立意取材』向度，要評估學生是否能準確理解並運用圖表的資訊。]" : ""}
+
+### 作文內容：
+${essayText}`;
+            
+            const parts = [{ text: prompt }];
+            if (topicImgBase64) {
+                parts.push({ inlineData: { mimeType: "image/jpeg", data: topicImgBase64 } });
+            }
+
+            const payload = { 
+                contents: [{ parts: parts }], 
+                generationConfig: { 
+                    responseMimeType: "application/json", 
+                    responseSchema: {
+                        "type": "OBJECT",
+                        "properties": {
+                            "overallScore": { "type": "INTEGER" },
+                            "overallComment": { "type": "STRING" },
+                            "dimensionalFeedback": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "dimension": { "type": "STRING" },
+                                        "strengths": { "type": "STRING" },
+                                        "suggestions": { "type": "STRING" }
+                                    },
+                                    "required": ["dimension", "strengths", "suggestions"]
+                                }
+                            },
+                            "keyGuidance": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "focusArea": { "type": "STRING" },
+                                        "originalText": { "type": "STRING" },
+                                        "suggestions": { "type": "STRING" },
+                                        "revisedExample": { "type": "STRING" }
+                                    },
+                                    "required": ["focusArea", "originalText", "suggestions", "revisedExample"]
+                                }
+                            }
+                        },
+                        "required": ["overallScore", "overallComment", "dimensionalFeedback", "keyGuidance"]
+                    }
+                }
+            };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) { const errorBody = await response.text(); console.error("API Error Response:", errorBody); throw new Error(`API call failed with status: ${response.status}`); }
+            const result = await response.json();
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) { return JSON.parse(result.candidates[0].content.parts[0].text); }
+            throw new Error("AI未能生成有效的批改回饋。");
+        }
+        
+        // --- Chat Functions ---
+        async function handleChatSubmit() {
+            const chatInput = document.getElementById('chat-input');
+            const question = chatInput.value.trim();
+            if (!question) return;
+
+            addChatMessage('user', question);
+            chatInput.value = '';
+
+            const chatSendBtn = document.getElementById('chat-send-btn');
+            const chatSendBtnText = document.getElementById('chat-send-btn-text');
+            const chatLoader = document.getElementById('chat-loader');
+
+            chatSendBtn.disabled = true;
+            chatSendBtnText.classList.add('hidden');
+            chatLoader.classList.remove('hidden');
+
+            try {
+                const aiResponse = await getAIChatResponse(question);
+                addChatMessage('model', aiResponse);
+            } catch (error) {
+                console.error("Chat Error:", error);
+                addChatMessage('model', "抱歉，我現在有點忙不過來，請稍後再問我一次喔。");
+            } finally {
+                chatSendBtn.disabled = false;
+                chatSendBtnText.classList.remove('hidden');
+                chatLoader.classList.add('hidden');
+            }
+        }
+
+        function addChatMessage(role, text) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageWrapper = document.createElement('div');
+            const messageBubble = document.createElement('div');
+            
+            messageWrapper.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+            messageBubble.className = 'p-2 rounded-lg max-w-xs';
+            
+            if (role === 'user') {
+                messageBubble.classList.add('bg-blue-500', 'text-white');
+                messageBubble.textContent = text;
+            } else {
+                messageBubble.classList.add('bg-gray-200', 'dark:bg-slate-600', 'text-gray-800', 'dark:text-slate-200');
+                let formattedText = text.replace(/\n/g, '<br>');
+                formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-inherit">$1</strong>');
+                messageBubble.innerHTML = formattedText;
+            }
+
+            messageWrapper.appendChild(messageBubble);
+            chatMessages.appendChild(messageWrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            chatHistory.push({ role: role, parts: [{ text: text }] });
+        }
+        
+        async function getAIChatResponse(question) {
+            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            const prompt = `# 指令：你是一位資深的台灣國中國文老師(學思達教學法)，也是一位作文家教。你剛批改完學生的作文，現在要針對他提出的問題，進行一步步的引導與解惑。
+
+## 你的教學核心（學思達講義知識庫）：
+你必須隨時圍繞以下教學術語來回答問題，並引導學生修改。
+1.  **立意層次 (A-B-C)**：檢視文章思想高度。A層次(現實)、B層次(心靈)、C層次(社會)。
+2.  **情境破題五段式結構**：分析文章是否符合此架構。
+3.  **段落三要素**：檢查關鍵段落是否具備「主題句」、「舉例說明」、「結論句」。
+4.  **感官摹寫**：鼓勵學生運用五感細節(Show, Don't Tell)。
+5.  **修辭三寶**：建議在適當時機使用「譬喻」、「轉化」、「映襯」。
+6.  **首尾呼應**：檢視結尾是否能與開頭的「情境」或「觀點」呼應。
+
+## 上下文資訊：
+### 1. 學生原文：
+"""
+${currentEssayText}
+"""
+
+### 2. 你給的批改建議 (JSON格式):
+"""
+${JSON.stringify(currentFeedback)}
+"""
+
+### 3. 先前的對話紀錄：
+${chatHistory.map(m => `${m.role === 'user' ? '學生' : '老師'}: ${m.parts[0].text}`).join('\n')}
+
+## 學生最新的問題：
+${question}
+
+## 回答規則：
+1.  你的回答必須簡潔、切中要點，直接針對學生的問題。
+2.  **多用提問式引導**，而不是直接給答案。例如：「很好，你注意到這個問題了。那你覺得，如果運用我們講義提到的『感官摹寫』，可以怎麼讓這段更有畫面感呢？」
+3.  如果學生要求具體範例，請提供簡短的示範，並解釋你為何這樣修改。
+4.  如果學生的問題與作文或建議無關，請溫和地引導他回到寫作的討論上。
+5.  **在需要強調的關鍵詞上，使用 Markdown 的粗體語法 \`**關鍵詞**\`。**
+6.  直接輸出你的回答文字，不要包含任何標籤或前綴。`;
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API call failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                return result.candidates[0].content.parts[0].text;
+            }
+            throw new Error("AI未能生成有效的聊天回應。");
+        }
+        
+        // --- Brainstorm Modal Functions ---
+        function toggleBrainstormModal() {
+            let modal = document.getElementById('brainstorm-modal');
+            if (modal) {
+                modal.remove();
+            } else {
+                createBrainstormModal();
+            }
+        }
+
+        function createBrainstormModal() {
+            brainstormChatHistory = []; // Reset history each time modal is opened
+            const selectedLessonKey = lessonSelector.value;
+            const lessonTitle = lessons[selectedLessonKey]?.title || "寫作";
+
+            const modalHTML = `
+                <div id="brainstorm-modal" class="modal-overlay">
+                    <div class="modal-content dark:bg-slate-800">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">靈感產生器：${lessonTitle}</h2>
+                            <button id="close-brainstorm-modal" class="text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-white">&times;</button>
+                        </div>
+                        <div id="brainstorm-chat-messages" class="flex-1 overflow-y-auto p-3 bg-gray-100 dark:bg-slate-700 rounded-lg mb-4 space-y-4">
+                            <div class="flex justify-start"><div class="bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-slate-200 p-2 rounded-lg max-w-xs">同學你好！對於「${lessonTitle}」這個練習，想不到要寫什麼嗎？別擔心，我們可以一起聊聊，把你的想法找出來！你最近有沒有什麼印象深刻的事情呢？</div></div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <input type="text" id="brainstorm-chat-input" class="flex-1 w-full p-2 border border-gray-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" placeholder="任何想法都可以說說看...">
+                            <button id="brainstorm-chat-send-btn" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 flex items-center justify-center">
+                                <span id="brainstorm-send-btn-text">傳送</span>
+                                <div id="brainstorm-loader" class="loader w-5 h-5 border-t-white hidden"></div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            document.getElementById('close-brainstorm-modal').addEventListener('click', toggleBrainstormModal);
+            document.getElementById('brainstorm-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'brainstorm-modal') {
+                    toggleBrainstormModal();
+                }
+            });
+            document.getElementById('brainstorm-chat-send-btn').addEventListener('click', handleBrainstormSubmit);
+            document.getElementById('brainstorm-chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleBrainstormSubmit();
+            });
+            document.getElementById('brainstorm-chat-input').focus();
+        }
+
+        async function handleBrainstormSubmit() {
+            const input = document.getElementById('brainstorm-chat-input');
+            const question = input.value.trim();
+            if (!question) return;
+            
+            addBrainstormChatMessage('user', question);
+            input.value = '';
+
+            const sendBtn = document.getElementById('brainstorm-chat-send-btn');
+            const btnText = document.getElementById('brainstorm-send-btn-text');
+            const loader = document.getElementById('brainstorm-loader');
+            
+            sendBtn.disabled = true;
+            btnText.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            try {
+                const aiResponse = await getAIBrainstormResponse(question);
+                addBrainstormChatMessage('model', aiResponse);
+            } catch (error) {
+                console.error("Brainstorming AI Error:", error);
+                addBrainstormChatMessage('model', "糟糕，我的靈感好像斷線了... 你可以檢查一下網路，然後再問我一次嗎？");
+            } finally {
+                sendBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                loader.classList.add('hidden');
+            }
+        }
+        
+        function addBrainstormChatMessage(role, text) {
+            const container = document.getElementById('brainstorm-chat-messages');
+            const messageWrapper = document.createElement('div');
+            const messageBubble = document.createElement('div');
+            
+            messageWrapper.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+            messageBubble.className = 'p-2 rounded-lg max-w-xs';
+            
+            if (role === 'user') {
+                messageBubble.classList.add('bg-blue-500', 'text-white');
+                messageBubble.textContent = text;
+            } else {
+                messageBubble.classList.add('bg-gray-200', 'dark:bg-slate-600', 'text-gray-800', 'dark:text-slate-200');
+                let formattedText = text.replace(/\n/g, '<br>');
+                formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-inherit">$1</strong>');
+                messageBubble.innerHTML = formattedText;
+            }
+
+            messageWrapper.appendChild(messageBubble);
+            container.appendChild(messageWrapper);
+            container.scrollTop = container.scrollHeight;
+
+            brainstormChatHistory.push({ role: role, parts: [{ text: text }] });
+        }
+        
+        async function getAIBrainstormResponse(question) {
+            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            const selectedLessonKey = lessonSelector.value;
+            const lesson = lessons[selectedLessonKey] || { title: '通用寫作', guidance: '無特定引導。' };
+
+            const prompt = `# 指令：你是一位友善且擅長引導的台灣國中「學思達」作文助教。你的任務是擔任學生的腦力激盪夥伴，幫助對於作文題目完全沒有靈感的學生，找到可以發揮的切入點。
+
+## 核心原則：
+- **絕不代寫：** 你的目標是「啟發」，而不是「給答案」。嚴禁直接提供完整的故事情節或段落。
+- **多用提問：** 使用蘇格拉底式的提問法，引導學生從自己的生活經驗中尋找素材。
+- **連結講義：** 將你的引導與該課次的學習重點緊密結合，自然地使用講義中的術語。
+- **保持溫暖：** 語氣要充滿鼓勵性、同理心，讓學生感覺像在和一位親切的學長姐聊天。
+
+## 上下文資訊：
+### 1. 本次課堂練習主題：
+- **課次名稱：** ${lesson.title}
+- **核心概念引導：** ${lesson.guidance.replace(/<[^>]*>?/gm, '')}
+
+### 2. 先前的對話紀錄：
+${brainstormChatHistory.map(m => `${m.role === 'user' ? '學生' : '助教'}: ${m.parts[0].text}`).join('\n')}
+
+## 學生最新的問題/想法：
+${question}
+
+## 回答範例與規則：
+1.  **當學生說「我不知道要寫什麼」時：**
+    - **你應該問：** 「沒關係的，我們一起來想！這個主題讓你聯想到最近生活中的哪一件小事嗎？無論多小都可以喔！」
+    - **而不是說：** 「你可以寫一個關於跟朋友吵架和好的故事。」
+2.  **當學生給出一個初步想法時：**
+    - **你應該問：** 「這個經驗聽起來很特別耶！如果我們用這堂課學到的 **A-B-C層次** 來分析，你覺得這件事在『現實(A)』發生了什麼？它又帶給你什麼『內心(B)』的感覺呢？」
+    - **而不是說：** 「很好，那你就把這個故事寫下來吧。」
+3.  **在需要強調的關鍵詞上，使用 Markdown 的粗體語法 \`**關鍵詞**\`。**
+4.  直接輸出你的回答文字，不要包含任何標籤或前綴。`;
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API call failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                return result.candidates[0].content.parts[0].text;
+            }
+            throw new Error("AI未能生成有效的腦力激盪回應。");
+        }
+
+    </script>
+</body>
+</html>
