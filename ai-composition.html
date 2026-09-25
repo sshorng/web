@@ -221,11 +221,11 @@
         // --- API Configuration ---
         const API_KEY = atob("QVEuQWI4Uk42TGJYamR5LWQzOTFWdHRpQll1TDhqMm40WTY3eDN5M1VXNHM2eHZkcnd6bnc=");
         const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
-        const MODEL_NAME = "gemini-2.5-flash";
+        const MODEL_NAME = "gemini-flash-latest";
         const CHAT_MODEL_NAME = "gemini-flash-lite-latest"; // AI 作文家教/對話專用模型
 
-        // --- Universal Gemini API Caller with Exponential Backoff & 429 Queue Handling ---
-        async function callGeminiAPI(apiUrl, payload, onRetryNotice = null, maxRetries = 6) {
+        // --- Universal Gemini API Caller ---
+        async function callGeminiAPI(apiUrl, payload, maxRetries = 2) {
             let attempt = 0;
             while (true) {
                 try {
@@ -235,22 +235,13 @@
                         body: JSON.stringify(payload)
                     });
 
-                    if (response.status === 429 || response.status === 503) {
+                    // 僅在真正的 429 限流時做一次極短重試，其餘狀態不拖延
+                    if (response.status === 429) {
                         attempt++;
-                        if (attempt > maxRetries) {
-                            throw new Error(`伺服器忙碌（已自動排隊重試 ${maxRetries} 次，HTTP ${response.status}），請稍候再試。`);
+                        if (attempt <= maxRetries) {
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+                            continue;
                         }
-                        // 指數退避 (2.5s, 3.75s, 5.6s...) + 隨機擾動 (jitter 0~2s) 避開全班同時重試驚群
-                        const baseDelay = 2500;
-                        const delay = Math.round(baseDelay * Math.pow(1.5, attempt - 1) + Math.random() * 2000);
-                        const waitSec = Math.round(delay / 1000);
-
-                        if (typeof onRetryNotice === 'function') {
-                            onRetryNotice(attempt, waitSec, response.status);
-                        }
-
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        continue;
                     }
 
                     if (!response.ok) {
@@ -261,20 +252,12 @@
 
                     return await response.json();
                 } catch (err) {
-                    if (err.message && (err.message.includes('API 請求失敗') || err.message.includes('已自動排隊重試'))) {
-                        throw err;
-                    }
+                    if (attempt >= maxRetries) throw err;
                     attempt++;
-                    if (attempt > maxRetries) {
-                        throw err;
-                    }
-                    const delay = 3000 + Math.random() * 2000;
-                    if (typeof onRetryNotice === 'function') {
-                        onRetryNotice(attempt, Math.round(delay / 1000));
-                    }
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
+        }
         }
 
 
@@ -583,8 +566,8 @@
             throw new Error("AI未能加上標點。");
         }
 
-        async function handleSubmit() {
-            submitErrorMessage.classList.add('hidden'); // Reset on each click
+                async function handleSubmit() {
+            submitErrorMessage.classList.add('hidden');
 
             const essayText = essayInput.value.trim();
             const topicText = topicInput.value.trim();
@@ -595,22 +578,10 @@
             }
             
             const selectedLesson = lessonSelector.value;
-            setLoadingState(true, 'AI 助教批改中...', '正在深度分析你的文章結構與用詞，請稍候。');
+            setLoadingState(true, 'AI 助教批改中...');
             
             try {
-                const feedback = await getAIFeedback(essayText, topicText, topicImageBase64, selectedLesson, (attempt, waitSec, status) => {
-                    if (status === 429) {
-                        updateLoadingMessage(
-                            '⏳ 助教正在為您排隊中…',
-                            `全班練習較為熱絡，已為您自動排隊（預估等待約 ${waitSec} 秒，第 ${attempt} 次重試）…`
-                        );
-                    } else {
-                        updateLoadingMessage(
-                            '🔄 正在重新連線中…',
-                            `雲端伺服器回應稍慢，正在為您重連（約 ${waitSec} 秒，第 ${attempt} 次嘗試）…`
-                        );
-                    }
-                });
+                const feedback = await getAIFeedback(essayText, topicText, topicImageBase64, selectedLesson);
                 currentEssayText = essayText;
                 currentFeedback = feedback;
                 chatHistory = [];
@@ -623,126 +594,14 @@
             }
         }
 
-        function setLoadingState(isLoading, text = 'AI 助教批改中...', subtext = '正在深度分析你的文章結構與用詞，請稍候。') {
-            const loadingHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-center"><div class="text-center text-gray-500 dark:text-slate-400"><div class="loader mx-auto"></div><h3 id="loading-main-text" class="mt-4 text-xl font-medium text-gray-800 dark:text-slate-200">${text}</h3><p id="loading-sub-text" class="mt-1 text-md text-gray-600 dark:text-slate-400">${subtext}</p></div></div>`;
+        function setLoadingState(isLoading, text = 'AI 助教批改中...') {
+            const loadingHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-center"><div class="text-center text-gray-500 dark:text-slate-400"><div class="loader mx-auto"></div><h3 class="mt-4 text-xl font-medium text-gray-800 dark:text-slate-200">${text}</h3><p class="mt-1 text-md text-gray-600 dark:text-slate-400">正在深度分析你的文章結構與用詞，請稍候。</p></div></div>`;
             if (isLoading) {
                 inputSection.classList.add('hidden');
                 feedbackSection.innerHTML = loadingHTML;
                 feedbackSection.classList.remove('hidden');
             }
-        }
-
-        function updateLoadingMessage(mainText, subText) {
-            const mainEl = document.getElementById('loading-main-text');
-            const subEl = document.getElementById('loading-sub-text');
-            if (mainEl && mainText) mainEl.textContent = mainText;
-            if (subEl && subText) subEl.textContent = subText;
-        }
-
-        function displayFeedback(data) {
-            inputSection.classList.add('hidden');
-            feedbackSection.classList.remove('hidden');
-            feedbackSection.innerHTML = ''; // Clear previous results
-
-            const resultContainer = document.createElement('div');
-            resultContainer.className = 'bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-xl shadow-lg fade-in';
-            
-            const scoreText = { 6: '六級分（精熟）', 5: '五級分（精熟）', 4: '四級分（基礎）', 3: '三級分（待加強）', 2: '二级分（待加強）', 1: '一級分（待加強）' };
-
-            let feedbackHTML = `
-                <div class="flex justify-end mb-4 space-x-2">
-                    <button id="back-to-edit-btn" class="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">返回修改</button>
-                </div>
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white text-center">批改總評</h2>
-                    <div class="mt-2 text-center">
-                        <div class="inline-block bg-blue-100 text-blue-800 text-3xl font-bold px-6 py-2 rounded-full dark:bg-blue-900/50 dark:text-blue-300">${scoreText[data.overallScore] || `${data.overallScore}級分`}</div>
-                    </div>
-                    <p class="mt-4 text-left text-lg p-4 bg-gray-100 rounded-lg dark:bg-slate-700 text-gray-800 dark:text-slate-200"><span class="font-bold">老師的話：</span>${data.overallComment}</p>
-                </div>
-                <div class="space-y-4 mb-8">
-            `;
-            const dimensionColors = { '立意取材': 'border-l-red-500', '結構組織': 'border-l-blue-500', '遣詞造句': 'border-l-green-500', '錯別字、格式與標點符號': 'border-l-yellow-500' };
-
-            data.dimensionalFeedback.forEach(item => {
-                feedbackHTML += `<div class="feedback-card bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm ${dimensionColors[item.dimension] || 'border-l-gray-400'}"><h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">${item.dimension}</h3><div class="space-y-3"><div><h4 class="font-semibold text-green-600 dark:text-green-400">✔️ 做得好的地方</h4><p class="text-gray-700 dark:text-slate-300 ml-1">${item.strengths}</p></div><div><h4 class="font-semibold text-orange-600 dark:text-orange-400">💡 可以更好的地方</h4><p class="text-gray-700 dark:text-slate-300 ml-1">${item.suggestions}</p></div></div></div>`;
-            });
-            feedbackHTML += `</div>`;
-
-            // Key Guidance Section
-            feedbackHTML += `<div class="border-t dark:border-slate-700 pt-6"><h2 class="text-2xl font-bold text-gray-900 dark:text-white text-center mb-4">關鍵指導</h2><div class="space-y-6">`;
-            
-            data.keyGuidance.forEach(guidance => {
-                const revisedExampleHTML = guidance.revisedExample.replace(/\*\*(.*?)\*\*/g, '<strong class="text-green-600 dark:text-green-300 font-bold">$1</strong>');
-                feedbackHTML += `
-                    <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg">
-                        <h4 class="font-bold text-lg text-gray-800 dark:text-slate-200 mb-3">⭐ 學習焦點：${guidance.focusArea}</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="p-3 rounded-md bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-400 dark:border-orange-500">
-                                <p class="text-sm font-bold text-orange-700 dark:text-orange-400 mb-1">你的原文</p>
-                                <p class="text-md text-gray-700 dark:text-slate-300 whitespace-pre-wrap">${guidance.originalText}</p>
-                            </div>
-                            <div class="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 dark:border-green-500">
-                                <p class="text-sm font-bold text-green-700 dark:text-green-400 mb-1">可以這樣修改</p>
-                                <p class="text-md text-gray-700 dark:text-slate-300 whitespace-pre-wrap">${revisedExampleHTML}</p>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <p class="font-semibold text-gray-700 dark:text-slate-300">💡 老師建議：</p>
-                            <p class="text-gray-600 dark:text-slate-400">${guidance.suggestions}</p>
-                        </div>
-                    </div>`;
-            });
-            feedbackHTML += `</div></div>`;
-            
-            // Add the chat box
-            feedbackHTML += `
-                <div id="ai-chat-container" class="mt-8 border-t pt-6 dark:border-slate-700">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">AI 作文家教</h3>
-                    <div id="chat-messages" class="h-64 overflow-y-auto p-3 bg-gray-100 dark:bg-slate-700 rounded-lg mb-3 space-y-4">
-                        <div class="flex justify-start"><div class="bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-slate-200 p-2 rounded-lg max-w-xs">同學你好！針對剛剛的批改建議，有什麼不清楚的地方，或想知道如何一步步修改嗎？隨時都可以問我喔！</div></div>
-                    </div>
-                    <div class="flex space-x-2">
-                        <input type="text" id="chat-input" class="flex-1 w-full p-2 border border-gray-300 rounded-lg dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-400" placeholder="問問AI老師...">
-                        <button id="chat-send-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center">
-                            <span id="chat-send-btn-text">傳送</span>
-                            <div id="chat-loader" class="loader w-5 h-5 border-t-white hidden"></div>
-                        </button>
-                    </div>
-                    <!-- 預設建議問題泡泡 -->
-                    <div class="mt-3 flex flex-wrap gap-2 items-center">
-                        <span class="text-xs text-gray-500 dark:text-slate-400 font-medium">💡 快速提問：</span>
-                        <button type="button" class="quick-prompt-btn text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
-                            你會建議我改寫哪一段？
-                        </button>
-                        <button type="button" class="quick-prompt-btn text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
-                            如何把立意提升到 B、C 思想層次？
-                        </button>
-                        <button type="button" class="quick-prompt-btn text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
-                            我的開頭要怎麼改更有畫面感？
-                        </button>
-                        <button type="button" class="quick-prompt-btn text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
-                            請幫我挑一句示範更生動的感官摹寫
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            resultContainer.innerHTML = feedbackHTML;
-            feedbackSection.appendChild(resultContainer);
-            
-            document.getElementById('back-to-edit-btn').addEventListener('click', () => {
-                feedbackSection.classList.add('hidden');
-                inputSection.classList.remove('hidden');
-                showFeedbackBtn.classList.remove('hidden');
-            });
-
-            document.getElementById('chat-send-btn').addEventListener('click', () => handleChatSubmit());
-            document.getElementById('chat-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    handleChatSubmit();
-                }
-            });
+        });
             document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const qText = btn.textContent.trim();
@@ -757,7 +616,7 @@
             feedbackSection.innerHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg fade-in"><div class="text-center text-red-500"><svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><h3 class="mt-2 text-xl font-medium">批改失敗</h3><p class="mt-1 text-md">${message || '抱歉，系統暫時無法連線，請稍後再試一次。'}</p></div></div>`;
         }
 
-        async function getAIFeedback(essayText, topicText, topicImgBase64, lessonKey = 'general', onRetryNotice = null) {
+        async function getAIFeedback(essayText, topicText, topicImgBase64, lessonKey = 'general') {
             const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
             
             let lessonInstructions = '';
@@ -842,7 +701,7 @@ ${essayText}`;
                     }
                 }
             };
-            const result = await callGeminiAPI(apiUrl, payload, onRetryNotice);
+            const result = await callGeminiAPI(apiUrl, payload);
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) { return JSON.parse(result.candidates[0].content.parts[0].text); }
             throw new Error("AI未能生成有效的批改回饋。");
         }
