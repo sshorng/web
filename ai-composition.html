@@ -9,6 +9,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        .typing-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: currentColor;
+            margin: 0 2px;
+            animation: typingBounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
         body {
             font-family: 'Noto Sans TC', sans-serif;
         }
@@ -206,6 +222,7 @@
         const API_KEY = atob("QVEuQWI4Uk42TGJYamR5LWQzOTFWdHRpQll1TDhqMm40WTY3eDN5M1VXNHM2eHZkcnd6bnc=");
         const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
         const MODEL_NAME = "gemini-2.5-flash";
+        const CHAT_MODEL_NAME = "gemini-flash-lite-latest"; // AI 作文家教/對話專用模型
 
         // --- Universal Gemini API Caller with Exponential Backoff & 429 Queue Handling ---
         async function callGeminiAPI(apiUrl, payload, onRetryNotice = null, maxRetries = 6) {
@@ -692,6 +709,22 @@
                             <div id="chat-loader" class="loader w-5 h-5 border-t-white hidden"></div>
                         </button>
                     </div>
+                    <!-- 預設建議問題泡泡 -->
+                    <div class="mt-3 flex flex-wrap gap-2 items-center">
+                        <span class="text-xs text-gray-500 dark:text-slate-400 font-medium">💡 快速提問：</span>
+                        <button type="button" class="quick-prompt-btn text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            這篇哪一段寫得最好？
+                        </button>
+                        <button type="button" class="quick-prompt-btn text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            如何把立意提升到 B、C 思想層次？
+                        </button>
+                        <button type="button" class="quick-prompt-btn text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            我的開頭要怎麼改更有畫面感？
+                        </button>
+                        <button type="button" class="quick-prompt-btn text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            請幫我挑一句示範更生動的感官摹寫
+                        </button>
+                    </div>
                 </div>
             `;
             
@@ -704,11 +737,17 @@
                 showFeedbackBtn.classList.remove('hidden');
             });
 
-            document.getElementById('chat-send-btn').addEventListener('click', handleChatSubmit);
+            document.getElementById('chat-send-btn').addEventListener('click', () => handleChatSubmit());
             document.getElementById('chat-input').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     handleChatSubmit();
                 }
+            });
+            document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const qText = btn.textContent.trim();
+                    handleChatSubmit(qText);
+                });
             });
         }
 
@@ -809,9 +848,31 @@ ${essayText}`;
         }
         
         // --- Chat Functions ---
-        async function handleChatSubmit() {
+        function addThinkingMessage() {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageWrapper = document.createElement('div');
+            messageWrapper.id = 'chat-thinking-indicator';
+            messageWrapper.className = 'flex justify-start';
+            messageWrapper.innerHTML = `
+                <div class="bg-blue-50 dark:bg-slate-700/80 border border-blue-200 dark:border-slate-600 text-blue-800 dark:text-blue-300 p-2.5 rounded-lg max-w-xs shadow-sm flex items-center space-x-1.5 fade-in">
+                    <span class="text-sm font-medium">💭 助教正在思考並整理建議中</span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            `;
+            chatMessages.appendChild(messageWrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeThinkingMessage() {
+            const el = document.getElementById('chat-thinking-indicator');
+            if (el) el.remove();
+        }
+
+        async function handleChatSubmit(customQuestion = null) {
             const chatInput = document.getElementById('chat-input');
-            const question = chatInput.value.trim();
+            const question = (typeof customQuestion === 'string' ? customQuestion : chatInput.value).trim();
             if (!question) return;
 
             addChatMessage('user', question);
@@ -825,11 +886,15 @@ ${essayText}`;
             chatSendBtnText.classList.add('hidden');
             chatLoader.classList.remove('hidden');
 
+            addThinkingMessage();
+
             try {
                 const aiResponse = await getAIChatResponse(question);
+                removeThinkingMessage();
                 addChatMessage('model', aiResponse);
             } catch (error) {
                 console.error("Chat Error:", error);
+                removeThinkingMessage();
                 addChatMessage('model', "抱歉，我現在有點忙不過來，請稍後再問我一次喔。");
             } finally {
                 chatSendBtn.disabled = false;
@@ -864,7 +929,7 @@ ${essayText}`;
         }
         
         async function getAIChatResponse(question) {
-            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            const apiUrl = `${API_BASE_URL}${CHAT_MODEL_NAME}:generateContent?key=${API_KEY}`;
             const prompt = `# 指令：你是一位資深的台灣國中國文老師(學思達教學法)，也是一位作文家教。你剛批改完學生的作文，現在要針對他提出的問題，進行一步步的引導與解惑。
 
 ## 你的教學核心（學思達講義知識庫）：
