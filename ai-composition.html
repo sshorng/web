@@ -9,22 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        .typing-dot {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: currentColor;
-            margin: 0 2px;
-            animation: typingBounce 1.4s infinite ease-in-out both;
-        }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typingBounce {
-            0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-
         body {
             font-family: 'Noto Sans TC', sans-serif;
         }
@@ -83,6 +67,21 @@
         }
         .dark .modal-content {
             background: #1e293b; /* slate-800 */
+        }
+        .typing-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: currentColor;
+            margin: 0 2px;
+            animation: typingBounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
@@ -221,45 +220,7 @@
         // --- API Configuration ---
         const API_KEY = atob("QVEuQWI4Uk42TGJYamR5LWQzOTFWdHRpQll1TDhqMm40WTY3eDN5M1VXNHM2eHZkcnd6bnc=");
         const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
-        const MODEL_NAME = "gemini-flash-latest";
-        const CHAT_MODEL_NAME = "gemini-flash-lite-latest"; // AI 作文家教/對話專用模型
-
-        // --- Universal Gemini API Caller ---
-        async function callGeminiAPI(apiUrl, payload, maxRetries = 2) {
-            let attempt = 0;
-            while (true) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    // 僅在真正的 429 限流時做一次極短重試，其餘狀態不拖延
-                    if (response.status === 429) {
-                        attempt++;
-                        if (attempt <= maxRetries) {
-                            await new Promise(resolve => setTimeout(resolve, 1500));
-                            continue;
-                        }
-                    }
-
-                    if (!response.ok) {
-                        const errorBody = await response.text();
-                        console.error("API Error Response:", errorBody);
-                        throw new Error(`API 請求失敗 (狀態碼: ${response.status})`);
-                    }
-
-                    return await response.json();
-                } catch (err) {
-                    if (attempt >= maxRetries) throw err;
-                    attempt++;
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-        }
-        }
-
+        const MODEL_NAME = "gemini-flash-lite-latest";
 
         // --- State Variables ---
         let isListening = false;
@@ -511,7 +472,9 @@
         async function callGeminiVision(base64ImageData, visionPrompt) {
             const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
             const payload = { contents: [{ parts: [{ text: visionPrompt }, { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }] }] };
-            const result = await callGeminiAPI(apiUrl, payload);
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text;
             }
@@ -559,15 +522,17 @@
             const prompt = `請為以下這段聽寫的繁體中文文字加上適當的標點符號，使其成為通順的句子。請直接回傳加上標點後的文字，不要包含任何額外的說明或標籤。\n\n文字如下：\n"${text}"`;
             
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
-            const result = await callGeminiAPI(apiUrl, payload);
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text.trim();
             }
             throw new Error("AI未能加上標點。");
         }
 
-                async function handleSubmit() {
-            submitErrorMessage.classList.add('hidden');
+        async function handleSubmit() {
+            submitErrorMessage.classList.add('hidden'); // Reset on each click
 
             const essayText = essayInput.value.trim();
             const topicText = topicInput.value.trim();
@@ -594,14 +559,119 @@
             }
         }
 
-        function setLoadingState(isLoading, text = 'AI 助教批改中...') {
-            const loadingHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-center"><div class="text-center text-gray-500 dark:text-slate-400"><div class="loader mx-auto"></div><h3 class="mt-4 text-xl font-medium text-gray-800 dark:text-slate-200">${text}</h3><p class="mt-1 text-md text-gray-600 dark:text-slate-400">正在深度分析你的文章結構與用詞，請稍候。</p></div></div>`;
+        function setLoadingState(isLoading, text = 'AI 老師批改中...') {
+            const loadingHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-center"><div class="text-center text-gray-500 dark:text-slate-400"><div class="loader mx-auto"></div><h3 class="mt-4 text-xl font-medium">${text}</h3><p class="mt-1 text-md">正在深度分析你的文章結構與用詞，請稍候。</p></div></div>`;
             if (isLoading) {
                 inputSection.classList.add('hidden');
                 feedbackSection.innerHTML = loadingHTML;
                 feedbackSection.classList.remove('hidden');
             }
-        });
+        }
+
+        function displayFeedback(data) {
+            inputSection.classList.add('hidden');
+            feedbackSection.classList.remove('hidden');
+            feedbackSection.innerHTML = ''; // Clear previous results
+
+            const resultContainer = document.createElement('div');
+            resultContainer.className = 'bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-xl shadow-lg fade-in';
+            
+            const scoreText = { 6: '六級分（精熟）', 5: '五級分（精熟）', 4: '四級分（基礎）', 3: '三級分（待加強）', 2: '二级分（待加強）', 1: '一級分（待加強）' };
+
+            let feedbackHTML = `
+                <div class="flex justify-end mb-4 space-x-2">
+                    <button id="back-to-edit-btn" class="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">返回修改</button>
+                </div>
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white text-center">批改總評</h2>
+                    <div class="mt-2 text-center">
+                        <div class="inline-block bg-blue-100 text-blue-800 text-3xl font-bold px-6 py-2 rounded-full dark:bg-blue-900/50 dark:text-blue-300">${scoreText[data.overallScore] || `${data.overallScore}級分`}</div>
+                    </div>
+                    <p class="mt-4 text-left text-lg p-4 bg-gray-100 rounded-lg dark:bg-slate-700 text-gray-800 dark:text-slate-200"><span class="font-bold">老師的話：</span>${data.overallComment}</p>
+                </div>
+                <div class="space-y-4 mb-8">
+            `;
+            const dimensionColors = { '立意取材': 'border-l-red-500', '結構組織': 'border-l-blue-500', '遣詞造句': 'border-l-green-500', '錯別字、格式與標點符號': 'border-l-yellow-500' };
+
+            data.dimensionalFeedback.forEach(item => {
+                feedbackHTML += `<div class="feedback-card bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm ${dimensionColors[item.dimension] || 'border-l-gray-400'}"><h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">${item.dimension}</h3><div class="space-y-3"><div><h4 class="font-semibold text-green-600 dark:text-green-400">✔️ 做得好的地方</h4><p class="text-gray-700 dark:text-slate-300 ml-1">${item.strengths}</p></div><div><h4 class="font-semibold text-orange-600 dark:text-orange-400">💡 可以更好的地方</h4><p class="text-gray-700 dark:text-slate-300 ml-1">${item.suggestions}</p></div></div></div>`;
+            });
+            feedbackHTML += `</div>`;
+
+            // Key Guidance Section
+            feedbackHTML += `<div class="border-t dark:border-slate-700 pt-6"><h2 class="text-2xl font-bold text-gray-900 dark:text-white text-center mb-4">關鍵指導</h2><div class="space-y-6">`;
+            
+            data.keyGuidance.forEach(guidance => {
+                const revisedExampleHTML = guidance.revisedExample.replace(/\*\*(.*?)\*\*/g, '<strong class="text-green-600 dark:text-green-300 font-bold">$1</strong>');
+                feedbackHTML += `
+                    <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg text-gray-800 dark:text-slate-200 mb-3">⭐ 學習焦點：${guidance.focusArea}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-3 rounded-md bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-400 dark:border-orange-500">
+                                <p class="text-sm font-bold text-orange-700 dark:text-orange-400 mb-1">你的原文</p>
+                                <p class="text-md text-gray-700 dark:text-slate-300 whitespace-pre-wrap">${guidance.originalText}</p>
+                            </div>
+                            <div class="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 dark:border-green-500">
+                                <p class="text-sm font-bold text-green-700 dark:text-green-400 mb-1">可以這樣修改</p>
+                                <p class="text-md text-gray-700 dark:text-slate-300 whitespace-pre-wrap">${revisedExampleHTML}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <p class="font-semibold text-gray-700 dark:text-slate-300">💡 老師建議：</p>
+                            <p class="text-gray-600 dark:text-slate-400">${guidance.suggestions}</p>
+                        </div>
+                    </div>`;
+            });
+            feedbackHTML += `</div></div>`;
+            
+            // Add the chat box
+            feedbackHTML += `
+                <div id="ai-chat-container" class="mt-8 border-t pt-6 dark:border-slate-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">AI 作文家教</h3>
+                    <div id="chat-messages" class="h-64 overflow-y-auto p-3 bg-gray-100 dark:bg-slate-700 rounded-lg mb-3 space-y-4">
+                        <div class="flex justify-start"><div class="bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-slate-200 p-2 rounded-lg max-w-xs">同學你好！針對剛剛的批改建議，有什麼不清楚的地方，或想知道如何一步步修改嗎？隨時都可以問我喔！</div></div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <input type="text" id="chat-input" class="flex-1 w-full p-2 border border-gray-300 rounded-lg dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-400" placeholder="問問AI老師...">
+                        <button id="chat-send-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center">
+                            <span id="chat-send-btn-text">傳送</span>
+                            <div id="chat-loader" class="loader w-5 h-5 border-t-white hidden"></div>
+                        </button>
+                    </div>
+                    <!-- 預設建議問題泡泡 -->
+                    <div class="mt-3 flex flex-wrap gap-2 items-center">
+                        <span class="text-xs text-gray-500 dark:text-slate-400 font-medium">💡 快速提問：</span>
+                        <button type="button" class="quick-prompt-btn text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            你會建議我改寫哪一段？
+                        </button>
+                        <button type="button" class="quick-prompt-btn text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            如何把立意提升到 B、C 思想層次？
+                        </button>
+                        <button type="button" class="quick-prompt-btn text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            我的開頭要怎麼改更有畫面感？
+                        </button>
+                        <button type="button" class="quick-prompt-btn text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-700/60 px-3 py-1 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm">
+                            請幫我挑一句示範更生動的感官摹寫
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            resultContainer.innerHTML = feedbackHTML;
+            feedbackSection.appendChild(resultContainer);
+            
+            document.getElementById('back-to-edit-btn').addEventListener('click', () => {
+                feedbackSection.classList.add('hidden');
+                inputSection.classList.remove('hidden');
+                showFeedbackBtn.classList.remove('hidden');
+            });
+
+            document.getElementById('chat-send-btn').addEventListener('click', () => handleChatSubmit());
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleChatSubmit();
+                }
+            });
             document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const qText = btn.textContent.trim();
@@ -701,7 +771,9 @@ ${essayText}`;
                     }
                 }
             };
-            const result = await callGeminiAPI(apiUrl, payload);
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) { const errorBody = await response.text(); console.error("API Error Response:", errorBody); throw new Error(`API call failed with status: ${response.status}`); }
+            const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) { return JSON.parse(result.candidates[0].content.parts[0].text); }
             throw new Error("AI未能生成有效的批改回饋。");
         }
@@ -788,7 +860,7 @@ ${essayText}`;
         }
         
         async function getAIChatResponse(question) {
-            const apiUrl = `${API_BASE_URL}${CHAT_MODEL_NAME}:generateContent?key=${API_KEY}`;
+            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
             const prompt = `# 指令：你是一位資深的台灣國中國文老師(學思達教學法)，也是一位作文家教。你剛批改完學生的作文，現在要針對他提出的問題，進行一步步的引導與解惑。
 
 ## 你的教學核心（學思達講義知識庫）：
@@ -829,7 +901,17 @@ ${question}
                 contents: [{ role: "user", parts: [{ text: prompt }] }]
             };
 
-            const result = await callGeminiAPI(apiUrl, payload);
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API call failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text;
             }
@@ -978,7 +1060,17 @@ ${question}
                 contents: [{ role: "user", parts: [{ text: prompt }] }]
             };
 
-            const result = await callGeminiAPI(apiUrl, payload);
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API call failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text;
             }
