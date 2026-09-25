@@ -220,7 +220,8 @@
         // --- API Configuration ---
         const API_KEY = atob("QVEuQWI4Uk42TGJYamR5LWQzOTFWdHRpQll1TDhqMm40WTY3eDN5M1VXNHM2eHZkcnd6bnc=");
         const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
-        const MODEL_NAME = "gemini-flash-lite-latest";
+        const MODEL_NAME = "gemini-flash-latest";
+        const CHAT_MODEL_NAME = "gemini-flash-lite-latest";
 
         // --- State Variables ---
         let isListening = false;
@@ -860,7 +861,7 @@ ${essayText}`;
         }
         
         async function getAIChatResponse(question) {
-            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            const apiUrl = `${API_BASE_URL}${CHAT_MODEL_NAME}:generateContent?key=${API_KEY}`;
             const prompt = `# 指令：你是一位資深的台灣國中國文老師(學思達教學法)，也是一位作文家教。你剛批改完學生的作文，現在要針對他提出的問題，進行一步步的引導與解惑。
 
 ## 你的教學核心（學思達講義知識庫）：
@@ -1023,7 +1024,7 @@ ${question}
         }
         
         async function getAIBrainstormResponse(question) {
-            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            const apiUrl = `${API_BASE_URL}${CHAT_MODEL_NAME}:generateContent?key=${API_KEY}`;
             const selectedLessonKey = lessonSelector.value;
             const lesson = lessons[selectedLessonKey] || { title: '通用寫作', guidance: '無特定引導。' };
 
