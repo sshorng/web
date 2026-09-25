@@ -205,7 +205,7 @@
         // --- API Configuration ---
         const API_KEY = atob("QVEuQWI4Uk42TGJYamR5LWQzOTFWdHRpQll1TDhqMm40WTY3eDN5M1VXNHM2eHZkcnd6bnc=");
         const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
-        const MODEL_NAME = "gemini-flash-latest";
+        const MODEL_NAME = "gemini-2.5-flash";
 
         // --- Universal Gemini API Caller with Exponential Backoff & 429 Queue Handling ---
         async function callGeminiAPI(apiUrl, payload, onRetryNotice = null, maxRetries = 6) {
@@ -229,7 +229,7 @@
                         const waitSec = Math.round(delay / 1000);
 
                         if (typeof onRetryNotice === 'function') {
-                            onRetryNotice(attempt, waitSec);
+                            onRetryNotice(attempt, waitSec, response.status);
                         }
 
                         await new Promise(resolve => setTimeout(resolve, delay));
@@ -581,11 +581,18 @@
             setLoadingState(true, 'AI 助教批改中...', '正在深度分析你的文章結構與用詞，請稍候。');
             
             try {
-                const feedback = await getAIFeedback(essayText, topicText, topicImageBase64, selectedLesson, (attempt, waitSec) => {
-                    updateLoadingMessage(
-                        '⏳ 助教正在為您排隊中…',
-                        `全班練習較為熱絡，已為您自動排隊（預估等待約 ${waitSec} 秒，第 ${attempt} 次重試）…`
-                    );
+                const feedback = await getAIFeedback(essayText, topicText, topicImageBase64, selectedLesson, (attempt, waitSec, status) => {
+                    if (status === 429) {
+                        updateLoadingMessage(
+                            '⏳ 助教正在為您排隊中…',
+                            `全班練習較為熱絡，已為您自動排隊（預估等待約 ${waitSec} 秒，第 ${attempt} 次重試）…`
+                        );
+                    } else {
+                        updateLoadingMessage(
+                            '🔄 正在重新連線中…',
+                            `雲端伺服器回應稍慢，正在為您重連（約 ${waitSec} 秒，第 ${attempt} 次嘗試）…`
+                        );
+                    }
                 });
                 currentEssayText = essayText;
                 currentFeedback = feedback;
