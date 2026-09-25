@@ -207,6 +207,60 @@
         const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
         const MODEL_NAME = "gemini-flash-latest";
 
+        // --- Universal Gemini API Caller with Exponential Backoff & 429 Queue Handling ---
+        async function callGeminiAPI(apiUrl, payload, onRetryNotice = null, maxRetries = 6) {
+            let attempt = 0;
+            while (true) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 429 || response.status === 503) {
+                        attempt++;
+                        if (attempt > maxRetries) {
+                            throw new Error(`伺服器忙碌（已自動排隊重試 ${maxRetries} 次，HTTP ${response.status}），請稍候再試。`);
+                        }
+                        // 指數退避 (2.5s, 3.75s, 5.6s...) + 隨機擾動 (jitter 0~2s) 避開全班同時重試驚群
+                        const baseDelay = 2500;
+                        const delay = Math.round(baseDelay * Math.pow(1.5, attempt - 1) + Math.random() * 2000);
+                        const waitSec = Math.round(delay / 1000);
+
+                        if (typeof onRetryNotice === 'function') {
+                            onRetryNotice(attempt, waitSec);
+                        }
+
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error("API Error Response:", errorBody);
+                        throw new Error(`API 請求失敗 (狀態碼: ${response.status})`);
+                    }
+
+                    return await response.json();
+                } catch (err) {
+                    if (err.message && (err.message.includes('API 請求失敗') || err.message.includes('已自動排隊重試'))) {
+                        throw err;
+                    }
+                    attempt++;
+                    if (attempt > maxRetries) {
+                        throw err;
+                    }
+                    const delay = 3000 + Math.random() * 2000;
+                    if (typeof onRetryNotice === 'function') {
+                        onRetryNotice(attempt, Math.round(delay / 1000));
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+
         // --- State Variables ---
         let isListening = false;
         let recognition;
@@ -457,9 +511,7 @@
         async function callGeminiVision(base64ImageData, visionPrompt) {
             const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
             const payload = { contents: [{ parts: [{ text: visionPrompt }, { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }] }] };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-            const result = await response.json();
+            const result = await callGeminiAPI(apiUrl, payload);
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text;
             }
@@ -507,9 +559,7 @@
             const prompt = `請為以下這段聽寫的繁體中文文字加上適當的標點符號，使其成為通順的句子。請直接回傳加上標點後的文字，不要包含任何額外的說明或標籤。\n\n文字如下：\n"${text}"`;
             
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-            const result = await response.json();
+            const result = await callGeminiAPI(apiUrl, payload);
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text.trim();
             }
@@ -528,10 +578,15 @@
             }
             
             const selectedLesson = lessonSelector.value;
-            setLoadingState(true, 'AI 助教批改中...');
+            setLoadingState(true, 'AI 助教批改中...', '正在深度分析你的文章結構與用詞，請稍候。');
             
             try {
-                const feedback = await getAIFeedback(essayText, topicText, topicImageBase64, selectedLesson);
+                const feedback = await getAIFeedback(essayText, topicText, topicImageBase64, selectedLesson, (attempt, waitSec) => {
+                    updateLoadingMessage(
+                        '⏳ 助教正在為您排隊中…',
+                        `全班練習較為熱絡，已為您自動排隊（預估等待約 ${waitSec} 秒，第 ${attempt} 次重試）…`
+                    );
+                });
                 currentEssayText = essayText;
                 currentFeedback = feedback;
                 chatHistory = [];
@@ -544,13 +599,20 @@
             }
         }
 
-        function setLoadingState(isLoading, text = 'AI 老師批改中...') {
-            const loadingHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-center"><div class="text-center text-gray-500 dark:text-slate-400"><div class="loader mx-auto"></div><h3 class="mt-4 text-xl font-medium">${text}</h3><p class="mt-1 text-md">正在深度分析你的文章結構與用詞，請稍候。</p></div></div>`;
+        function setLoadingState(isLoading, text = 'AI 助教批改中...', subtext = '正在深度分析你的文章結構與用詞，請稍候。') {
+            const loadingHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg flex items-center justify-center"><div class="text-center text-gray-500 dark:text-slate-400"><div class="loader mx-auto"></div><h3 id="loading-main-text" class="mt-4 text-xl font-medium text-gray-800 dark:text-slate-200">${text}</h3><p id="loading-sub-text" class="mt-1 text-md text-gray-600 dark:text-slate-400">${subtext}</p></div></div>`;
             if (isLoading) {
                 inputSection.classList.add('hidden');
                 feedbackSection.innerHTML = loadingHTML;
                 feedbackSection.classList.remove('hidden');
             }
+        }
+
+        function updateLoadingMessage(mainText, subText) {
+            const mainEl = document.getElementById('loading-main-text');
+            const subEl = document.getElementById('loading-sub-text');
+            if (mainEl && mainText) mainEl.textContent = mainText;
+            if (subEl && subText) subEl.textContent = subText;
         }
 
         function displayFeedback(data) {
@@ -649,7 +711,7 @@
             feedbackSection.innerHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg fade-in"><div class="text-center text-red-500"><svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><h3 class="mt-2 text-xl font-medium">批改失敗</h3><p class="mt-1 text-md">${message || '抱歉，系統暫時無法連線，請稍後再試一次。'}</p></div></div>`;
         }
 
-        async function getAIFeedback(essayText, topicText, topicImgBase64, lessonKey = 'general') {
+        async function getAIFeedback(essayText, topicText, topicImgBase64, lessonKey = 'general', onRetryNotice = null) {
             const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
             
             let lessonInstructions = '';
@@ -734,9 +796,7 @@ ${essayText}`;
                     }
                 }
             };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) { const errorBody = await response.text(); console.error("API Error Response:", errorBody); throw new Error(`API call failed with status: ${response.status}`); }
-            const result = await response.json();
+            const result = await callGeminiAPI(apiUrl, payload, onRetryNotice);
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) { return JSON.parse(result.candidates[0].content.parts[0].text); }
             throw new Error("AI未能生成有效的批改回饋。");
         }
@@ -838,17 +898,7 @@ ${question}
                 contents: [{ role: "user", parts: [{ text: prompt }] }]
             };
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API call failed with status: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await callGeminiAPI(apiUrl, payload);
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text;
             }
@@ -997,17 +1047,7 @@ ${question}
                 contents: [{ role: "user", parts: [{ text: prompt }] }]
             };
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API call failed with status: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await callGeminiAPI(apiUrl, payload);
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text;
             }
