@@ -221,7 +221,43 @@
         const API_KEY = atob("QVEuQWI4Uk42TGJYamR5LWQzOTFWdHRpQll1TDhqMm40WTY3eDN5M1VXNHM2eHZkcnd6bnc=");
         const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
         const MODEL_NAME = "gemini-flash-latest";
-        const CHAT_MODEL_NAME = "gemini-flash-lite-latest";
+        const FALLBACK_MODEL_NAME = "gemini-flash-lite-latest";
+        const CHAT_MODEL_NAME = FALLBACK_MODEL_NAME;
+        const RETRYABLE_API_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+        async function fetchGemini(payload, primaryModel = MODEL_NAME) {
+            const modelsToTry = primaryModel === MODEL_NAME
+                ? [MODEL_NAME, FALLBACK_MODEL_NAME]
+                : [primaryModel];
+            let lastStatus = 'unknown';
+
+            for (let index = 0; index < modelsToTry.length; index++) {
+                const model = modelsToTry[index];
+                const apiUrl = `${API_BASE_URL}${model}:generateContent?key=${API_KEY}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) return response;
+
+                lastStatus = response.status;
+                const errorBody = await response.text();
+                console.error(`Gemini API Error (${model}, ${response.status}):`, errorBody);
+
+                const canUseFallback = index === 0
+                    && modelsToTry.length > 1
+                    && RETRYABLE_API_STATUSES.has(response.status);
+                if (!canUseFallback) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                console.warn(`主要模型暫時無法使用，改用 ${FALLBACK_MODEL_NAME} 重試。`);
+            }
+
+            throw new Error(`API call failed with status: ${lastStatus}`);
+        }
 
         // --- State Variables ---
         let isListening = false;
@@ -471,10 +507,8 @@
         }
         
         async function callGeminiVision(base64ImageData, visionPrompt) {
-            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
             const payload = { contents: [{ parts: [{ text: visionPrompt }, { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }] }] };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            const response = await fetchGemini(payload);
             const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text;
@@ -519,12 +553,10 @@
         }
 
         async function addPunctuation(text) {
-            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
             const prompt = `請為以下這段聽寫的繁體中文文字加上適當的標點符號，使其成為通順的句子。請直接回傳加上標點後的文字，不要包含任何額外的說明或標籤。\n\n文字如下：\n"${text}"`;
             
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            const response = await fetchGemini(payload);
             const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
                 return result.candidates[0].content.parts[0].text.trim();
@@ -688,8 +720,6 @@
         }
 
         async function getAIFeedback(essayText, topicText, topicImgBase64, lessonKey = 'general') {
-            const apiUrl = `${API_BASE_URL}${MODEL_NAME}:generateContent?key=${API_KEY}`;
-            
             let lessonInstructions = '';
             if (lessonKey && lessons[lessonKey] && lessons[lessonKey].prompt_addition) {
                 lessonInstructions = `\n## 課堂學習重點：\n本篇文章是針對「${lessons[lessonKey].title}」的練習。批改時，請務必聚焦於以下教學重點，並在回饋中明確使用講義中的相關術語：\n${lessons[lessonKey].prompt_addition}\n`;
@@ -772,8 +802,7 @@ ${essayText}`;
                     }
                 }
             };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) { const errorBody = await response.text(); console.error("API Error Response:", errorBody); throw new Error(`API call failed with status: ${response.status}`); }
+            const response = await fetchGemini(payload);
             const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) { return JSON.parse(result.candidates[0].content.parts[0].text); }
             throw new Error("AI未能生成有效的批改回饋。");
@@ -861,7 +890,6 @@ ${essayText}`;
         }
         
         async function getAIChatResponse(question) {
-            const apiUrl = `${API_BASE_URL}${CHAT_MODEL_NAME}:generateContent?key=${API_KEY}`;
             const prompt = `# 指令：你是一位資深的台灣國中國文老師(學思達教學法)，也是一位作文家教。你剛批改完學生的作文，現在要針對他提出的問題，進行一步步的引導與解惑。
 
 ## 你的教學核心（學思達講義知識庫）：
@@ -902,15 +930,7 @@ ${question}
                 contents: [{ role: "user", parts: [{ text: prompt }] }]
             };
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API call failed with status: ${response.status}`);
-            }
+            const response = await fetchGemini(payload, CHAT_MODEL_NAME);
 
             const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
@@ -1024,7 +1044,6 @@ ${question}
         }
         
         async function getAIBrainstormResponse(question) {
-            const apiUrl = `${API_BASE_URL}${CHAT_MODEL_NAME}:generateContent?key=${API_KEY}`;
             const selectedLessonKey = lessonSelector.value;
             const lesson = lessons[selectedLessonKey] || { title: '通用寫作', guidance: '無特定引導。' };
 
@@ -1061,15 +1080,7 @@ ${question}
                 contents: [{ role: "user", parts: [{ text: prompt }] }]
             };
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API call failed with status: ${response.status}`);
-            }
+            const response = await fetchGemini(payload, CHAT_MODEL_NAME);
 
             const result = await response.json();
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
