@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國中導師 B 表隨身秘書與 AI 諮詢教練</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================================================
+       花叔Design · 日系文具手帳與工坊排印美學 (Studio Midori Editorial)
+       ========================================================================== */
+    :root {
+      --bg: #f7f5f0;               /* 沉靜無反光的厚磅燕麥紙底色 */
+      --bg-surface: #ffffff;       /* 象牙暖白純淨紙面 */
+      --bg-subtle: #fbfaf7;        /* 手帳微淺分頁色 */
+      --bg-hover: #f2eee6;         /* 柔和燕麥懸停色 */
+      
+      --border: #e2ddd5;           /* 細緻 1px 實線邊框 */
+      --border-light: #ece7df;     /* 極細分隔線 */
+      --border-dark: #322d28;      /* 俐落墨黑強調邊界 */
+      
+      --ink-primary: #2c2723;      /* 深焙炭黑暖墨，高對比且完全不刺眼 */
+      --ink-secondary: #635d55;    /* 沉穩胡桃木次級文字 */
+      --ink-tertiary: #958d84;     /* 亞麻灰箋註輔助文字 */
+      
+      --accent: #2b5948;           /* 典雅松針墨綠（主按鈕與核心行動） */
+      --accent-hover: #1f4235;     /* 沉厚松墨 */
+      --accent-soft: #edf4f0;      /* 松針淡綠箋底色 */
+      
+      --brass: #b37424;            /* 溫潤黃銅金色（選取與金鑰重點） */
+      --brass-soft: #fcf4eb;       /* 淺黃銅紙底色 */
+      
+      --danger: #aa3d2c;           /* 硃砂紅警戒色 */
+      --danger-soft: #faeee9;
+      
+      --radius: 6px;               /* 捨棄大圓角，改為俐落文具書本小圓角 */
+      --font-stack: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-stack);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--ink-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 40px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1400px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* 頂部導航列：極簡文具手帳裝幀風格 */
+    header.app-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 24px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      background: var(--ink-primary);
+      color: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      letter-spacing: 0.02em;
+    }
+
+    .brand-meta {
+      font-size: 12px;
+      color: var(--ink-tertiary);
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 按鈕體系：去除俗氣漸變，採用職人實色微框 */
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      border: 1px solid var(--accent);
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-teal {
+      background: var(--brass-soft);
+      color: var(--brass);
+      border: 1px solid #ebd7bf;
+    }
+    .btn-teal:hover {
+      background: #f7e8d5;
+      border-color: var(--brass);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover {
+      background: var(--bg-hover);
+      color: var(--ink-primary);
+      border-color: #d1c9bd;
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--ink-secondary);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--ink-primary);
+      border-color: #d1c9bd;
+    }
+
+    .sheet-ico {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* 雙欄主架構 */
+    .app-main, .workspace-split {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .left-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .right-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* 統一卡片：象牙白面、細線框、無浮誇多層陰影 */
+    .panel-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      letter-spacing: 0.02em;
+    }
+
+    /* 班級座號矩陣：極簡沉靜棋盤 */
+    .seats-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .seat-chip {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      color: var(--ink-secondary);
+      border-radius: 4px;
+      padding: 8px 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.12s ease;
+    }
+
+    .seat-chip:hover {
+      border-color: #c4bbb0;
+      color: var(--ink-primary);
+      background: var(--bg-hover);
+    }
+
+    .seat-chip.active {
+      background: var(--ink-primary);
+      border-color: var(--ink-primary);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .seat-chip.has-records::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--brass);
+    }
+
+    .seat-chip.active.has-records::after {
+      background: #ffffff;
+    }
+
+    /* 當前學生檔案卡：手帳標籤頁質感 */
+    .student-badge-card {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .student-badge-left {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .student-badge-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--ink-primary);
+      letter-spacing: -0.5px;
+    }
+
+    .student-badge-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink-primary);
+    }
+
+    .student-badge-meta {
+      font-size: 12px;
+      color: var(--ink-tertiary);
+    }
+
+    .student-tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .profile-tag {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: var(--ink-secondary);
+      font-weight: 500;
+    }
+
+    .profile-tag.highlight {
+      background: var(--brass-soft);
+      border-color: #ebd7bf;
+      color: var(--brass);
+    }
+
+    .profile-tag.alert {
+      background: var(--danger-soft);
+      border-color: #f2cfc9;
+      color: var(--danger);
+    }
+
+    /* 歷次輔導紀錄時間軸 */
+    .timeline-container {
+      max-height: 400px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .timeline-item {
+      padding: 12px 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .timeline-item:hover {
+      border-color: #c4bbb0;
+      background: var(--bg-subtle);
+    }
+
+    .timeline-item.active-item {
+      border-color: var(--border-dark);
+      border-left: 3px solid var(--ink-primary);
+      background: #ffffff;
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--ink-tertiary);
+      margin-bottom: 5px;
+    }
+
+    .timeline-tag {
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      font-size: 11px;
+      color: var(--ink-secondary);
+      font-weight: 500;
+    }
+
+    .timeline-snippet {
+      font-size: 13px;
+      color: var(--ink-primary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* 表單元件：極致簡約內斂的線條輸入框 */
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 9px 12px;
+      font-size: 13.5px;
+      color: var(--ink-primary);
+      transition: border-color 0.15s ease;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--ink-primary);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 110px;
+      line-height: 1.6;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    /* AI 潤飾前後對照區 */
+    .polish-box {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-subtle);
+      display: none;
+    }
+
+    .polish-box.show, .polish-box.active {
+      display: block;
+    }
+
+
+    /* AI 班級經營與諮商教練：自由對話與即時氣泡 */
+    .coach-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .coach-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .coach-chip-btn {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      color: var(--ink-secondary);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .coach-chip-btn:hover {
+      background: var(--brass-soft);
+      border-color: var(--brass);
+      color: var(--brass);
+    }
+
+    .coach-chat-box {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 16px;
+      min-height: 220px;
+      max-height: 420px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .chat-msg {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 88%;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .chat-msg.ai {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13.5px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .chat-msg.user .chat-bubble {
+      background: var(--ink-primary);
+      color: #ffffff;
+      border-bottom-right-radius: 1px;
+    }
+
+    .chat-msg.ai .chat-bubble {
+      background: #ffffff;
+      color: var(--ink-primary);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 1px;
+    }
+
+    .chat-sender {
+      font-size: 11px;
+      color: var(--ink-tertiary);
+      margin: 0 4px;
+    }
+
+    .chat-copy-btn {
+      font-size: 11px;
+      padding: 2px 8px;
+      background: transparent;
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      margin-top: 4px;
+      align-self: flex-start;
+    }
+    .chat-copy-btn:hover {
+      background: var(--bg-hover);
+      color: var(--ink-primary);
+    }
+
+    .coach-input-bar {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .coach-input-bar textarea {
+      flex: 1;
+      min-height: 42px;
+      height: 42px;
+      max-height: 120px;
+      padding: 9px 12px;
+      font-size: 13.5px;
+      resize: none;
+      line-height: 1.4;
+    }
+
+    /* 舊樣式保留相容 */
+    .coach-section-old {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .coach-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 8px;
+    }
+
+    .coach-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--ink-secondary);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .coach-tab-btn:hover {
+      background: var(--bg-hover);
+      color: var(--ink-primary);
+    }
+
+    .coach-tab-btn.active {
+      background: var(--ink-primary);
+      color: #ffffff;
+    }
+
+    .coach-advice-box {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 16px 20px;
+      font-size: 13.5px;
+      line-height: 1.8;
+      color: var(--ink-primary);
+      min-height: 100px;
+      white-space: pre-wrap;
+    }
+
+    /* 自訂 Modal 體系 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(30, 27, 24, 0.4);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius);
+      width: 90%;
+      max-width: 600px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-card .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      margin-bottom: 8px;
+    }
+
+    .modal-card .message {
+      color: var(--ink-secondary);
+      font-size: 13.5px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .modal-card .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* B 表專用 A4 直式列印排版樣式 */
+    #printArea {
+      display: none;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #ffffff;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 18mm 16mm 18mm 16mm;
+      }
+      .b-table-page {
+        page-break-after: always;
+      }
+      .b-table-header {
+        text-align: center;
+        margin-bottom: 15px;
+      }
+      .b-table-title {
+        font-size: 20pt;
+        font-weight: bold;
+        letter-spacing: 2px;
+      }
+      .b-table-subtitle {
+        font-size: 13pt;
+        margin-top: 4px;
+      }
+      .b-student-meta {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10px;
+      }
+      .b-student-meta td {
+        padding: 6px 10px;
+        font-size: 11pt;
+        border: 1px solid #333333;
+      }
+      .b-records-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      .b-records-table th, .b-records-table td {
+        border: 1px solid #333333;
+        padding: 8px 10px;
+        font-size: 10.5pt;
+        line-height: 1.5;
+        vertical-align: top;
+      }
+      .b-records-table th {
+        background-color: #f7f7f7;
+        text-align: center;
+      }
+      .stamp-col {
+        width: 80px;
+        text-align: center;
+      }
+    }
+</style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- 頂部功能列 -->
+    <header class="app-topbar">
+      <div class="brand-section">
+        <div class="brand-mark">B</div>
+        <div>
+          <div class="brand-title">國中導師 B 表隨身秘書與 AI 諮詢教練</div>
+          <div class="brand-meta" id="cloudStatusMeta">本地離線儲存就緒 · 隨時可備份或連動試算表</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <!-- 契約第 12 條：試算表入口圖示 -->
+        <a class="icon-btn" id="__sheetLink" href="#" target="_blank" rel="noopener noreferrer" hidden
+           title="另開分頁到雲端試算表" aria-label="另開分頁到雲端試算表">
+          <svg class="sheet-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="8" y1="13" x2="16" y2="13"></line>
+            <line x1="8" y1="17" x2="16" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </a>
+        <button class="btn-primary" onclick="openPrintModal()">一鍵 B 表列印</button>
+        <button class="btn-ghost" onclick="openBackupModal()">匯出與匯入</button>
+        <button class="btn-ghost" onclick="openStudentsModal()">班級名冊</button>
+        <button class="icon-btn" id="__openSettings" title="系統設定（GAS網址與AI金鑰）" aria-label="系統設定">設定</button>
+      </div>
+    </header>
+
+    <!-- 工作台：即時分割雙欄 -->
+    <div class="workspace-split app-main">
+      
+      <!-- 左欄：名冊與該生時間軸 -->
+      <aside class="left-pane">
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">班級座號</span>
+            <span id="classInfoLabel" style="font-size: 13px; color: var(--ink-secondary); font-weight: 600;">七年一班</span>
+          </div>
+          <div class="seats-grid" id="seatsGrid">
+            <!-- 由 JS 動態渲染 -->
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">學生檔案</span>
+            <span id="recordCountBadge" style="font-size: 12.5px; color: var(--teal); font-weight: 700;">累計 0 筆紀錄</span>
+          </div>
+          <div class="student-badge-card" style="flex-direction: column; align-items: stretch; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="student-badge-left">
+                <span class="student-badge-num" id="currentSeatNo">01</span>
+                <div>
+                  <div class="student-badge-name" id="currentStudentName">學生姓名</div>
+                  <div class="student-badge-meta" id="currentStudentMeta">座號 1 · 男</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-ghost" style="padding: 4px 10px; font-size: 12px;" onclick="openEditStudentModal()">編輯背景</button>
+                <button class="btn-ghost" style="padding: 4px 10px; font-size: 12px;" onclick="printCurrentStudentBTable()">列印此生</button>
+              </div>
+            </div>
+
+            <div id="studentProfileTags" class="student-tags-row">
+              <span class="profile-tag">家庭：一般</span>
+              <span class="profile-tag">個性：溫和觀察中</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">輔導紀錄時間軸</span>
+            <button class="btn-ghost" style="padding: 4px 10px; font-size: 12px;" onclick="clearActiveRecord()">新增紀錄</button>
+          </div>
+          <div class="timeline-container" id="timelineList">
+            <p style="color: var(--ink-muted); font-size: 13.5px; text-align: center; padding: 26px 0;">尚無輔導紀錄，請於右側輸入。</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 右欄：記錄、AI 潤飾與 AI 教練 -->
+      <main class="right-pane">
+        
+        <!-- 上區塊：快速記錄與專業潤飾 -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">輔導晤談紀錄登記</span>
+            <span style="font-size: 12.5px; color: var(--accent); font-weight: 600;">AI 去情緒專業潤飾</span>
+          </div>
+
+          <div class="form-grid-3">
+            <div>
+              <label for="recordDate">晤談日期</label>
+              <input type="date" id="recordDate">
+            </div>
+            <div>
+              <label for="recordTarget">晤談對象</label>
+              <select id="recordTarget">
+                <option value="學生本人">學生本人</option>
+                <option value="家長">家長</option>
+                <option value="任課教師">任課教師</option>
+                <option value="同儕">同儕</option>
+              </select>
+            </div>
+            <div>
+              <label for="recordCategory">輔導類別</label>
+              <select id="recordCategory">
+                <option value="生活常規">生活常規</option>
+                <option value="人際同儕">人際同儕</option>
+                <option value="學習適應">學習適應</option>
+                <option value="家庭狀況">家庭狀況</option>
+                <option value="情緒壓力">情緒壓力</option>
+                <option value="生涯探索">生涯探索</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="rawInput" style="margin-bottom: 0;">導師隨手筆記（口語短句、通聯雜記或課堂狀況）</label>
+              <button type="button" class="btn-ghost" id="btnVoiceInput" onclick="toggleVoiceInput()" style="padding: 3px 10px; font-size: 12px;">語音輸入口述</button>
+            </div>
+            <textarea id="rawInput" placeholder="例如：第三節數學課跟隔壁吵架摔筆，說大家都針對他。午休找來晤談，情緒激動但有稍微冷靜，下午打電話給媽媽溝通，媽媽說在家也會這樣..."></textarea>
+            <div id="voiceStatusTip" style="display: none; font-size: 12px; color: var(--brass); margin-top: 4px; font-weight: 600;">聆聽中，請直接對著麥克風說話，講完再按一次即可結束...</div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-teal" id="btnPolishAI" onclick="handlePolishAI()">AI 去情緒專業潤飾</button>
+            <button class="btn-primary" id="btnSaveRecord" onclick="handleSaveRecord()">儲存晤談紀錄</button>
+            <button class="btn-ghost" onclick="resetForm()">清空表單</button>
+          </div>
+
+          <!-- AI 潤飾前後對照與套用區 -->
+          <div class="polish-box" id="polishResultBox">
+            <div style="font-weight: 700; color: var(--teal); margin-bottom: 12px; font-size: 13.5px;">B 表標準格式（客觀陳述，可直接手動修訂）：</div>
+            <div style="margin-bottom: 14px;">
+              <label>【觀察重點與晤談摘要】（客觀事實）</label>
+              <textarea id="polishedSummary" style="min-height: 90px;"></textarea>
+            </div>
+            <div>
+              <label>【處理策略與後續追蹤】（輔導作為）</label>
+              <textarea id="polishedStrategy" style="min-height: 90px;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 下區塊：AI 班級經營與諮商教練（自由連續對話 ＋ 情境氣泡） -->
+        <div class="coach-section">
+          <div class="panel-header" style="border-color: var(--border-subtle); margin-bottom: 0;">
+            <div style="display: flex; align-items: baseline; gap: 10px;">
+              <span class="panel-title">AI 班級經營與諮商教練</span>
+              <span id="coachFocusBadge" style="font-size: 11.5px; color: var(--brass); font-weight: 600;">已載入當前事件脈絡</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span style="font-size: 11.5px; color: var(--ink-tertiary);">去識別化脈絡中</span>
+              <button type="button" class="btn-ghost" style="padding: 2px 8px; font-size: 11.5px;" onclick="clearCoachChat()">清空對話</button>
+            </div>
+          </div>
+
+          <!-- 情境速選氣泡（依事件與學生背景動態推薦） -->
+          <div>
+            <div style="font-size: 11.5px; color: var(--ink-secondary); font-weight: 600; margin-bottom: 6px;">針對此生推薦諮詢問題（點擊即送出）：</div>
+            <div class="coach-chips-row" id="coachPromptChips">
+              <!-- 由 JS 動態生成 -->
+            </div>
+          </div>
+
+          <!-- 對話訊息串流區 -->
+          <div class="coach-chat-box" id="coachChatBox">
+            <div class="chat-msg ai">
+              <span class="chat-sender">AI 諮詢教練</span>
+              <div class="chat-bubble">我是您的班級經營與諮商教練。我已掌握該生的個別背景（家庭概況、身心特質與輔導歷程）。
+您可以直接在下方輸入任何想請教的問題，或點擊上方的速選氣泡，我會提供可直接複製發送的 LINE 話術、通話台詞或法規避坑指引。</div>
+            </div>
+          </div>
+
+          <!-- 底部輸入列 -->
+          <div class="coach-input-bar">
+            <textarea id="coachInputText" placeholder="輸入你想詢問教練的狀況（例如：媽媽很強勢怎麼辦？剛剛課堂打人該先怎麼處理？...）" onkeydown="handleCoachKey(event)"></textarea>
+            <button type="button" class="btn-primary" id="btnSendCoach" onclick="sendCoachMessage()" style="height: 42px; padding: 0 16px;">發送諮詢</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 本地備份與檔案匯入／匯出彈窗 -->
+  <div class="modal-overlay" id="backupModal">
+    <div class="modal-card">
+      <div class="title">本地檔案備份與還原</div>
+      <div class="message">這套系統支援 100% 本地運作。您可以隨時將全班學生名冊與輔導紀錄下載儲存為 JSON 或 CSV 檔案，換電腦或重灌時一鍵匯入秒速還原。</div>
+      
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px;">
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="exportBackupJSON()">匯出完整 JSON 備份檔</button>
+          <button class="btn-teal" style="flex: 1; justify-content: center;" onclick="exportRecordsCSV()">匯出 Excel (CSV) 明細檔</button>
+        </div>
+        <div style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 6px;">
+          <label style="margin-bottom: 8px;">匯入還原備份檔案（支援 .json）：</label>
+          <input type="file" id="importFileInput" accept=".json" style="padding: 9px;">
+          <button class="btn-ghost" style="margin-top: 10px; width: 100%; justify-content: center;" onclick="handleImportFile()">讀取並還原檔案資料</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost" onclick="document.getElementById('backupModal').classList.remove('show')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 契約第 2 條與第 4 條：系統設定彈窗 -->
+  <div class="modal-overlay" id="__settingsModal">
+    <div class="modal-card">
+      <div class="title">設定 系統與連線設定</div>
+      <div style="margin-bottom: 14px;">
+        <label for="__gasInput">Google Apps Script (GAS) 部署網址（可選）</label>
+        <input type="text" id="__gasInput" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label for="__geminiKeyInput">Gemini API 金鑰（留空則讀取試算表設定）</label>
+        <input type="password" id="__geminiKeyInput" placeholder="AIzaSy...">
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label for="__classNameInput">班級名稱</label>
+        <input type="text" id="__classNameInput" placeholder="七年一班">
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label for="__teacherNameInput">導師姓名</label>
+        <input type="text" id="__teacherNameInput" placeholder="導師姓名">
+      </div>
+      <div class="actions">
+        <button class="btn-ghost" id="__clearBtn">清除設定</button>
+        <button class="btn-ghost" onclick="document.getElementById('__settingsModal').classList.remove('show')">取消</button>
+        <button class="btn-primary" id="__saveBtn">儲存設定</button>
+      </div>
+      <div style="margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px;">
+        <button class="btn-ghost" id="__genShare" style="width: 100%; justify-content: center;">🔗 產生免設定分享連結與 QR Code</button>
+        <div id="__shareResult" style="display: none; margin-top: 12px; text-align: center;">
+          <div class="qr-wrap"><img id="__qrImg" alt="QR Code" style="max-width: 180px; border-radius: 8px;"></div>
+          <div id="__shareUrl" style="word-break: break-all; font-size: 12px; color: var(--ink-muted); margin-top: 6px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 學生名冊管理彈窗 -->
+  <div class="modal-overlay" id="studentsModal">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="title">編輯班級學生名冊</div>
+      <div class="message">直接在此快速貼上或修改全班座號與姓名（每行一位，格式：座號、姓名、性別）：</div>
+      <textarea id="studentsBatchText" style="min-height: 250px; font-family: monospace; font-size: 13.5px;"></textarea>
+      <div class="actions" style="margin-top: 16px;">
+        <button class="btn-ghost" onclick="document.getElementById('studentsModal').classList.remove('show')">取消</button>
+        <button class="btn-primary" onclick="saveStudentsBatch()">儲存名冊至本地與雲端</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- B 表列印預覽彈窗 -->
+  <div class="modal-overlay" id="printModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="title">列印此生學生輔導資料 B 表</div>
+      <div class="message">期末送交輔導室或會議留存專用，排版完全符合標準 A4 表件格式。</div>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px;">
+        <button class="btn-primary" style="justify-content: center;" onclick="executePrintCurrent()">列印當前學生（座號 <span id="printCurrentSeatSpan">01</span>）B 表</button>
+        <button class="btn-teal" style="justify-content: center;" onclick="executePrintAllClass()">一鍵列印全班學生 B 表（有紀錄者連續分頁）</button>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost" onclick="document.getElementById('printModal').classList.remove('show')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 學生基本背景資料編輯彈窗 -->
+  <div class="modal-overlay" id="studentProfileModal">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="title" id="studentProfileTitle">編輯學生基本背景資料</div>
+      <div class="message">完善學生之家庭結構、身心脆弱特質與輔導歷程，AI 諮詢教練將自動整合此脈絡，提供最契合該生特質的實戰對話話術。</div>
+      
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+        <div class="form-grid-3">
+          <div>
+            <label>座號</label>
+            <input type="number" id="profSeatNo" readonly style="background: var(--bg); opacity: 0.85;">
+          </div>
+          <div>
+            <label>姓名</label>
+            <input type="text" id="profName">
+          </div>
+          <div>
+            <label>性別</label>
+            <select id="profGender">
+              <option value="男">男</option>
+              <option value="女">女</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div>
+            <label>家庭結構與主要照顧者</label>
+            <input type="text" id="profFamily" placeholder="例如：雙親同住、單親從母、祖父母隔代教養、主要與外婆聯絡">
+          </div>
+          <div>
+            <label>特教身分或脆弱性註記</label>
+            <input type="text" id="profSpecial" placeholder="例如：無、疑似情緒障礙、ADHD 服藥中、高關懷脆弱家庭">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div>
+            <label>個性特質、專長與人際處境</label>
+            <input type="text" id="profTraits" placeholder="例如：自尊心強易受激怒、擅長繪畫、在班上朋友較少孤立">
+          </div>
+          <div>
+            <label>過往輔導室歷程或認輔紀錄</label>
+            <input type="text" id="profHistory" placeholder="例如：國小曾有認輔紀錄、本學期初曾至輔導室心理諮商兩次">
+          </div>
+        </div>
+
+        <div>
+          <label>導師私房觀察備忘（不列印，僅作 AI 背景與導師筆記）</label>
+          <textarea id="profNote" style="min-height: 70px;" placeholder="例如：對父親管教極為反彈，提到家裡容易防衛，宜先同理再談規矩..."></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-ghost" onclick="document.getElementById('studentProfileModal').classList.remove('show')">取消</button>
+        <button class="btn-primary" onclick="saveStudentProfileModal()">儲存學生檔案</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 契約第 2 條：自訂 Modal 實作 -->
+  <div class="modal-overlay" id="__modal">
+    <div class="modal-card">
+      <div class="title" id="__modalTitle">通知</div>
+      <div class="message" id="__modalMsg">內容</div>
+      <div class="actions" id="__modalActions"></div>
+    </div>
+  </div>
+
+  <!-- 隱藏列印區域（@media print） -->
+  <div id="printArea"></div>
+
+  <script>
+    /* ==========================================================================
+       1. CONFIG：全域設定與優先序
+       ========================================================================== */
+    const DEFAULT_GAS_URL = "";
+
+    function resolveGasUrl() {
+      const q = new URLSearchParams(location.search).get("config");
+      if (q) {
+        try { return atob(q); } catch(e) {}
+      }
+      return DEFAULT_GAS_URL || localStorage.getItem("gas_url") || "";
+    }
+
+    function resolveGeminiKey() {
+      return localStorage.getItem("gemini_api_key") || "";
+    }
+
+    let GAS_URL = resolveGasUrl();
+    let GEMINI_API_KEY = resolveGeminiKey();
+
+    /* ==========================================================================
+       2. STATE STORE：狀態集中管理（防腐架構與本地持久化）
+       ========================================================================== */
+    const state = {
+      className: localStorage.getItem("b_class_name") || "七年一班",
+      teacherName: localStorage.getItem("b_teacher_name") || "導師",
+      students: [],
+      records: [],
+      activeSeatNo: 1,
+      activeRecordId: null,
+      coachMode: "PARENT",
+      polishedData: null,
+      coachHistory: []
+    };
+
+    let cloudSynced = null;
+
+    // 本地持久化存檔
+    function saveLocalData() {
+      try {
+        localStorage.setItem("b_table_records", JSON.stringify(state.records));
+        localStorage.setItem("b_table_students", JSON.stringify(state.students));
+      } catch (e) {
+        console.warn("本地存儲限制：", e);
+      }
+    }
+
+    function loadLocalData() {
+      try {
+        const r = localStorage.getItem("b_table_records");
+        const s = localStorage.getItem("b_table_students");
+        if (r) state.records = JSON.parse(r);
+        if (s) state.students = JSON.parse(s);
+      } catch (e) {
+        console.warn("讀取本地儲存失敗：", e);
+      }
+    }
+
+    /* ==========================================================================
+       3. PURE BUSINESS ENGINE：純運算函式（零 DOM、純函式）
+       ========================================================================== */
+    function anonymizeText(text, studentName) {
+      if (!text) return "";
+      let safe = String(text);
+      if (studentName && studentName.length >= 2) {
+        const reg = new RegExp(studentName, "g");
+        safe = safe.replace(reg, "【該生】");
+      }
+      safe = safe.replace(/(媽媽|爸爸|家長|母親|父親)/g, "【家長】");
+      return safe;
+    }
+
+    function deanonymizeText(text, studentName) {
+      if (!text) return "";
+      return text.replace(/【該生】/g, studentName || "該生")
+                 .replace(/【家長】/g, "家長");
+    }
+
+    function filterRecordsBySeat(records, seatNo) {
+      return records
+        .filter(r => Number(r.seatNo) === Number(seatNo))
+        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    }
+
+    function countRecordsBySeats(records) {
+      const counts = {};
+      records.forEach(r => {
+        const s = Number(r.seatNo);
+        counts[s] = (counts[s] || 0) + 1;
+      });
+      return counts;
+    }
+
+    function sheetEntryOf(res) {
+      const info = res && res.sheet ? res.sheet : null;
+      const url = info && info.url ? String(info.url) : "";
+      if (!/^https:\/\/docs\.google\.com\/spreadsheets\//.test(url)) return null;
+      return { url: url, name: String(info.name || ""), id: String(info.id || "") };
+    }
+
+    function generateRecordsCSVString(records) {
+      const headers = ["紀錄編號", "座號", "姓名", "晤談日期", "晤談對象", "輔導類別", "觀察與晤談摘要", "處理策略與追蹤"];
+      const escapeField = (f) => `"${String(f || '').replace(/"/g, '""')}"`;
+
+      let csv = "\uFEFF" + headers.join(",") + "\n";
+      records.forEach(r => {
+        const row = [
+          escapeField(r.id),
+          escapeField(r.seatNo),
+          escapeField(r.name),
+          escapeField(r.date),
+          escapeField(r.target),
+          escapeField(r.category),
+          escapeField(r.summary),
+          escapeField(r.strategy)
+        ];
+        csv += row.join(",") + "\n";
+      });
+      return csv;
+    }
+
+    /* ==========================================================================
+       4. API ADAPTER：網路通訊與本機檔案下載
+       ========================================================================== */
+    const NET = { READ_TIMEOUT: 18000, WRITE_TIMEOUT: 30000 };
+
+    async function gasFetch_(url, options, timeoutMs, label) {
+      const ctl = (typeof AbortController === "function") ? new AbortController() : null;
+      let timer = null;
+      if (ctl) {
+        options.signal = ctl.signal;
+        timer = setTimeout(() => { try { ctl.abort(); } catch(e) {} }, timeoutMs);
+      }
+      const t0 = Date.now();
+      try {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        let json;
+        try { json = JSON.parse(text); }
+        catch (err) { throw new Error("試算表回傳無法解析之內容（HTTP " + res.status + "）"); }
+        json.serverMs = Date.now() - t0;
+        return json;
+      } catch (err) {
+        if (err && err.name === "AbortError") throw new Error("連線逾時 " + Math.round(timeoutMs / 1000) + " 秒");
+        throw err;
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    }
+
+    async function gasPost(action, payload) {
+      if (!GAS_URL) return null;
+      const fd = new FormData();
+      fd.append("action", action);
+      fd.append("data", JSON.stringify(payload || {}));
+      try {
+        const json = await gasFetch_(GAS_URL, { method: "POST", body: fd }, NET.WRITE_TIMEOUT, action);
+        return json;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function gasGet(action) {
+      if (!GAS_URL) return null;
+      try {
+        return await gasFetch_(GAS_URL + "?action=" + encodeURIComponent(action), {}, NET.READ_TIMEOUT, action);
+      } catch (err) {
+        return null;
+      }
+    }
+
+    const SYNC_PARTS = ["records", "students"];
+    function snapshot() {
+      const snap = {};
+      SYNC_PARTS.forEach(k => { snap[k] = JSON.stringify(state[k] || []); });
+      return snap;
+    }
+
+    function partsChanged(snap) {
+      if (!cloudSynced) return null;
+      const changed = [];
+      SYNC_PARTS.forEach(k => { if (snap[k] !== cloudSynced[k]) changed.push(k); });
+      return changed;
+    }
+
+    // 前端呼叫 Gemini API（極速 Lite 優先 ＋ 關閉 Thinking 思考延遲）
+    // 備援鏈：官方最新 Lite 別名優先直達，關閉深思階段，確保 1 秒內極速秒回
+    // 前端呼叫 Gemini API（鎖定驗證可用之極速模型直達，記憶最快端點）
+    // 實測確認可用的極速模型序列（3.1 / 3 系列 Lite 優先直達）
+    const GEMINI_MODELS_CHAIN = [
+      "gemini-3.1-flash-lite",               // 第一首選：3.1 Lite 極速輕量端點
+      "gemini-3.1-flash-lite-preview",       // 第二首選：3.1 Lite 預覽端點
+      "gemini-3-flash-preview",              // 第三順位：實測通行秒回端點
+      "gemini-2.5-flash-lite",               // 第四順位：2.5 Lite 高速端點
+      "gemini-2.5-flash",                    // 第五順位：2.5 Flash 穩定備援
+      "gemini-2.0-flash",                    // 第六順位：2.0 Flash 備援
+      "gemini-flash-lite-latest",            // 第七順位：Lite 官方動態別名（契約必備）
+      "gemini-1.5-flash-latest"              // 第八順位：保底端點
+    ];
+
+    // 成功過的模型自動快取至頂部，下次 0 秒直達（預設以 3.1 Lite 為優先目標）
+    let FASTEST_WORKING_MODEL = localStorage.getItem("b_fast_gemini_model") || "gemini-3.1-flash-lite";
+
+    async function callGemini(prompt) {
+      const key = GEMINI_API_KEY;
+      if (!key) {
+        return { ok: false, error: "未設定 Gemini API Key，請至右上角齒輪 設定 填寫金鑰以解鎖 AI 潤飾與教練功能！" };
+      }
+
+      // 排列呼叫順序：把上次成功過的端點排在絕對第一順位
+      const triedModels = [...new Set([FASTEST_WORKING_MODEL, ...GEMINI_MODELS_CHAIN])];
+      let lastError = "";
+
+      // 針對文字生成一律直打 v1beta（避免 v1 產生 404 延遲）
+      for (const model of triedModels) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const fastBody = {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 800
+          }
+        };
+
+        try {
+          // 4 秒嚴格超時：超時立刻換下一個，絕不卡住
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 4000);
+
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fastBody),
+            signal: controller.signal
+          });
+          clearTimeout(timer);
+
+          if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            lastError = e.error?.message || `HTTP ${res.status}`;
+            console.warn(`[Gemini] ${model} 呼叫失敗（${lastError}），嘗試下一個...`);
+            continue;
+          }
+
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (text) {
+            FASTEST_WORKING_MODEL = model;
+            try { localStorage.setItem("b_fast_gemini_model", model); } catch(e){}
+            console.info(`[Gemini] ⚡ 成功由最速模型【${model}】即時產出！`);
+            return { ok: true, text, modelUsed: model };
+          }
+        } catch (err) {
+          lastError = err.name === "AbortError" ? "連線逾時" : (err.message || "網路異常");
+          console.warn(`[Gemini] ${model} 異常（${lastError}），嘗試下一個...`);
+        }
+      }
+
+      return { ok: false, error: `所有極速模型皆無法連線。最後訊息：${lastError}` };
+    }
+
+        function triggerDownload(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    /* ==========================================================================
+       5. UI VIEW & EVENT HANDLERS
+       ========================================================================== */
+    function showModal(title, message, type = "info") {
+      const overlay = document.getElementById("__modal");
+      document.getElementById("__modalTitle").textContent = title;
+      document.getElementById("__modalMsg").textContent = message;
+      const actions = document.getElementById("__modalActions");
+      actions.innerHTML = "";
+      const ok = document.createElement("button");
+      ok.className = "btn-primary";
+      ok.textContent = "確定";
+      ok.onclick = () => { overlay.classList.remove("show"); resolvePending(true); };
+      actions.appendChild(ok);
+
+      if (type === "confirm") {
+        const cancel = document.createElement("button");
+        cancel.className = "btn-ghost";
+        cancel.textContent = "取消";
+        cancel.onclick = () => { overlay.classList.remove("show"); resolvePending(false); };
+        actions.insertBefore(cancel, ok);
+      }
+      overlay.classList.add("show");
+      return pendingPromise();
+    }
+
+    let __pending = null;
+    function pendingPromise() { return new Promise(r => __pending = r); }
+    function resolvePending(v) { if (__pending) { __pending(v); __pending = null; } }
+
+    function renderSheetEntry(res) {
+      const book = sheetEntryOf(res);
+      const icon = document.getElementById("__sheetLink");
+      const statusMeta = document.getElementById("cloudStatusMeta");
+      if (!book) {
+        if (icon) { icon.hidden = true; icon.removeAttribute("href"); }
+        if (statusMeta) statusMeta.textContent = "本地離線儲存就緒 · 隨時可備份或連動試算表";
+        return;
+      }
+      const label = book.name ? ("另開分頁至試算表：" + book.name) : "另開分頁至雲端試算表";
+      if (icon) { icon.href = book.url; icon.title = label; icon.hidden = false; }
+      if (statusMeta) statusMeta.textContent = `已成功連動雲端試算表（${book.name}）`;
+    }
+
+    function initDefaultStudents() {
+      if (state.students.length === 0) {
+        const list = [];
+        for (let i = 1; i <= 30; i++) {
+          list.push({
+            seatNo: i,
+            name: "學生" + i,
+            gender: (i % 2 === 1 ? "男" : "女"),
+            family: (i === 1 ? "雙親同住，母為主要聯繫人" : "一般家庭"),
+            specialStatus: (i === 1 ? "易激動敏感、需溫和堅定引導" : "常規良好"),
+            traits: (i === 1 ? "熱心負責但抗挫力弱" : "一般學生"),
+            counselingHistory: (i === 1 ? "開學初曾與家長晤談一次" : "無特殊通報"),
+            note: ""
+          });
+        }
+        state.students = list;
+      }
+    }
+
+    function renderSeats() {
+      const grid = document.getElementById("seatsGrid");
+      grid.innerHTML = "";
+      const counts = countRecordsBySeats(state.records);
+
+      state.students.forEach(st => {
+        const chip = document.createElement("div");
+        chip.className = "seat-chip" + (st.seatNo === state.activeSeatNo ? " active" : "");
+        if (counts[st.seatNo] > 0) chip.classList.add("has-records");
+        chip.textContent = String(st.seatNo).padStart(2, "0");
+        chip.title = `${st.seatNo} 號 ${st.name}（已記錄 ${counts[st.seatNo] || 0} 筆）`;
+        chip.onclick = () => selectSeat(st.seatNo);
+        grid.appendChild(chip);
+      });
+    }
+
+
+    function openEditStudentModal() {
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { seatNo: state.activeSeatNo, name: "", gender: "男" };
+      document.getElementById("studentProfileTitle").textContent = `👤 編輯座號 ${st.seatNo} 號（${st.name}）基本背景資料`;
+      document.getElementById("profSeatNo").value = st.seatNo;
+      document.getElementById("profName").value = st.name || "";
+      document.getElementById("profGender").value = st.gender || "男";
+      document.getElementById("profFamily").value = st.family || "";
+      document.getElementById("profSpecial").value = st.specialStatus || "";
+      document.getElementById("profTraits").value = st.traits || "";
+      document.getElementById("profHistory").value = st.counselingHistory || "";
+      document.getElementById("profNote").value = st.note || "";
+      document.getElementById("studentProfileModal").classList.add("show");
+    }
+
+    async function saveStudentProfileModal() {
+      const seatNo = parseInt(document.getElementById("profSeatNo").value, 10);
+      const st = state.students.find(s => s.seatNo === seatNo);
+      if (!st) return;
+
+      st.name = document.getElementById("profName").value.trim() || st.name;
+      st.gender = document.getElementById("profGender").value;
+      st.family = document.getElementById("profFamily").value.trim();
+      st.specialStatus = document.getElementById("profSpecial").value.trim();
+      st.traits = document.getElementById("profTraits").value.trim();
+      st.counselingHistory = document.getElementById("profHistory").value.trim();
+      st.note = document.getElementById("profNote").value.trim();
+
+      saveLocalData();
+      renderSeats();
+      renderCurrentStudent();
+      document.getElementById("studentProfileModal").classList.remove("show");
+
+      if (GAS_URL) {
+        await gasPost("saveStudents", { students: state.students });
+      }
+      showModal("儲存成功", `座號 ${st.seatNo} 號之基本背景資料已更新！AI 諮詢教練將自動整合此脈絡。`, "success");
+    }
+
+    function renderCurrentStudent() {
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { seatNo: state.activeSeatNo, name: "未建檔", gender: "男" };
+      document.getElementById("currentSeatNo").textContent = String(st.seatNo).padStart(2, "0");
+      document.getElementById("currentStudentName").textContent = st.name;
+      document.getElementById("currentStudentMeta").textContent = `座號 ${st.seatNo} · ${st.gender}`;
+      document.getElementById("printCurrentSeatSpan").textContent = String(st.seatNo).padStart(2, "0");
+
+      const studentRecords = filterRecordsBySeat(state.records, st.seatNo);
+      document.getElementById("recordCountBadge").textContent = `累計 ${studentRecords.length} 筆紀錄`;
+
+      // 渲染學生背景微標籤
+      const tagsBox = document.getElementById("studentProfileTags");
+      if (tagsBox) {
+        let tagHtml = "";
+        if (st.family) tagHtml += `<span class="profile-tag">🏠 ${st.family}</span>`;
+        if (st.specialStatus && st.specialStatus !== "無") tagHtml += `<span class="profile-tag alert">⚠️ ${st.specialStatus}</span>`;
+        if (st.traits) tagHtml += `<span class="profile-tag highlight">🌱 ${st.traits}</span>`;
+        if (st.counselingHistory) tagHtml += `<span class="profile-tag">📋 ${st.counselingHistory}</span>`;
+        if (!tagHtml) tagHtml = `<span class="profile-tag" style="opacity:0.6;">尚無背景資料，點擊右上角「編輯背景」進行設定</span>`;
+        tagsBox.innerHTML = tagHtml;
+      }
+
+      renderTimeline(studentRecords);
+      renderCoachChips();
+    }
+
+    function renderTimeline(studentRecords) {
+      const container = document.getElementById("timelineList");
+      container.innerHTML = "";
+      if (studentRecords.length === 0) {
+        container.innerHTML = `<p style="color: var(--ink-muted); font-size: 13.5px; text-align: center; padding: 26px 0;">該生尚無紀錄，請於右側輸入。</p>`;
+        return;
+      }
+
+      studentRecords.forEach(rec => {
+        const item = document.createElement("div");
+        item.className = "timeline-item" + (rec.id === state.activeRecordId ? " active-item" : "");
+        item.innerHTML = `
+          <div class="timeline-header">
+            <span>${rec.date} · ${rec.target}</span>
+            <span class="timeline-tag">${rec.category}</span>
+          </div>
+          <div class="timeline-snippet">${rec.summary || "無摘要"}</div>
+        `;
+        item.onclick = () => loadRecordToForm(rec);
+        container.appendChild(item);
+      });
+    }
+
+    function selectSeat(seatNo) {
+      state.activeSeatNo = Number(seatNo);
+      state.activeRecordId = null;
+      renderSeats();
+      renderCurrentStudent();
+      resetForm();
+    }
+
+    function clearActiveRecord() {
+      state.activeRecordId = null;
+      resetForm();
+      renderCurrentStudent();
+    }
+
+    function loadRecordToForm(rec) {
+      state.activeRecordId = rec.id;
+      document.getElementById("recordDate").value = rec.date;
+      document.getElementById("recordTarget").value = rec.target;
+      document.getElementById("recordCategory").value = rec.category;
+      document.getElementById("rawInput").value = rec.summary;
+
+      document.getElementById("polishedSummary").value = rec.summary;
+      document.getElementById("polishedStrategy").value = rec.strategy;
+      document.getElementById("polishResultBox").classList.add("active");
+      renderCurrentStudent();
+      renderCoachChips();
+    }
+
+    function resetForm() {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("recordDate").value = today;
+      document.getElementById("rawInput").value = "";
+      document.getElementById("polishedSummary").value = "";
+      document.getElementById("polishedStrategy").value = "";
+      document.getElementById("polishResultBox").classList.remove("active");
+      renderCoachChips();
+    }
+
+
+    // 語音輸入引擎（Web Speech API）
+    let recognition = null;
+    let isRecognizing = false;
+
+    function initVoiceInput() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        return null;
+      }
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = "zh-TW";
+
+      rec.onstart = () => {
+        isRecognizing = true;
+        const btn = document.getElementById("btnVoiceInput");
+        const tip = document.getElementById("voiceStatusTip");
+        if (btn) {
+          btn.textContent = "停止錄音";
+          btn.style.color = "var(--danger)";
+          btn.style.borderColor = "var(--danger)";
+        }
+        if (tip) tip.style.display = "block";
+      };
+
+      rec.onresult = (event) => {
+        let interimTranscript = "";
+        let finalTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        const inputArea = document.getElementById("rawInput");
+        if (finalTranscript) {
+          // 若已有內容則補上逗點或空格
+          const prev = inputArea.value.trim();
+          inputArea.value = (prev ? prev + "，" : "") + finalTranscript;
+        }
+      };
+
+      rec.onerror = (event) => {
+        console.warn("語音輸入錯誤：", event.error);
+        if (event.error === "not-allowed") {
+          showModal("麥克風權限提示", "瀏覽器未允許麥克風權限，請點擊網址列旁的鎖頭或圖示允許麥克風。", "warning");
+        }
+        stopVoiceInput();
+      };
+
+      rec.onend = () => {
+        stopVoiceInput();
+      };
+
+      return rec;
+    }
+
+    function toggleVoiceInput() {
+      if (isRecognizing) {
+        if (recognition) recognition.stop();
+        stopVoiceInput();
+        return;
+      }
+
+      if (!recognition) {
+        recognition = initVoiceInput();
+      }
+
+      if (!recognition) {
+        showModal("環境不支援", "您的瀏覽器不支援 Web Speech 語音辨識（建議使用 Chrome、Edge 或 Safari 瀏覽器）。", "info");
+        return;
+      }
+
+      try {
+        recognition.start();
+      } catch (err) {
+        console.warn("啟動語音辨識失敗：", err);
+      }
+    }
+
+    function stopVoiceInput() {
+      isRecognizing = false;
+      const btn = document.getElementById("btnVoiceInput");
+      const tip = document.getElementById("voiceStatusTip");
+      if (btn) {
+        btn.textContent = "語音輸入口述";
+        btn.style.color = "";
+        btn.style.borderColor = "";
+      }
+      if (tip) tip.style.display = "none";
+    }
+
+    // AI 專業去情緒潤飾
+    async function handlePolishAI() {
+      const raw = document.getElementById("rawInput").value.trim();
+      if (!raw) {
+        showModal("提示", "請先輸入導師隨手筆記或口語內容", "info");
+        return;
+      }
+
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { name: "該生" };
+      const safeRaw = anonymizeText(raw, st.name);
+
+      const prompt = `你是一位精通台灣國中輔導諮商與校園法規的資深輔導主任。
+請將以下導師撰寫的口語、零碎或帶有情緒的隨手紀錄，轉換為台灣學校官方學生輔導資料紀錄表（B 表）的客觀公務格式。
+嚴禁主觀情緒性字眼，必須基於事實客觀陳述，並提供教育專業之處遇策略。
+
+【原始紀錄】：
+${safeRaw}
+
+請嚴格依照以下 JSON 格式回傳，不要有任何多餘的引言或 markdown 標籤：
+{
+  "summary": "客觀行為觀察與晤談摘要（約 50 到 120 字，敘述事件經過、學生身心反應與溝通重點）",
+  "strategy": "處理策略與後續追蹤（約 50 到 100 字，包含具體正向管教措施、親師聯絡配合與後續觀察重點）"
+}`;
+
+      const btn = document.getElementById("btnPolishAI");
+      btn.textContent = "AI 專業潤飾中...";
+      btn.disabled = true;
+
+      const res = await callGemini(prompt);
+      btn.textContent = "AI 去情緒專業潤飾";
+      btn.disabled = false;
+
+      if (!res.ok) {
+        showModal("AI 潤飾提示", res.error, "info");
+        return;
+      }
+
+      try {
+        let textToParse = res.text.trim();
+        // 擷取 { ... } 範圍內的真實 JSON
+        const firstBrace = textToParse.indexOf("{");
+        const lastBrace = textToParse.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          textToParse = textToParse.substring(firstBrace, lastBrace + 1);
+        }
+        const parsed = JSON.parse(textToParse);
+
+        const realSummary = deanonymizeText(parsed.summary || "", st.name);
+        const realStrategy = deanonymizeText(parsed.strategy || "", st.name);
+
+        document.getElementById("polishedSummary").value = realSummary;
+        document.getElementById("polishedStrategy").value = realStrategy;
+      } catch (err) {
+        // 若 JSON 解析失敗，以正規表達式暴力抓取 summary 與 strategy 欄位值
+        let sumMatch = res.text.match(/"summary"\s*:\s*"([^"]+)"/);
+        let strMatch = res.text.match(/"strategy"\s*:\s*"([^"]+)"/);
+        if (sumMatch) {
+          document.getElementById("polishedSummary").value = deanonymizeText(sumMatch[1], st.name);
+          document.getElementById("polishedStrategy").value = strMatch ? deanonymizeText(strMatch[1], st.name) : "配合家長親師合作，持續正向引導與常規觀察。";
+        } else {
+          // 純文字 fallback 清洗任何殘留引號或代碼
+          const cleanText = res.text.replace(/[{}"\`]|summary:|strategy:/gi, "").trim();
+          document.getElementById("polishedSummary").value = deanonymizeText(cleanText, st.name);
+          document.getElementById("polishedStrategy").value = "持續關懷並追蹤後續課堂表現。";
+        }
+      }
+
+      const box = document.getElementById("polishResultBox");
+      box.classList.add("active");
+      box.classList.add("show");
+      box.style.display = "block";
+      box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    // 儲存紀錄（本地立即儲存，雲端異步同步）
+    async function handleSaveRecord() {
+      const date = document.getElementById("recordDate").value;
+      const target = document.getElementById("recordTarget").value;
+      const category = document.getElementById("recordCategory").value;
+      let summary = document.getElementById("polishedSummary").value.trim();
+      let strategy = document.getElementById("polishedStrategy").value.trim();
+
+      if (!summary) {
+        summary = document.getElementById("rawInput").value.trim();
+      }
+      if (!summary) {
+        showModal("欄位缺少", "請填寫紀錄內容或先執行 AI 潤飾", "warning");
+        return;
+      }
+
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { seatNo: state.activeSeatNo, name: "學生" + state.activeSeatNo };
+      const newRec = {
+        id: state.activeRecordId || ("REC_" + Date.now()),
+        seatNo: st.seatNo,
+        name: st.name,
+        date: date,
+        target: target,
+        category: category,
+        summary: summary,
+        strategy: strategy || "依輔導策略持續觀察與親師合作。"
+      };
+
+      // 1. 本地立即儲存
+      const existIdx = state.records.findIndex(r => r.id === newRec.id);
+      if (existIdx >= 0) {
+        state.records[existIdx] = newRec;
+      } else {
+        state.records.push(newRec);
+      }
+      saveLocalData();
+      renderSeats();
+      renderCurrentStudent();
+
+      // 2. 若有 GAS 網址，異步同步到試算表
+      if (GAS_URL) {
+        const btn = document.getElementById("btnSaveRecord");
+        btn.textContent = "雲端同步中...";
+        const res = await gasPost("saveRecord", { record: newRec });
+        btn.textContent = "儲存晤談紀錄";
+        if (res && res.ok) {
+          showModal("儲存成功", `座號 ${st.seatNo} 號之紀錄已儲存至本地並同步至雲端試算表！`, "success");
+          cloudSynced = snapshot();
+        } else {
+          showModal("本地已存", `座號 ${st.seatNo} 號之紀錄已保存在瀏覽器中（雲端連線失敗）。`, "info");
+        }
+      } else {
+        showModal("本地儲存成功", `座號 ${st.seatNo} 號之紀錄已安全保存在本瀏覽器中！隨時可於頂部匯出備份檔案。`, "success");
+      }
+    }
+
+    // AI 教練諮詢
+    function setCoachMode(mode) {
+      state.coachMode = mode;
+      document.querySelectorAll(".coach-tab-btn").forEach(b => b.classList.remove("active"));
+      if (mode === "PARENT") document.getElementById("tabCoachA").classList.add("active");
+      if (mode === "DISCIPLINE") document.getElementById("tabCoachB").classList.add("active");
+      if (mode === "REFERRAL") document.getElementById("tabCoachC").classList.add("active");
+    }
+
+    // ===== AI 班級經營與諮商教練：自由連續對話引擎 =====
+    const DEFAULT_COACH_CHIPS = [
+      "幫我擬一段今天傳給家長的溫和 LINE 訊息",
+      "若改打電話給家長，第一句話該怎麼說才不激怒對方？",
+      "學生課堂暴怒失控，當下 30 秒我能做什麼降溫？",
+      "這個情況有需要填寫輔導室轉介單嗎？門檻是什麼？",
+      "如果家長質疑老師處理不公，我該如何自保說明？"
+    ];
+
+    function renderCoachChips() {
+      const container = document.getElementById("coachPromptChips");
+      if (!container) return;
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo);
+      const currentRaw = document.getElementById("rawInput").value.trim() || document.getElementById("polishedSummary").value.trim();
+      const focusBadge = document.getElementById("coachFocusBadge");
+
+      let chips = [];
+
+      // 若有選取或輸入事件，第一顆氣泡直接針對「本次事件」量身訂做！
+      if (currentRaw) {
+        if (focusBadge) focusBadge.textContent = "已鎖定本次事件脈絡";
+        chips.push("針對本次發生的事件狀況，請直接擬一段發給家長的 LINE 說明訊息");
+        chips.push("針對此事件致電家長時，開場第一句話該如何同理才不激怒對方？");
+        chips.push("此事件是否已達校安通報或輔導室轉介門檻？導師該如何自保？");
+      } else {
+        if (focusBadge) focusBadge.textContent = "掌握該生基本背景中";
+        chips.push("請根據該生平時身心特質，提供三條日常班級常規引導策略");
+        chips.push("若要與主要照顧者建立良好同盟，親師溝通有哪些注意事項？");
+      }
+
+      if (st && st.specialStatus && st.specialStatus !== "無" && st.specialStatus !== "常規良好") {
+        chips.push(`針對該生【${st.specialStatus}】特質，課堂情緒升溫時當下 30 秒能做什麼？`);
+      }
+
+      chips.push("學生情緒失控時，如何在不公開羞辱的前提下安定同儕觀感？");
+
+      container.innerHTML = chips.slice(0, 5).map(q => `
+        <button type="button" class="coach-chip-btn" onclick="sendCoachPrompt('${q.replace(/'/g, "\'")}')">${q}</button>
+      `).join("");
+    }
+
+    function clearCoachChat() {
+      state.coachHistory = [];
+      const box = document.getElementById("coachChatBox");
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { name: "該生" };
+      box.innerHTML = `
+        <div class="chat-msg ai">
+          <span class="chat-sender">AI 諮詢教練</span>
+          <div class="chat-bubble">已清空對話紀錄。我已就位並掌握座號 ${st.seatNo} 號（${st.name}）的背景脈絡。請隨時提出您遇到的班級經營難題。</div>
+        </div>
+      `;
+    }
+
+    function handleCoachKey(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendCoachMessage();
+      }
+    }
+
+    function sendCoachPrompt(question) {
+      document.getElementById("coachInputText").value = question;
+      sendCoachMessage();
+    }
+
+    function appendChatMessage(role, text, allowCopy = false) {
+      const box = document.getElementById("coachChatBox");
+      const msgDiv = document.createElement("div");
+      msgDiv.className = `chat-msg ${role}`;
+      
+      const senderSpan = document.createElement("span");
+      senderSpan.className = "chat-sender";
+      senderSpan.textContent = role === "user" ? "導師" : "AI 諮詢教練";
+      
+      const bubbleDiv = document.createElement("div");
+      bubbleDiv.className = "chat-bubble";
+      bubbleDiv.textContent = text;
+
+      msgDiv.appendChild(senderSpan);
+      msgDiv.appendChild(bubbleDiv);
+
+      if (allowCopy && role === "ai") {
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "chat-copy-btn";
+        copyBtn.textContent = "複製此段建議";
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(text).then(() => {
+            showModal("複製成功", "已將教練建議複製至剪貼簿！", "success");
+          });
+        };
+        msgDiv.appendChild(copyBtn);
+      }
+
+      box.appendChild(msgDiv);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendCoachMessage() {
+      const input = document.getElementById("coachInputText");
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { name: "該生" };
+      const currentRaw = document.getElementById("rawInput").value || document.getElementById("polishedSummary").value;
+      const history = filterRecordsBySeat(state.records, st.seatNo).slice(0, 3);
+
+      input.value = "";
+      appendChatMessage("user", userText);
+
+      const btn = document.getElementById("btnSendCoach");
+      btn.disabled = true;
+      btn.textContent = "諮詢中...";
+
+      // 組裝背景與連續對話脈絡
+      const bgInfo = `
+・座號/化名：${st.seatNo}號【${anonymizeText(st.name, st.name)}】
+・家庭概況：${st.family || "一般雙親或未詳述"}
+・身心特質註記：${st.specialStatus || "無特殊通報"}
+・個性專長：${st.traits || "一般國中生特質"}
+・過往輔導歷程：${st.counselingHistory || "無轉介"}
+・本次事件：${anonymizeText(currentRaw, st.name) || "無即時細節，通則諮詢"}
+`.trim();
+
+      // 提取最近對話歷程
+      const conversationContext = state.coachHistory.slice(-4).map(h => `${h.role === "user" ? "導師" : "教練"}：${h.text}`).join("\n");
+
+      const prompt = `你是一位精通台灣國中校園實務、親師溝通與學生輔導法的資深主任顧問。
+請以資深導師的同理與實務立場，回答老師的提問。
+
+【學生背景脈絡】：
+${bgInfo}
+
+【過往對話歷程】：
+${conversationContext || "（初次提問）"}
+
+【導師當前最新提問】：
+${anonymizeText(userText, st.name)}
+
+【極嚴格輸出契約限制】：
+1. 嚴禁任何開場白（絕對不要寫「你好」、「我是專家」等客套廢話），第一行直接出策略與話術！
+2. 務實直球對決：若問話術，直接給完整、拿拿起手機就能貼給家長的 LINE 訊息或通話台詞；若問管教，直接條列現場具體步驟；若問法規，直接講通報門檻與自保要點。
+3. 嚴禁任何 Markdown 符號（絕對禁止使用 **粗體**、###、---），標題直接用【】方括號。
+4. 全形標點，繁體中文，字數精簡在 250 至 350 字以內。`;
+
+      const res = await callGemini(prompt);
+      btn.disabled = false;
+      btn.textContent = "發送諮詢";
+
+      if (!res.ok) {
+        showModal("諮詢提示", res.error, "info");
+        return;
+      }
+
+      let cleanText = res.text
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .replace(/#{1,6}\s?/g, "")
+        .replace(/^\s*[-*]\s+/gm, "• ")
+        .replace(/---/g, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+
+      const finalReply = deanonymizeText(cleanText, st.name);
+      
+      // 記錄到本地對話歷程
+      state.coachHistory.push({ role: "user", text: userText });
+      state.coachHistory.push({ role: "ai", text: finalReply });
+
+      appendChatMessage("ai", finalReply, true);
+    }
+
+        // 檔案匯出與匯入（JSON / CSV）
+    function openBackupModal() {
+      document.getElementById("backupModal").classList.add("show");
+    }
+
+    function exportBackupJSON() {
+      const data = {
+        version: "1.0",
+        exportAt: new Date().toISOString(),
+        className: state.className,
+        teacherName: state.teacherName,
+        students: state.students,
+        records: state.records
+      };
+      const jsonStr = JSON.stringify(data, null, 2);
+      const filename = `班級輔導B表備份_${state.className}_${new Date().toISOString().slice(0, 10)}.json`;
+      triggerDownload(jsonStr, filename, "application/json");
+      showModal("匯出成功", "完整備份 JSON 檔案已下載至您的電腦！", "success");
+    }
+
+    function exportRecordsCSV() {
+      if (state.records.length === 0) {
+        showModal("尚無紀錄", "目前沒有任何輔導紀錄可匯出。", "info");
+        return;
+      }
+      const csvStr = generateRecordsCSVString(state.records);
+      const filename = `輔導紀錄清冊_${state.className}_${new Date().toISOString().slice(0, 10)}.csv`;
+      triggerDownload(csvStr, filename, "text/csv;charset=utf-8;");
+      showModal("匯出成功", "輔導紀錄 CSV 檔案已下載，可用 Excel 直接開啟檢視！", "success");
+    }
+
+    function handleImportFile() {
+      const input = document.getElementById("importFileInput");
+      if (!input.files || input.files.length === 0) {
+        showModal("未選取檔案", "請先點擊選擇欲還原的 .json 備份檔案", "warning");
+        return;
+      }
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.records && Array.isArray(data.records)) {
+            state.records = data.records;
+          }
+          if (data.students && Array.isArray(data.students)) {
+            state.students = data.students;
+          }
+          if (data.className) state.className = data.className;
+          if (data.teacherName) state.teacherName = data.teacherName;
+
+          saveLocalData();
+          renderSeats();
+          renderCurrentStudent();
+          document.getElementById("backupModal").classList.remove("show");
+          showModal("還原成功", `已成功載入 ${state.students.length} 位學生名冊與 ${state.records.length} 筆輔導紀錄！`, "success");
+        } catch (err) {
+          showModal("檔案錯誤", "無法解析該 JSON 檔案，請確認格式是否正確。", "error");
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    // B 表列印功能
+    function openPrintModal() {
+      document.getElementById("printModal").classList.add("show");
+    }
+
+    function executePrintCurrent() {
+      document.getElementById("printModal").classList.remove("show");
+      printCurrentStudentBTable();
+    }
+
+    function printCurrentStudentBTable() {
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo);
+      if (!st) return;
+      const records = filterRecordsBySeat(state.records, st.seatNo);
+      generateBTableHTML([st], { [st.seatNo]: records });
+      window.print();
+    }
+
+    function executePrintAllClass() {
+      document.getElementById("printModal").classList.remove("show");
+      const studentsToPrint = state.students.filter(s => filterRecordsBySeat(state.records, s.seatNo).length > 0);
+      if (studentsToPrint.length === 0) {
+        showModal("無可印資料", "全班目前尚未有任何輔導紀錄，請先登記後再列印。", "info");
+        return;
+      }
+      const recordsMap = {};
+      studentsToPrint.forEach(s => {
+        recordsMap[s.seatNo] = filterRecordsBySeat(state.records, s.seatNo);
+      });
+      generateBTableHTML(studentsToPrint, recordsMap);
+      window.print();
+    }
+
+    function generateBTableHTML(studentList, recordsMap) {
+      const printDiv = document.getElementById("printArea");
+      let html = "";
+
+      studentList.forEach(st => {
+        const records = recordsMap[st.seatNo] || [];
+        let rowsHtml = "";
+
+        if (records.length === 0) {
+          rowsHtml = `<tr><td colspan="5" style="text-align:center; padding: 25px;">本學期尚無特殊輔導晤談紀錄。</td></tr>`;
+        } else {
+          records.forEach((r) => {
+            rowsHtml += `
+              <tr>
+                <td style="text-align: center; width: 85px;">${r.date}</td>
+                <td style="text-align: center; width: 75px;">${r.target}</td>
+                <td style="text-align: center; width: 80px;">${r.category}</td>
+                <td>
+                  <strong>【觀察與晤談摘要】</strong><br>${r.summary.replace(/\n/g, "<br>")}<br><br>
+                  <strong>【處理策略與追蹤】</strong><br>${(r.strategy || "依常規觀察輔導。").replace(/\n/g, "<br>")}
+                </td>
+                <td class="stamp-col"></td>
+              </tr>
+            `;
+          });
+        }
+
+        html += `
+          <div class="b-table-page">
+            <div class="b-table-header">
+              <div class="b-table-title">國民中學學生輔導資料紀錄表（B 表）</div>
+              <div class="b-table-subtitle">晤談紀錄與生活輔導個案追蹤表</div>
+            </div>
+            <table class="b-student-meta">
+              <tr>
+                <td style="width: 25%;"><strong>班級：</strong>${state.className}</td>
+                <td style="width: 20%;"><strong>座號：</strong>${st.seatNo}</td>
+                <td style="width: 30%;"><strong>學生姓名：</strong>${st.name}</td>
+                <td style="width: 25%;"><strong>性別：</strong>${st.gender}</td>
+              </tr>
+              <tr>
+                <td colspan="2"><strong>導師姓名：</strong>${state.teacherName}</td>
+                <td colspan="2"><strong>列印日期：</strong>${new Date().toLocaleDateString("zh-TW")}</td>
+              </tr>
+            </table>
+
+            <table class="b-records-table">
+              <thead>
+                <tr>
+                  <th style="width: 85px;">日期</th>
+                  <th style="width: 75px;">晤談對象</th>
+                  <th style="width: 80px;">輔導類別</th>
+                  <th>輔導內容摘要與處理追蹤措施</th>
+                  <th class="stamp-col">導師簽章</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+      });
+
+      printDiv.innerHTML = html;
+    }
+
+    // 學生名冊管理
+    function openStudentsModal() {
+      const txt = state.students.map(s => `${s.seatNo}、${s.name}、${s.gender}`).join("\n");
+      document.getElementById("studentsBatchText").value = txt;
+      document.getElementById("studentsModal").classList.add("show");
+    }
+
+    async function saveStudentsBatch() {
+      const raw = document.getElementById("studentsBatchText").value.trim();
+      if (!raw) return;
+      const lines = raw.split("\n");
+      const list = [];
+      lines.forEach(l => {
+        const parts = l.split(/[,，、]/);
+        if (parts.length >= 2) {
+          const num = parseInt(parts[0].trim(), 10);
+          if (!isNaN(num)) {
+            list.push({
+              seatNo: num,
+              name: parts[1].trim(),
+              gender: (parts[2] ? parts[2].trim() : "男"),
+              note: ""
+            });
+          }
+        }
+      });
+
+      if (list.length > 0) {
+        state.students = list;
+        saveLocalData();
+        renderSeats();
+        renderCurrentStudent();
+        document.getElementById("studentsModal").classList.remove("show");
+        showModal("名冊已更新", `成功載入 ${list.length} 位學生名冊並儲存於本地！`, "success");
+        if (GAS_URL) {
+          gasPost("saveStudents", { students: list });
+        }
+      }
+    }
+
+    // 系統設定事件綁定
+    document.getElementById("__openSettings").onclick = () => {
+      document.getElementById("__gasInput").value = GAS_URL;
+      document.getElementById("__geminiKeyInput").value = GEMINI_API_KEY;
+      document.getElementById("__classNameInput").value = state.className;
+      document.getElementById("__teacherNameInput").value = state.teacherName;
+      document.getElementById("__settingsModal").classList.add("show");
+    };
+
+    document.getElementById("__saveBtn").onclick = () => {
+      const g = document.getElementById("__gasInput").value.trim();
+      const k = document.getElementById("__geminiKeyInput").value.trim();
+      const c = document.getElementById("__classNameInput").value.trim();
+      const t = document.getElementById("__teacherNameInput").value.trim();
+
+      if (g) localStorage.setItem("gas_url", g); else localStorage.removeItem("gas_url");
+      if (k) localStorage.setItem("gemini_api_key", k); else localStorage.removeItem("gemini_api_key");
+      if (c) { state.className = c; localStorage.setItem("b_class_name", c); }
+      if (t) { state.teacherName = t; localStorage.setItem("b_teacher_name", t); }
+
+      GAS_URL = resolveGasUrl();
+      GEMINI_API_KEY = resolveGeminiKey();
+      document.getElementById("classInfoLabel").textContent = state.className;
+      document.getElementById("__settingsModal").classList.remove("show");
+      showModal("設定已儲存", "參數設定完成，已即時生效", "success").then(() => bootstrapApp());
+    };
+
+    document.getElementById("__clearBtn").onclick = () => {
+      showModal("確認清除", "將清除本機儲存之 GAS 網址與 API 金鑰，確定嗎？", "confirm").then(ok => {
+        if (ok) {
+          localStorage.removeItem("gas_url");
+          localStorage.removeItem("gemini_api_key");
+          location.reload();
+        }
+      });
+    };
+
+    document.getElementById("__genShare").onclick = () => {
+      const url = resolveGasUrl();
+      if (!url) { showModal("無法產生", "請先填寫 GAS 部署網址", "warning"); return; }
+      const b64 = btoa(url);
+      const shareUrl = `${location.origin}${location.pathname}?config=${b64}`;
+      document.getElementById("__shareUrl").textContent = shareUrl;
+      document.getElementById("__qrImg").src = `https://quickchart.io/qr?text=${encodeURIComponent(shareUrl)}&size=200`;
+      document.getElementById("__shareResult").style.display = "block";
+    };
+
+    // 啟動載入
+    async function bootstrapApp() {
+      loadLocalData();
+      initDefaultStudents();
+      renderSeats();
+      renderCurrentStudent();
+      resetForm();
+
+      if (!GAS_URL) {
+        renderSheetEntry(null);
+        return;
+      }
+
+      const res = await gasGet("bootstrap");
+      if (res && res.ok) {
+        if (res.students && res.students.length > 0) {
+          state.students = res.students;
+        }
+        if (res.records && res.records.length > 0) {
+          state.records = res.records;
+        }
+        if (res.settings) {
+          if (res.settings["班級名稱"]) {
+            state.className = res.settings["班級名稱"];
+            document.getElementById("classInfoLabel").textContent = state.className;
+          }
+          if (res.settings["導師姓名"]) state.teacherName = res.settings["導師姓名"];
+          if (res.settings["GeminiAPIKey"] && !GEMINI_API_KEY) {
+            GEMINI_API_KEY = res.settings["GeminiAPIKey"];
+          }
+        }
+        saveLocalData();
+        cloudSynced = snapshot();
+        renderSeats();
+        renderCurrentStudent();
+        renderSheetEntry(res);
+      }
+    }
+
+    // 啟動執行
+    bootstrapApp();
+  </script>
+</body>
+</html>
