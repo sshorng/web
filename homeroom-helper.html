@@ -921,9 +921,9 @@
           <div style="margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <label for="recordStrategy" style="margin-bottom: 0; font-weight: 700;">【處理策略與後續追蹤】（輔導作為）</label>
-              <button type="button" class="btn-ghost" id="btnRegenStrategy" onclick="handleRegenStrategy()" style="padding: 3px 10px; font-size: 12px;">AI 推薦輔導策略</button>
+              <button type="button" class="btn-ghost" id="btnRegenStrategy" onclick="handleRegenStrategy()" style="padding: 3px 10px; font-size: 12px;">AI 擬定輔導作為</button>
             </div>
-            <textarea id="recordStrategy" style="min-height: 95px;" placeholder="記錄輔導策略、親師合作重點與後續追蹤（點擊上方「AI 去情緒潤飾」或右上角「AI 推薦輔導策略」會自動擬定符合法規與教育專業之作法）。"></textarea>
+            <textarea id="recordStrategy" style="min-height: 95px;" placeholder="記錄導師已採取之輔導作為、親師溝通重點與後續追蹤（以導師執行紀錄口吻撰寫，點擊上方「AI 去情緒潤飾」或右上角「AI 擬定輔導作為」自動生成專業紀錄）。"></textarea>
           </div>
 
           <!-- 表單操作按鈕 -->
@@ -1755,17 +1755,22 @@
       const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { name: "該生" };
       const safeRaw = anonymizeText(raw, st.name);
 
-      const prompt = `你是一位精通台灣國中輔導諮商與校園法規的資深輔導主任。
-請將以下導師撰寫的口語、零碎或帶有情緒的隨手紀錄，轉換為台灣學校官方學生輔導資料紀錄表（B 表）的客觀公務格式。
-嚴禁主觀情緒性字眼，必須基於事實客觀陳述，並提供教育專業之處遇策略。
+      const prompt = `你是一位精通台灣國中輔導行政與學生輔導資料表（B 表）撰寫規範的資深輔導主任。
+請將以下導師撰寫的口語隨手筆記或課堂狀況，轉換為台灣學校官方學生輔導紀錄表（B 表）的標準公務紀錄格式。
+
+【撰寫身分與口吻規範（鐵則）】：
+1. 這是「導師本人的輔導紀錄表」，兩欄皆必須是【導師執行與處遇紀錄口吻】（例如「導師已於課後進行個別晤談...」、「已聯繫家長說明...」、「後續將持續觀察...」）。
+2. 【嚴格禁止】使用第三人稱建議句（絕對不可出現「建議導師...」、「請導師...」、「導師應...」等外部顧問口吻）。
+3. 【觀察重點與晤談摘要】：以客觀事實陳述，詳實記錄事件經過、學生身心反應與談話重點，零情緒字眼、零主觀推論。
+4. 【處理策略與後續追蹤】：以導師實務作為紀錄口吻撰寫，包含「已採取的安撫/輔導措施」、「親師聯繫溝通共識」與「後續校內追蹤或轉介規劃」，約 60 到 100 字。
 
 【原始紀錄】：
 ${safeRaw}
 
 請嚴格依照以下 JSON 格式回傳，不要有任何多餘的引言或 markdown 標籤：
 {
-  "summary": "客觀行為觀察與晤談摘要（約 50 到 120 字，敘述事件經過、學生身心反應與溝通重點）",
-  "strategy": "處理策略與後續追蹤（約 50 到 100 字，包含具體正向管教措施、親師聯絡配合與後續觀察重點）"
+  "summary": "客觀行為觀察與晤談摘要（約 50 到 120 字，客觀敘述事件與學生反應）",
+  "strategy": "處理策略與後續追蹤（約 60 到 100 字，必須為導師自身處遇紀錄口吻，嚴禁出現「建議導師」）"
 }`;
 
       const btn = document.getElementById("btnPolishAI");
@@ -1802,15 +1807,27 @@ ${safeRaw}
       btn.textContent = "策略生成中...";
       btn.disabled = true;
 
-      const prompt = `你是台灣國中輔導諮商資深主任。依據以下學生的晤談與觀察摘要，請擬定 2 到 3 項具體、正向且合法的導師輔導處置作為與親師溝通建議（約 60 到 100 字，純文字一段，繁體中文）：
+      const prompt = `你是一位精通台灣國中輔導實務的資深主任。請依據以下事件摘要，以【導師本人的實務輔導紀錄口吻】撰寫「處理策略與後續追蹤」（約 60 到 100 字，純文字一段，繁體中文）。
+
+【口吻規範（鐵則）】：
+1. 必須以導師處遇紀錄口吻撰寫（例如「導師採取彈性輔導作為，先行安撫情緒...」、「已與家長取得聯繫溝通共識...」、「後續將持續觀察其人際互動，必要時轉介專任輔導教師...」）。
+2. 【嚴格禁止】使用「建議導師...」、「請導師...」、「導師應...」等給建議的顧問口吻！
+
 事件摘要：${anonymizeText(summaryText, st.name)}`;
 
       const res = await callGemini(prompt);
-      btn.textContent = "AI 推薦輔導策略";
+      btn.textContent = "AI 擬定輔導作為";
       btn.disabled = false;
 
       if (res.ok) {
         let cleanText = res.text.replace(/^[{\[\s"'“`]+|[}\]\s"'”`]+$/g, "").trim();
+        cleanText = cleanText
+          .replace(/^建議導師(?:採納|採取|進行)?/g, "導師採取")
+          .replace(/^建議(?:採納|採取|進行)/g, "採取")
+          .replace(/建議導師/g, "導師")
+          .replace(/請導師/g, "導師將")
+          .replace(/建請/g, "後續將")
+          .replace(/導師應/g, "導師將");
         document.getElementById("recordStrategy").value = deanonymizeText(cleanText, st.name);
       } else {
         showModal("策略生成提示", res.error, "info");
@@ -2267,8 +2284,22 @@ ${anonymizeText(userText, st.name)}
       summary = cleanField(summary);
       strategy = cleanField(strategy);
 
+      // 強制去建議化，轉化為導師實務紀錄口吻
+      function convertToRecordTone(str) {
+        if (!str) return "";
+        return str
+          .replace(/^建議導師(?:採納|採取|進行)?/g, "導師採取")
+          .replace(/^建議(?:採納|採取|進行)/g, "採取")
+          .replace(/建議導師/g, "導師")
+          .replace(/請導師/g, "導師將")
+          .replace(/建請/g, "後續將")
+          .replace(/導師應/g, "導師將");
+      }
+
+      strategy = convertToRecordTone(strategy);
+
       if (!strategy) {
-        strategy = "配合家長親師合作，持續正向引導與常規觀察。";
+        strategy = "導師已於課後予以安撫關懷，並與家長保持聯繫，後續持續觀察其課堂學習常規。";
       }
 
       return {
