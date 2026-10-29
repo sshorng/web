@@ -898,32 +898,38 @@
             </div>
           </div>
 
+          <!-- B 表標準欄位一：觀察重點與晤談摘要 -->
+          <div style="margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="recordSummary" style="margin-bottom: 0; font-weight: 700;">【觀察重點與晤談摘要】（客觀事實）</label>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn-ghost" id="btnVoiceInput" onclick="toggleVoiceInput()" style="padding: 3px 10px; font-size: 12px;">語音口述</button>
+                <button type="button" class="btn-teal" id="btnPolishAI" onclick="handlePolishAI()" style="padding: 3px 12px; font-size: 12px;">AI 去情緒潤飾</button>
+              </div>
+            </div>
+            <textarea id="recordSummary" style="min-height: 110px;" placeholder="可直接撰寫客觀事實，或以口語短句隨意口述課堂狀況（例如：第三節數學課大哭摔筆、下午與家長聯繫...）。點擊右上角「AI 去情緒潤飾」，系統將在原位置自動轉化為標準公文客觀事實，並同步生成下方處置策略。"></textarea>
+            <div id="voiceStatusTip" style="display: none; font-size: 12px; color: var(--brass); margin-top: 4px; font-weight: 600;">聆聽中，請直接對著麥克風說話，講完再按一次即可結束...</div>
+            
+            <!-- 原位備份與還原提示列 -->
+            <div id="rawDraftNotice" style="display: none; align-items: center; justify-content: space-between; font-size: 12px; background: rgba(43, 89, 72, 0.07); border: 1px solid rgba(43, 89, 72, 0.2); border-radius: 4px; padding: 6px 12px; margin-top: 6px; color: var(--teal);">
+              <span>已由 AI 完成客觀去情緒潤飾</span>
+              <button type="button" class="btn-ghost" onclick="restoreRawDraft()" style="padding: 2px 8px; font-size: 11.5px; height: auto;">還原原始口述手記</button>
+            </div>
+          </div>
+
+          <!-- B 表標準欄位二：處理策略與後續追蹤 -->
           <div style="margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <label for="rawInput" style="margin-bottom: 0;">導師隨手筆記（口語短句、通聯雜記或課堂狀況）</label>
-              <button type="button" class="btn-ghost" id="btnVoiceInput" onclick="toggleVoiceInput()" style="padding: 3px 10px; font-size: 12px;">語音輸入口述</button>
+              <label for="recordStrategy" style="margin-bottom: 0; font-weight: 700;">【處理策略與後續追蹤】（輔導作為）</label>
+              <button type="button" class="btn-ghost" id="btnRegenStrategy" onclick="handleRegenStrategy()" style="padding: 3px 10px; font-size: 12px;">AI 推薦輔導策略</button>
             </div>
-            <textarea id="rawInput" placeholder="例如：第三節數學課跟隔壁吵架摔筆，說大家都針對他。午休找來晤談，情緒激動但有稍微冷靜，下午打電話給媽媽溝通，媽媽說在家也會這樣..."></textarea>
-            <div id="voiceStatusTip" style="display: none; font-size: 12px; color: var(--brass); margin-top: 4px; font-weight: 600;">聆聽中，請直接對著麥克風說話，講完再按一次即可結束...</div>
+            <textarea id="recordStrategy" style="min-height: 95px;" placeholder="記錄輔導策略、親師合作重點與後續追蹤（點擊上方「AI 去情緒潤飾」或右上角「AI 推薦輔導策略」會自動擬定符合法規與教育專業之作法）。"></textarea>
           </div>
 
+          <!-- 表單操作按鈕 -->
           <div class="btn-row">
-            <button class="btn-teal" id="btnPolishAI" onclick="handlePolishAI()">AI 去情緒專業潤飾</button>
             <button class="btn-primary" id="btnSaveRecord" onclick="handleSaveRecord()">儲存晤談紀錄</button>
             <button class="btn-ghost" onclick="resetForm()">清空表單</button>
-          </div>
-
-          <!-- AI 潤飾前後對照與套用區 -->
-          <div class="polish-box" id="polishResultBox">
-            <div style="font-weight: 700; color: var(--teal); margin-bottom: 12px; font-size: 13.5px;">B 表標準格式（客觀陳述，可直接手動修訂）：</div>
-            <div style="margin-bottom: 14px;">
-              <label>【觀察重點與晤談摘要】（客觀事實）</label>
-              <textarea id="polishedSummary" style="min-height: 90px;"></textarea>
-            </div>
-            <div>
-              <label>【處理策略與後續追蹤】（輔導作為）</label>
-              <textarea id="polishedStrategy" style="min-height: 90px;"></textarea>
-            </div>
           </div>
         </div>
 
@@ -1598,28 +1604,43 @@
       renderCurrentStudent();
     }
 
+    let originalRawDraft = "";
+
     function loadRecordToForm(rec) {
       state.activeRecordId = rec.id;
       document.getElementById("recordDate").value = rec.date;
       document.getElementById("recordTarget").value = rec.target;
       document.getElementById("recordCategory").value = rec.category;
-      document.getElementById("rawInput").value = rec.summary;
-
-      document.getElementById("polishedSummary").value = rec.summary;
-      document.getElementById("polishedStrategy").value = rec.strategy;
-      document.getElementById("polishResultBox").classList.add("active");
+      document.getElementById("recordSummary").value = rec.summary;
+      document.getElementById("recordStrategy").value = rec.strategy || "";
+      originalRawDraft = "";
+      const notice = document.getElementById("rawDraftNotice");
+      if (notice) notice.style.display = "none";
       renderCurrentStudent();
       renderCoachChips();
     }
 
     function resetForm() {
+      state.activeRecordId = null;
       const today = new Date().toISOString().split("T")[0];
       document.getElementById("recordDate").value = today;
-      document.getElementById("rawInput").value = "";
-      document.getElementById("polishedSummary").value = "";
-      document.getElementById("polishedStrategy").value = "";
-      document.getElementById("polishResultBox").classList.remove("active");
+      document.getElementById("recordTarget").value = "學生本人";
+      document.getElementById("recordCategory").value = "學習適應";
+      document.getElementById("recordSummary").value = "";
+      document.getElementById("recordStrategy").value = "";
+      originalRawDraft = "";
+      const notice = document.getElementById("rawDraftNotice");
+      if (notice) notice.style.display = "none";
       renderCoachChips();
+    }
+
+    function restoreRawDraft() {
+      if (originalRawDraft) {
+        document.getElementById("recordSummary").value = originalRawDraft;
+        const notice = document.getElementById("rawDraftNotice");
+        if (notice) notice.style.display = "none";
+        renderCoachChips();
+      }
     }
 
 
@@ -1661,7 +1682,7 @@
           }
         }
 
-        const inputArea = document.getElementById("rawInput");
+        const inputArea = document.getElementById("recordSummary");
         if (finalTranscript) {
           // 若已有內容則補上逗點或空格
           const prev = inputArea.value.trim();
@@ -1719,13 +1740,17 @@
       if (tip) tip.style.display = "none";
     }
 
-    // AI 專業去情緒潤飾
+        // AI 專業去情緒潤飾（原位升級）
     async function handlePolishAI() {
-      const raw = document.getElementById("rawInput").value.trim();
+      const summaryArea = document.getElementById("recordSummary");
+      const raw = summaryArea.value.trim();
       if (!raw) {
-        showModal("提示", "請先輸入導師隨手筆記或口語內容", "info");
+        showModal("提示", "請先於【觀察重點與晤談摘要】中輸入或語音口述課堂狀況內容", "info");
         return;
       }
+
+      // 暫存原始草稿以供隨時還原
+      originalRawDraft = raw;
 
       const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { name: "該生" };
       const safeRaw = anonymizeText(raw, st.name);
@@ -1744,11 +1769,11 @@ ${safeRaw}
 }`;
 
       const btn = document.getElementById("btnPolishAI");
-      btn.textContent = "AI 專業潤飾中...";
+      btn.textContent = "AI 潤飾中...";
       btn.disabled = true;
 
       const res = await callGemini(prompt);
-      btn.textContent = "AI 去情緒專業潤飾";
+      btn.textContent = "AI 去情緒潤飾";
       btn.disabled = false;
 
       if (!res.ok) {
@@ -1757,14 +1782,39 @@ ${safeRaw}
       }
 
       const extracted = extractSummaryAndStrategy(res.text, st.name);
-      document.getElementById("polishedSummary").value = extracted.summary;
-      document.getElementById("polishedStrategy").value = extracted.strategy;
+      summaryArea.value = extracted.summary;
+      document.getElementById("recordStrategy").value = extracted.strategy;
 
-      const box = document.getElementById("polishResultBox");
-      box.classList.add("active");
-      box.classList.add("show");
-      box.style.display = "block";
-      box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const notice = document.getElementById("rawDraftNotice");
+      if (notice) notice.style.display = "flex";
+
+      renderCoachChips();
+    }
+
+    async function handleRegenStrategy() {
+      const summaryText = document.getElementById("recordSummary").value.trim();
+      if (!summaryText) {
+        showModal("提示", "請先填寫【觀察重點與晤談摘要】內容", "info");
+        return;
+      }
+      const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { name: "該生" };
+      const btn = document.getElementById("btnRegenStrategy");
+      btn.textContent = "策略生成中...";
+      btn.disabled = true;
+
+      const prompt = `你是台灣國中輔導諮商資深主任。依據以下學生的晤談與觀察摘要，請擬定 2 到 3 項具體、正向且合法的導師輔導處置作為與親師溝通建議（約 60 到 100 字，純文字一段，繁體中文）：
+事件摘要：${anonymizeText(summaryText, st.name)}`;
+
+      const res = await callGemini(prompt);
+      btn.textContent = "AI 推薦輔導策略";
+      btn.disabled = false;
+
+      if (res.ok) {
+        let cleanText = res.text.replace(/^[{\[\s"'“`]+|[}\]\s"'”`]+$/g, "").trim();
+        document.getElementById("recordStrategy").value = deanonymizeText(cleanText, st.name);
+      } else {
+        showModal("策略生成提示", res.error, "info");
+      }
     }
 
     // 儲存紀錄（本地立即儲存，雲端異步同步）
@@ -1772,14 +1822,11 @@ ${safeRaw}
       const date = document.getElementById("recordDate").value;
       const target = document.getElementById("recordTarget").value;
       const category = document.getElementById("recordCategory").value;
-      let summary = document.getElementById("polishedSummary").value.trim();
-      let strategy = document.getElementById("polishedStrategy").value.trim();
+      const summary = document.getElementById("recordSummary").value.trim();
+      const strategy = document.getElementById("recordStrategy").value.trim();
 
       if (!summary) {
-        summary = document.getElementById("rawInput").value.trim();
-      }
-      if (!summary) {
-        showModal("欄位缺少", "請填寫紀錄內容或先執行 AI 潤飾", "warning");
+        showModal("欄位缺少", "請填寫【觀察重點與晤談摘要】內容", "warning");
         return;
       }
 
@@ -1845,7 +1892,7 @@ ${safeRaw}
       const container = document.getElementById("coachPromptChips");
       if (!container) return;
       const st = state.students.find(s => s.seatNo === state.activeSeatNo);
-      const currentRaw = document.getElementById("rawInput").value.trim() || document.getElementById("polishedSummary").value.trim();
+      const currentRaw = document.getElementById("recordSummary").value.trim();
       const focusBadge = document.getElementById("coachFocusBadge");
 
       let chips = [];
@@ -1935,7 +1982,7 @@ ${safeRaw}
       if (!userText) return;
 
       const st = state.students.find(s => s.seatNo === state.activeSeatNo) || { name: "該生" };
-      const currentRaw = document.getElementById("rawInput").value || document.getElementById("polishedSummary").value;
+      const currentRaw = document.getElementById("recordSummary").value;
       const history = filterRecordsBySeat(state.records, st.seatNo).slice(0, 3);
 
       input.value = "";
