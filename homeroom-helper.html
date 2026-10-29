@@ -1011,9 +1011,16 @@
         <input type="text" id="__teacherNameInput" placeholder="導師姓名">
       </div>
       <div class="actions">
-        <button class="btn-ghost" id="__clearBtn">清除設定</button>
+        <button class="btn-ghost" id="__clearBtn">清除連線設定</button>
         <button class="btn-ghost" onclick="document.getElementById('__settingsModal').classList.remove('show')">取消</button>
         <button class="btn-primary" id="__saveBtn">儲存設定</button>
+      </div>
+      <div style="margin-top: 18px; border-top: 1px dashed var(--border); padding-top: 14px;">
+        <div style="font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 8px;">班級資料重置與維護</div>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn-ghost" style="flex: 1; justify-content: center; color: var(--wine);" onclick="clearAllRecordsOnly()">清空所有紀錄（保留名冊）</button>
+          <button type="button" class="btn-ghost" style="flex: 1; justify-content: center; color: var(--wine); border-color: var(--wine);" onclick="resetFactoryData()">完全重置出廠（清除本機全部資料）</button>
+        </div>
       </div>
       <div style="margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px;">
         <button class="btn-ghost" id="__genShare" style="width: 100%; justify-content: center;">🔗 產生免設定分享連結與 QR Code</button>
@@ -1029,8 +1036,16 @@
   <div class="modal-overlay" id="studentsModal">
     <div class="modal-card" style="max-width: 680px;">
       <div class="title">編輯班級學生名冊</div>
-      <div class="message">直接在此快速貼上或修改全班座號與姓名（每行一位，格式：座號、姓名、性別）：</div>
-      <textarea id="studentsBatchText" style="min-height: 250px; font-family: monospace; font-size: 13.5px;"></textarea>
+      <div class="message" style="line-height: 1.6; margin-bottom: 12px;">
+        支援直接從 Excel 複製貼上（支援 Tab、逗號、頓號或空格分隔，每行一位）。<br>
+        常見格式：<code>01 王小明 男</code> 或 <code>01 陳美玲 女</code>，或每行一個學生姓名。
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+        <button type="button" class="btn-ghost" style="font-size: 12px; padding: 5px 12px;" onclick="clearBatchInput()">清空輸入框</button>
+        <button type="button" class="btn-ghost" style="font-size: 12px; padding: 5px 12px;" onclick="fillBlank30Students()">填入 30 人空白座號</button>
+        <button type="button" class="btn-ghost" style="font-size: 12px; padding: 5px 12px; color: var(--wine);" onclick="clearAllStudentBackgrounds()">清空全班示範背景標籤</button>
+      </div>
+      <textarea id="studentsBatchText" style="min-height: 250px; font-family: monospace; font-size: 13.5px;" placeholder="1、王小明、男&#10;2、陳小美、女&#10;（亦可直接從 Excel 兩欄或三欄複製貼上）"></textarea>
       <div class="actions" style="margin-top: 16px;">
         <button class="btn-ghost" onclick="document.getElementById('studentsModal').classList.remove('show')">取消</button>
         <button class="btn-primary" onclick="saveStudentsBatch()">儲存名冊至本地與雲端</button>
@@ -1356,7 +1371,7 @@
         try {
           // 4 秒嚴格超時：超時立刻換下一個，絕不卡住
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 4000);
+          const timer = setTimeout(() => controller.abort(), 8000);
 
           const res = await fetch(url, {
             method: "POST",
@@ -1453,7 +1468,7 @@
           list.push({
             seatNo: i,
             name: "學生" + i,
-            gender: (i % 2 === 1 ? "男" : "女"),
+            gender: (i <= 20 ? "女" : "男"),
             family: (i === 1 ? "雙親同住，母為主要聯繫人" : "一般家庭"),
             specialStatus: (i === 1 ? "易激動敏感、需溫和堅定引導" : "常規良好"),
             traits: (i === 1 ? "熱心負責但抗挫力弱" : "一般學生"),
@@ -1741,35 +1756,9 @@ ${safeRaw}
         return;
       }
 
-      try {
-        let textToParse = res.text.trim();
-        // 擷取 { ... } 範圍內的真實 JSON
-        const firstBrace = textToParse.indexOf("{");
-        const lastBrace = textToParse.lastIndexOf("}");
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          textToParse = textToParse.substring(firstBrace, lastBrace + 1);
-        }
-        const parsed = JSON.parse(textToParse);
-
-        const realSummary = deanonymizeText(parsed.summary || "", st.name);
-        const realStrategy = deanonymizeText(parsed.strategy || "", st.name);
-
-        document.getElementById("polishedSummary").value = realSummary;
-        document.getElementById("polishedStrategy").value = realStrategy;
-      } catch (err) {
-        // 若 JSON 解析失敗，以正規表達式暴力抓取 summary 與 strategy 欄位值
-        let sumMatch = res.text.match(/"summary"\s*:\s*"([^"]+)"/);
-        let strMatch = res.text.match(/"strategy"\s*:\s*"([^"]+)"/);
-        if (sumMatch) {
-          document.getElementById("polishedSummary").value = deanonymizeText(sumMatch[1], st.name);
-          document.getElementById("polishedStrategy").value = strMatch ? deanonymizeText(strMatch[1], st.name) : "配合家長親師合作，持續正向引導與常規觀察。";
-        } else {
-          // 純文字 fallback 清洗任何殘留引號或代碼
-          const cleanText = res.text.replace(/[{}"\`]|summary:|strategy:/gi, "").trim();
-          document.getElementById("polishedSummary").value = deanonymizeText(cleanText, st.name);
-          document.getElementById("polishedStrategy").value = "持續關懷並追蹤後續課堂表現。";
-        }
-      }
+      const extracted = extractSummaryAndStrategy(res.text, st.name);
+      document.getElementById("polishedSummary").value = extracted.summary;
+      document.getElementById("polishedStrategy").value = extracted.strategy;
 
       const box = document.getElementById("polishResultBox");
       box.classList.add("active");
@@ -2177,29 +2166,180 @@ ${anonymizeText(userText, st.name)}
     }
 
     // 學生名冊管理
+    // 徹底抽取並清洗 AI 去情緒潤飾文字，消除殘留引號與欄位名
+    function extractSummaryAndStrategy(rawText, studentName) {
+      if (!rawText) return { summary: "", strategy: "" };
+      let text = String(rawText).trim();
+
+      // 移除可能存在的 markdown code block 標記
+      text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+
+      let summary = "";
+      let strategy = "";
+
+      // 1. 嘗試以正規 JSON.parse 解析
+      try {
+        const first = text.indexOf("{");
+        const last = text.lastIndexOf("}");
+        if (first !== -1 && last !== -1 && last > first) {
+          const jsonSub = text.substring(first, last + 1);
+          const obj = JSON.parse(jsonSub);
+          if (obj.summary) summary = String(obj.summary).trim();
+          if (obj.strategy) strategy = String(obj.strategy).trim();
+        }
+      } catch (e) {
+        // 忽略，繼續容錯流程
+      }
+
+      // 2. 若未取得，以多行正規表達式彈性抓取
+      if (!summary) {
+        const m = text.match(/"?summary"?\s*:\s*["“]?([\s\S]*?)(?:["”]?\s*,\s*"?strategy"?|"\}|$)/i);
+        if (m && m[1]) summary = m[1].trim();
+      }
+      if (!strategy) {
+        const m = text.match(/"?strategy"?\s*:\s*["“]?([\s\S]*?)(?:["”]?\s*\}|["”]?$)/i);
+        if (m && m[1]) strategy = m[1].trim();
+      }
+
+      // 3. 若仍無結果，以整段文字作為摘要
+      if (!summary && !strategy) {
+        summary = text;
+      }
+
+      // 4. 清除殘留之符號與標籤
+      const cleanField = (str) => {
+        if (!str) return "";
+        return str
+          .replace(/^[\s{}"'“”`]+/, "")
+          .replace(/^(?:summary|strategy)\s*[:：]\s*/i, "")
+          .replace(/^[\s{}"'“”`]+/, "")
+          .replace(/[\s{}"'“”`,]+$/, "")
+          .trim();
+      };
+
+      summary = cleanField(summary);
+      strategy = cleanField(strategy);
+
+      if (!strategy) {
+        strategy = "配合家長親師合作，持續正向引導與常規觀察。";
+      }
+
+      return {
+        summary: deanonymizeText(summary, studentName),
+        strategy: deanonymizeText(strategy, studentName)
+      };
+    }
+
     function openStudentsModal() {
       const txt = state.students.map(s => `${s.seatNo}、${s.name}、${s.gender}`).join("\n");
       document.getElementById("studentsBatchText").value = txt;
       document.getElementById("studentsModal").classList.add("show");
     }
 
+    function clearBatchInput() {
+      document.getElementById("studentsBatchText").value = "";
+      document.getElementById("studentsBatchText").focus();
+    }
+
+    function fillBlank30Students() {
+      const list = [];
+      for (let i = 1; i <= 30; i++) {
+        list.push(`${i}、座號${String(i).padStart(2, "0")}、${i <= 20 ? "女" : "男"}`);
+      }
+      document.getElementById("studentsBatchText").value = list.join("\n");
+    }
+
+    async function clearAllStudentBackgrounds() {
+      const ok = await showModal("確認清空背景標籤", "將清空全班所有學生的家庭結構、身心脆弱關注特質與輔導歷程標籤（座號與姓名將會完整保留）。確定要清空嗎？", "confirm");
+      if (!ok) return;
+
+      state.students.forEach(s => {
+        s.family = "";
+        s.specialStatus = "";
+        s.traits = "";
+        s.counselingHistory = "";
+      });
+      saveLocalData();
+      renderSeats();
+      renderCurrentStudent();
+      if (GAS_URL) {
+        gasPost("saveStudents", { students: state.students });
+      }
+      showModal("背景標籤已清空", "全班背景與關注標籤已全數歸零，您現在可以針對個別學生點選「編輯背景」輸入真實資料。", "success");
+    }
+
+    async function clearAllRecordsOnly() {
+      const ok = await showModal("確認清空紀錄", "確定要清空所有學生的輔導諮商紀錄嗎？（學生名冊與背景標籤將會完整保留）", "confirm");
+      if (!ok) return;
+
+      state.records = [];
+      state.activeRecordId = null;
+      saveLocalData();
+      renderSeats();
+      renderCurrentStudent();
+      resetForm();
+      if (GAS_URL) {
+        gasPost("saveRecords", { records: [] });
+      }
+      showModal("紀錄已清空", "已清空所有輔導紀錄，可開始記錄新學期內容！", "success");
+    }
+
+    async function resetFactoryData() {
+      const ok = await showModal("警告：完全出廠重置", "此動作將清除本機儲存之所有班級名冊、學生背景特質與歷史輔導紀錄，還原為最初狀態（API 金鑰將會保留）。確定要執行嗎？", "confirm");
+      if (!ok) return;
+
+      localStorage.removeItem("b_table_records");
+      localStorage.removeItem("b_table_students");
+      localStorage.removeItem("b_class_name");
+      localStorage.removeItem("b_teacher_name");
+      localStorage.removeItem("b_coach_history");
+      location.reload();
+    }
+
     async function saveStudentsBatch() {
       const raw = document.getElementById("studentsBatchText").value.trim();
-      if (!raw) return;
+      if (!raw) {
+        showModal("提示", "請輸入或貼上學生名單", "info");
+        return;
+      }
       const lines = raw.split("\n");
       const list = [];
-      lines.forEach(l => {
-        const parts = l.split(/[,，、]/);
-        if (parts.length >= 2) {
+      lines.forEach((l, idx) => {
+        const line = l.trim();
+        if (!line) return;
+        // 支援 Tab、逗號、頓號、多個空格分隔
+        const parts = line.split(/[\t,，、\s]+/);
+        if (parts.length >= 2 && !isNaN(parseInt(parts[0], 10))) {
           const num = parseInt(parts[0].trim(), 10);
-          if (!isNaN(num)) {
-            list.push({
-              seatNo: num,
-              name: parts[1].trim(),
-              gender: (parts[2] ? parts[2].trim() : "男"),
-              note: ""
-            });
-          }
+          const name = parts[1].trim();
+          const gender = (parts[2] && parts[2].trim()) ? parts[2].trim() : (num <= 20 ? "女" : "男");
+          const old = state.students.find(s => s.seatNo === num);
+          const isDemoFamily = old && old.family && (old.family.includes("主要聯繫人") || old.family === "一般家庭");
+          const isDemoSpecial = old && old.specialStatus && (old.specialStatus.includes("易激動敏感") || old.specialStatus === "常規良好");
+          list.push({
+            seatNo: num,
+            name: name,
+            gender: gender,
+            family: (old && !isDemoFamily) ? (old.family || "") : "",
+            specialStatus: (old && !isDemoSpecial) ? (old.specialStatus || "") : "",
+            traits: (old && old.traits !== "一般學生" && old.traits !== "熱心負責但抗挫力弱") ? (old.traits || "") : "",
+            counselingHistory: (old && old.counselingHistory !== "無特殊紀錄" && old.counselingHistory !== "開學初曾與家長一對一面談") ? (old.counselingHistory || "") : "",
+            note: old ? (old.note || "") : ""
+          });
+        } else if (parts.length === 1 && parts[0]) {
+          // 純姓名格式，每行一個姓名，自動依行號編座號
+          const num = idx + 1;
+          const name = parts[0].trim();
+          list.push({
+            seatNo: num,
+            name: name,
+            gender: (num <= 20 ? "女" : "男"),
+            family: "",
+            specialStatus: "",
+            traits: "",
+            counselingHistory: "",
+            note: ""
+          });
         }
       });
 
@@ -2213,6 +2353,8 @@ ${anonymizeText(userText, st.name)}
         if (GAS_URL) {
           gasPost("saveStudents", { students: list });
         }
+      } else {
+        showModal("無法解析", "未能成功識別任何學生資料，請確認每行包含座號與姓名。", "warning");
       }
     }
 
@@ -2267,6 +2409,14 @@ ${anonymizeText(userText, st.name)}
     async function bootstrapApp() {
       loadLocalData();
       initDefaultStudents();
+      // 若為預設示範名冊，自動同步性別規範（1~20 號女生，21 號後男生）
+      const isDefaultDemo = state.students.length === 30 && state.students.every(s => s.name === "學生" + s.seatNo);
+      if (isDefaultDemo) {
+        state.students.forEach(s => {
+          s.gender = (s.seatNo <= 20 ? "女" : "男");
+        });
+        saveLocalData();
+      }
       renderSeats();
       renderCurrentStudent();
       resetForm();
