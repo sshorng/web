@@ -72,6 +72,14 @@
         // ⚠️ 請將您的 Google Apps Script 網址貼在下方引號內
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc7QHVTXJ6gi7A2CIwl5hijlE7B__WmBIB5_bEpSvkWCP0j2WBTDGkOnnq1QP3ZjkEeQ/exec"; 
 
+        // 契約第 12 條：教師後台試算表入口網址
+        const SHEET_URL = "https://docs.google.com/spreadsheets/d/17L0mKygFIlVvWk9cGDCDGkwioCoD6VjoQtqCnDxDnnU/edit?gid=0#gid=0";
+
+        // 純函式：驗證試算表來源與格式，不合格就不產生連結
+        const isValidSheetUrl = (url) => /^https:\/\/docs\.google\.com\/spreadsheets\/d\/[A-Za-z0-9_-]{10,}/.test(String(url || "").trim());
+
+        const SHEET_URL_VALID = isValidSheetUrl(SHEET_URL);
+
         const { useState, useEffect } = React;
 
         // --- Icon Component (使用 Lucide icons 的路徑) ---
@@ -94,6 +102,7 @@
                 AlertTriangle: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
                 PlayCircle: <><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></>,
                 ChevronDown: <><polyline points="6 9 12 15 18 9" /></>,
+                FileSpreadsheet: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></>,
                 ChevronUp: <><polyline points="18 15 12 9 6 15" /></>
             };
 
@@ -299,6 +308,29 @@
                             <span className="text-sm text-ink-light ml-2">({messages.length} 則)</span>
                         </div>
                         <div className="flex gap-3 flex-wrap justify-end">
+                            {/* 契約第 12 條：試算表入口圖示（僅教師後台可見） */}
+                            {SHEET_URL_VALID ? (
+                                <a
+                                    href={SHEET_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="另開分頁到班級訊息試算表"
+                                    aria-label="另開分頁到班級訊息試算表"
+                                    className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] px-3 py-2 rounded border border-stone/60 text-celadon hover:text-xuan-paper hover:bg-celadon hover:border-celadon transition-colors"
+                                >
+                                    <Icon name="FileSpreadsheet" className="w-4 h-4" />
+                                    <span className="text-xs font-bold tracking-wider hidden sm:inline">試算表</span>
+                                </a>
+                            ) : (
+                                <span
+                                    title="尚未設定可用的試算表網址，請在檔案頂端 SHEET_URL 填入 https://docs.google.com/spreadsheets/d/ 開頭的網址"
+                                    className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] px-3 py-2 rounded border border-dashed border-stone/60 text-ink-light/50 cursor-help"
+                                >
+                                    <Icon name="FileSpreadsheet" className="w-4 h-4" />
+                                    <span className="text-xs tracking-wider hidden sm:inline">未設定</span>
+                                </span>
+                            )}
+
                             {/* 重新整理 */}
                              <button onClick={fetchMessages} className="p-2 text-ink-light hover:text-ink-main transition-colors" title="刷新">
                                 <Icon name="RefreshCw" className={isLoading ? "animate-spin" : ""} />
